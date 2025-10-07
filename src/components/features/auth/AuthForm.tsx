@@ -1,5 +1,6 @@
 "use client";
 
+import NextLink from "next/link";
 import { useState } from "react";
 import { Input } from "@heroui/input";
 import { Button } from "@heroui/button";
@@ -167,13 +168,17 @@ function SignupForm({
         className="justify-self-start"
       >
         <span className="text-sm text-secondary-600">
-          <Link href="/legal/terms" size="sm" className="font-medium">
-            이용약관
-          </Link>
+          <NextLink href="/legal/terms" passHref legacyBehavior>
+            <Link size="sm" className="font-medium">
+              이용약관
+            </Link>
+          </NextLink>
           과
-          <Link href="/legal/privacy" size="sm" className="font-medium">
-            개인정보처리방침
-          </Link>
+          <NextLink href="/legal/privacy" passHref legacyBehavior>
+            <Link size="sm" className="font-medium">
+              개인정보처리방침
+            </Link>
+          </NextLink>
           에 동의합니다
         </span>
       </Checkbox>
