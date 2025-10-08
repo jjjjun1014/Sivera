@@ -1,126 +1,20 @@
-import type { Config } from "tailwindcss";
-import { heroui } from "@heroui/theme";
+// tailwind.config.js
+const { heroui } = require("@heroui/theme");
 
-const config: Config = {
+/** @type {import('tailwindcss').Config} */
+module.exports = {
   content: [
-    "./src/pages/**/*.{js,ts,jsx,tsx,mdx}",
-    "./src/components/**/*.{js,ts,jsx,tsx,mdx}",
-    "./src/app/**/*.{js,ts,jsx,tsx,mdx}",
-    "./node_modules/@heroui/theme/dist/components/**/*.{js,ts,jsx,tsx,mdx}",
+    "./node_modules/@heroui/theme/dist/components/(accordion|alert|autocomplete|avatar|badge|breadcrumbs|button|calendar|card|checkbox|chip|code|date-input|date-picker|divider|drawer|dropdown|form|input|input-otp|kbd|link|listbox|menu|modal|navbar|number-input|pagination|popover|progress|radio|scroll-shadow|select|skeleton|slider|snippet|spacer|spinner|toggle|table|tabs|toast|user|ripple).js",
   ],
   theme: {
     extend: {
-      colors: {
-        primary: {
-          50: "#FFF8E1",
-          100: "#FFECB3",
-          200: "#FFE082",
-          300: "#FFD54F",
-          400: "#FFCA28",
-          500: "#FFC107",
-          600: "#FFB300",
-          700: "#FFA000",
-          800: "#FF8F00",
-          900: "#FF6F00",
-          DEFAULT: "#FFC107",
-          foreground: "#000000",
-        },
-        secondary: {
-          50: "#F8F9FA",
-          100: "#E9ECEF",
-          200: "#DEE2E6",
-          300: "#CED4DA",
-          400: "#ADB5BD",
-          500: "#6C757D",
-          600: "#495057",
-          700: "#343A40",
-          800: "#212529",
-          900: "#1C1C1C",
-          DEFAULT: "#6C757D",
-          foreground: "#FFFFFF",
-        },
-        success: {
-          50: "#E8F5E9",
-          100: "#C8E6C9",
-          200: "#A5D6A7",
-          300: "#81C784",
-          400: "#66BB6A",
-          500: "#4CAF50",
-          600: "#43A047",
-          700: "#388E3C",
-          800: "#2E7D32",
-          900: "#1B5E20",
-          DEFAULT: "#4CAF50",
-          foreground: "#FFFFFF",
-        },
-        danger: {
-          50: "#FFEBEE",
-          100: "#FFCDD2",
-          200: "#EF9A9A",
-          300: "#E57373",
-          400: "#EF5350",
-          500: "#F44336",
-          600: "#E53935",
-          700: "#D32F2F",
-          800: "#C62828",
-          900: "#B71C1C",
-          DEFAULT: "#F44336",
-          foreground: "#FFFFFF",
-        },
-        warning: {
-          50: "#FFFDE7",
-          100: "#FFF9C4",
-          200: "#FFF59D",
-          300: "#FFF176",
-          400: "#FFEE58",
-          500: "#FFEB3B",
-          600: "#FDD835",
-          700: "#FBC02D",
-          800: "#F9A825",
-          900: "#F57F17",
-          DEFAULT: "#FFEB3B",
-          foreground: "#000000",
-        },
-      },
-      fontSize: {
-        xs: "0.75rem",
-        sm: "0.875rem",
-        base: "1rem",
-        lg: "1.125rem",
-        xl: "1.25rem",
-        "2xl": "1.5rem",
-        "3xl": "1.875rem",
-        "4xl": "2.25rem",
-        "5xl": "3rem",
-        "6xl": "4rem",
+      fontFamily: {
+        sans: ["var(--font-sans)"],
+        mono: ["var(--font-mono)"],
+        "nanum-myeongjo": ["var(--font-nanum-myeongjo)"],
       },
     },
   },
   darkMode: "class",
-  plugins: [
-    heroui({
-      themes: {
-        light: {
-          colors: {
-            primary: "#FFC107",
-            secondary: "#6C757D",
-            success: "#4CAF50",
-            danger: "#F44336",
-            warning: "#FFEB3B",
-          },
-        },
-        dark: {
-          colors: {
-            primary: "#FFD54F",
-            secondary: "#ADB5BD",
-            success: "#81C784",
-            danger: "#E57373",
-            warning: "#FFF176",
-          },
-        },
-      },
-    }),
-  ],
+  plugins: [heroui()],
 };
-
-export default config;

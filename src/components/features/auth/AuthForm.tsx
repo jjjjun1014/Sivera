@@ -1,17 +1,26 @@
 "use client";
 
-import NextLink from "next/link";
-import { useState } from "react";
+import { useState, useActionState } from "react";
 import { Input } from "@heroui/input";
 import { Button } from "@heroui/button";
 import { Link } from "@heroui/link";
 import { Divider } from "@heroui/divider";
 import { Form } from "@heroui/form";
-import { FaEnvelope, FaLock, FaEye, FaEyeSlash } from "react-icons/fa";
+import { FaEnvelope, FaLock } from "react-icons/fa";
 import { useRouter } from "next/navigation";
+import { Accordion, AccordionItem } from "@heroui/accordion";
 import { Checkbox } from "@heroui/checkbox";
+import { Tabs, Tab } from "@heroui/tabs";
 import { Card, CardBody, CardHeader } from "@heroui/card";
-import { login, MASTER_ACCOUNT } from "@/lib/auth";
+
+import { clientLogin } from "@/app/[lang]/(auth)/login/client-actions";
+import { signup } from "@/app/[lang]/(auth)/login/actions";
+import { toast } from "@/utils/toast";
+import { useDictionary } from "@/hooks/use-dictionary";
+import TermsOfServiceContent from "@/app/[lang]/(public)/terms/TermsOfServiceContent";
+import RefundPolicyContent from "@/app/[lang]/(public)/refund-policy/RefundPolicyContent";
+import CookiePolicyContent from "@/app/[lang]/(public)/cookies/CookiePolicyContent";
+import { ActionState } from "@/types/actions";
 
 interface AuthFormProps {
   initialMode?: "login" | "signup";
@@ -20,70 +29,38 @@ interface AuthFormProps {
   inviteToken?: string;
 }
 
-const TID = {
-  signupEmail: "signup-input-email",
-  signupPassword: "signup-input-password",
-  signupSubmit: "signup-submit",
-  loginForm: "login-form",
-  loginId: "login-input-id",
-  loginPw: "login-input-pw",
-  loginSubmit: "login-submit",
-} as const;
-
-function PasswordInput({
-  "data-test-id": dataTestId,
-  autoComplete,
-  label = "비밀번호",
-  name = "password",
-  placeholder = "비밀번호를 입력하세요",
-  isDisabled = false,
-}: {
-  "data-test-id"?: string;
-  autoComplete: string;
-  label?: string;
-  name?: string;
-  placeholder?: string;
-  isDisabled?: boolean;
-}) {
-  const [isVisible, setIsVisible] = useState(false);
-  const toggleVisibility = () => setIsVisible(!isVisible);
-
-  return (
-    <Input
-      isRequired
-      data-test-id={dataTestId}
-      autoComplete={autoComplete}
-      label={label}
-      name={name}
-      placeholder={placeholder}
-      isDisabled={isDisabled}
-      startContent={<FaLock className="text-secondary-400" />}
-      endContent={
-        <button
-          className="focus:outline-none"
-          type="button"
-          onClick={toggleVisibility}
-        >
-          {isVisible ? (
-            <FaEyeSlash className="text-2xl text-secondary-400 pointer-events-none" />
-          ) : (
-            <FaEye className="text-2xl text-secondary-400 pointer-events-none" />
-          )}
-        </button>
-      }
-      type={isVisible ? "text" : "password"}
-      variant="bordered"
-    />
-  );
-}
-
-function LoginForm({
-  defaultEmail,
+export function AuthForm({
+  initialMode = "login",
   returnUrl,
-}: Pick<AuthFormProps, "defaultEmail" | "returnUrl">) {
+  defaultEmail,
+  inviteToken,
+}: AuthFormProps) {
+  const AC_EMAIL = "email" as const;
+  const AC_NEW_PASSWORD = "new-password" as const;
+  const AC_CURRENT_PASSWORD = "current-password" as const;
+  const TID = {
+    signupEmail: "signup-input-email",
+    signupPassword: "signup-input-password",
+    signupSubmit: "signup-submit",
+    loginForm: "login-form",
+    loginId: "login-input-id",
+    loginPw: "login-input-pw",
+    loginSubmit: "login-submit",
+  } as const;
+  const [isSignUp, setIsSignUp] = useState(initialMode === "signup");
   const [isLoading, setIsLoading] = useState(false);
+  const [isTermsAgreed, setIsTermsAgreed] = useState(false);
   const router = useRouter();
+  const { dictionary: dict } = useDictionary();
 
+  // For signup, we use server action with useActionState
+  const initialState: ActionState = { errors: {} };
+  const [signupState, signupAction, isSignupPending] = useActionState(
+    signup,
+    initialState,
+  );
+
+  // Handle login with client action
   const handleLogin = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setIsLoading(true);
@@ -93,171 +70,209 @@ function LoginForm({
     const password = formData.get("password") as string;
 
     try {
-      const success = login(email, password);
-      if (success) {
-        await new Promise((resolve) => setTimeout(resolve, 500));
-        router.push(returnUrl || "/hub");
-      } else {
-        alert("이메일 또는 비밀번호가 올바르지 않습니다.");
+      const result = await clientLogin(email, password, returnUrl, router);
+
+      if (!result.success && result.error) {
+        toast.error({
+          title: dict.auth.login.errors.general,
+          description: result.error,
+        });
       }
     } catch {
-      alert("로그인 중 오류가 발생했습니다.");
+      toast.error({
+        title: dict.common.error,
+        description: dict.errors.general,
+      });
     } finally {
       setIsLoading(false);
     }
   };
 
-  return (
-    <form data-test-id={TID.loginForm} onSubmit={handleLogin} className="grid gap-4">
-      <Input
-        isRequired
-        autoComplete="email"
-        data-test-id={TID.loginId}
-        defaultValue={defaultEmail}
-        isDisabled={isLoading}
-        label="이메일"
-        name="email"
-        placeholder="your@email.com"
-        startContent={<FaEnvelope className="text-secondary-400" />}
-        type="email"
-        variant="bordered"
-      />
-      <PasswordInput
-        data-test-id={TID.loginPw}
-        autoComplete="current-password"
-        isDisabled={isLoading}
-      />
-      <Button
-        fullWidth
-        color="primary"
-        data-test-id={TID.loginSubmit}
-        isDisabled={isLoading}
-        isLoading={isLoading}
-        type="submit"
-        className="mt-2 font-semibold"
-      >
-        로그인
-      </Button>
-    </form>
+  const termsContent = (
+    <div className="flex w-full flex-col">
+      <Tabs>
+        <Tab key="terms" title={dict.footer.terms}>
+          <Card>
+            <CardBody className="max-h-64 overflow-y-auto">
+              <TermsOfServiceContent />
+            </CardBody>
+          </Card>
+        </Tab>
+        <Tab key="refund" title={dict.footer.refund}>
+          <Card>
+            <CardBody className="max-h-64 overflow-y-auto">
+              <RefundPolicyContent />
+            </CardBody>
+          </Card>
+        </Tab>
+        <Tab key="cookies" title={dict.footer.cookies}>
+          <Card>
+            <CardBody className="max-h-64 overflow-y-auto">
+              <CookiePolicyContent />
+            </CardBody>
+          </Card>
+        </Tab>
+      </Tabs>
+    </div>
   );
-}
-
-function SignupForm({
-  defaultEmail,
-}: Pick<AuthFormProps, "defaultEmail">) {
-  const [isTermsAgreed, setIsTermsAgreed] = useState(false);
 
   return (
-    <Form action={() => {}} className="grid gap-4">
-      <Input
-        isRequired
-        autoComplete="email"
-        data-test-id={TID.signupEmail}
-        defaultValue={defaultEmail}
-        label="이메일"
-        name="email"
-        placeholder="your@email.com"
-        startContent={<FaEnvelope className="text-secondary-400" />}
-        type="email"
-        variant="bordered"
-      />
-      <PasswordInput data-test-id={TID.signupPassword} autoComplete="new-password" />
-      <Checkbox
-        isSelected={isTermsAgreed}
-        onValueChange={setIsTermsAgreed}
-        className="justify-self-start"
-      >
-        <span className="text-sm text-secondary-600">
-          <NextLink href="/legal/terms" passHref legacyBehavior>
-            <Link size="sm" className="font-medium">
-              이용약관
-            </Link>
-          </NextLink>
-          과
-          <NextLink href="/legal/privacy" passHref legacyBehavior>
-            <Link size="sm" className="font-medium">
-              개인정보처리방침
-            </Link>
-          </NextLink>
-          에 동의합니다
-        </span>
-      </Checkbox>
-      <Button
-        fullWidth
-        color="primary"
-        data-test-id={TID.signupSubmit}
-        isDisabled={!isTermsAgreed}
-        type="submit"
-        className="mt-2 font-semibold"
-      >
-        회원가입
-      </Button>
-    </Form>
-  );
-}
-
-export function AuthForm({
-  initialMode = "login",
-  returnUrl,
-  defaultEmail,
-}: AuthFormProps) {
-  const [isSignUp, setIsSignUp] = useState(initialMode === "signup");
-
-  return (
-    <Card className="w-full max-w-md p-4 shadow-xl rounded-2xl">
-      <CardHeader className="pt-8 px-8 pb-4 text-center">
-        <h1 className="text-3xl font-bold text-secondary-700">
-          {isSignUp ? "회원가입" : "Sivera 로그인"}
+    <Card className="w-full max-w-md">
+      <CardHeader className="flex flex-col gap-1 px-6 pt-6 text-center">
+        <h1 className="text-2xl font-bold">
+          {isSignUp ? dict.auth.signup.title : dict.auth.login.title}
         </h1>
-        <p className="text-sm text-secondary-500 mt-2">
-          {isSignUp
-            ? "Sivera에 오신 것을 환영합니다!"
-            : "계속하려면 로그인 정보를 입력하세요"}
-        </p>
+        {isSignUp && (
+          <p className="text-sm text-default-500">
+            {dict.home.cta.sectionSubtitle}
+          </p>
+        )}
       </CardHeader>
-      <CardBody className="p-8">
+      <CardBody className="px-6 py-4">
         {isSignUp ? (
-          <SignupForm defaultEmail={defaultEmail} />
+          <Form action={signupAction} validationErrors={signupState.errors}>
+            {returnUrl && (
+              <input name="returnUrl" type="hidden" value={returnUrl} />
+            )}
+            {inviteToken && (
+              <input name="inviteToken" type="hidden" value={inviteToken} />
+            )}
+            <div className="flex flex-col gap-4 items-center w-full min-w-sm mx-auto">
+              <Input
+                isRequired
+                autoComplete={AC_EMAIL}
+                data-test-id={TID.signupEmail}
+                defaultValue={defaultEmail}
+                errorMessage={signupState.errors?.email}
+                isInvalid={!!signupState.errors?.email}
+                label={dict.auth.signup.email}
+                name="email"
+                placeholder={dict.auth.signup.emailPlaceholder}
+                startContent={<FaEnvelope className="text-default-400" />}
+                type="email"
+                variant="bordered"
+              />
+              <Input
+                isRequired
+                autoComplete={AC_NEW_PASSWORD}
+                data-test-id={TID.signupPassword}
+                errorMessage={signupState.errors?.password}
+                isInvalid={!!signupState.errors?.password}
+                label={dict.auth.signup.password}
+                name="password"
+                placeholder={dict.auth.signup.passwordPlaceholder}
+                startContent={<FaLock className="text-default-400" />}
+                type="password"
+                variant="bordered"
+              />
+
+              <Accordion>
+                <AccordionItem
+                  key="terms"
+                  aria-label={dict.footer.terms}
+                  title={dict.footer.legal}
+                >
+                  {termsContent}
+                </AccordionItem>
+              </Accordion>
+
+              <Checkbox
+                isSelected={isTermsAgreed}
+                onValueChange={setIsTermsAgreed}
+              >
+                <span className="text-sm">
+                  {dict.consent.required} {dict.auth.signup.agreeToTerms}{" "}
+                  <Link href="/terms">{dict.footer.terms}</Link>,{" "}
+                  <Link href="/refund-policy">{dict.footer.refund}</Link>,{" "}
+                  <Link href="/cookies">{dict.footer.cookies}</Link>
+                </span>
+              </Checkbox>
+
+              {signupState.errors?.general && (
+                <div
+                  className={`text-sm ${
+                    signupState.success ? "text-success" : "text-danger"
+                  }`}
+                >
+                  {signupState.errors.general}
+                </div>
+              )}
+
+              <Button
+                fullWidth
+                color="primary"
+                data-test-id={TID.signupSubmit}
+                isDisabled={!isTermsAgreed || isSignupPending}
+                isLoading={isSignupPending}
+                type="submit"
+              >
+                {dict.auth.signup.submit}
+              </Button>
+            </div>
+          </Form>
         ) : (
-          <LoginForm defaultEmail={defaultEmail} returnUrl={returnUrl} />
+          <form data-test-id={TID.loginForm} onSubmit={handleLogin}>
+            <div className="flex flex-col gap-4 items-center w-full min-w-sm mx-auto">
+              <Input
+                isRequired
+                autoComplete={AC_EMAIL}
+                data-test-id={TID.loginId}
+                defaultValue={defaultEmail}
+                isDisabled={isLoading}
+                label={dict.auth.login.email}
+                name="email"
+                placeholder={dict.auth.login.emailPlaceholder}
+                startContent={<FaEnvelope className="text-default-400" />}
+                type="email"
+                variant="bordered"
+              />
+              <Input
+                isRequired
+                autoComplete={AC_CURRENT_PASSWORD}
+                data-test-id={TID.loginPw}
+                isDisabled={isLoading}
+                label={dict.auth.login.password}
+                name="password"
+                placeholder={dict.auth.login.passwordPlaceholder}
+                startContent={<FaLock className="text-default-400" />}
+                type="password"
+                variant="bordered"
+              />
+
+              <Button
+                fullWidth
+                color="primary"
+                data-test-id={TID.loginSubmit}
+                isDisabled={isLoading}
+                isLoading={isLoading}
+                type="submit"
+              >
+                {dict.auth.login.submit}
+              </Button>
+            </div>
+          </form>
         )}
 
-        <Divider className="my-6" />
+        <Divider className="my-4" />
 
         <div className="text-center">
-          <p className="text-sm text-secondary-500">
-            {isSignUp ? "이미 계정이 있으신가요?" : "아직 계정이 없으신가요?"}{" "}
+          <p className="text-sm text-default-500">
+            {isSignUp ? dict.auth.signup.hasAccount : dict.auth.login.noAccount}{" "}
             <Link
-              className="cursor-pointer font-semibold text-primary-600"
+              className="cursor-pointer"
               size="sm"
               onPress={() => setIsSignUp(!isSignUp)}
             >
-              {isSignUp ? "로그인" : "회원가입"}
+              {isSignUp ? dict.auth.signup.login : dict.auth.login.signUp}
             </Link>
           </p>
         </div>
 
         {!isSignUp && (
-          <div className="text-center mt-4">
-            <Link href="/forgot-password" size="sm" className="text-secondary-500">
-              비밀번호를 잊으셨나요?
+          <div className="text-center mt-2">
+            <Link href="/forgot-password" size="sm">
+              {dict.auth.login.forgotPassword}
             </Link>
-          </div>
-        )}
-
-        {!isSignUp && (
-          <div className="mt-8 p-4 bg-secondary-50 rounded-lg border border-secondary-200">
-            <p className="text-xs font-semibold text-secondary-600 mb-2 text-center">
-              🧪 테스트용 마스터 계정
-            </p>
-            <div className="text-xs text-secondary-500 space-y-1 text-center">
-              <p>
-                <strong>이메일:</strong> {MASTER_ACCOUNT.email}
-              </p>
-              <p>
-                <strong>비밀번호:</strong> {MASTER_ACCOUNT.password}
-              </p>
-            </div>
           </div>
         )}
       </CardBody>

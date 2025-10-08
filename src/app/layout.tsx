@@ -1,7 +1,10 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
-import "./globals.css";
+import "@/styles/globals.css";
 import { Providers } from "./providers";
+import { getDictionary } from "./dictionaries";
+import { DictionaryProvider } from "@/hooks/use-dictionary";
+import { Footer } from "@/components/layouts/footer";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -72,17 +75,22 @@ export const metadata: Metadata = {
   manifest: "/site.webmanifest",
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  const dictionary = await getDictionary("ko");
+
   return (
     <html lang="ko" suppressHydrationWarning>
       <body className={inter.className}>
-        <Providers>
-          {children}
-        </Providers>
+        <DictionaryProvider dictionary={dictionary} locale="ko">
+          <Providers>
+            {children}
+            <Footer />
+          </Providers>
+        </DictionaryProvider>
       </body>
     </html>
   );

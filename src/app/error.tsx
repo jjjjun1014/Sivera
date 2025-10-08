@@ -18,8 +18,8 @@ export default function Error({
   }, [error]);
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-orange-50 to-orange-100 dark:from-gray-900 dark:to-gray-800">
-      <Card className="w-full max-w-md shadow-xl bg-white dark:bg-gray-800">
+    <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-primary-50 to-primary-100 dark:from-gray-900 dark:to-gray-800">
+      <Card radius="sm" className="w-full max-w-md shadow-xl bg-white dark:bg-gray-800">
         <CardBody className="p-8 text-center">
           <div className="w-16 h-16 bg-danger-100 dark:bg-danger-900/20 rounded-full flex items-center justify-center mx-auto mb-4">
             <AlertTriangle className="w-8 h-8 text-danger" />
@@ -45,6 +45,7 @@ export default function Error({
           <div className="flex gap-3 justify-center">
             <Button
               color="primary"
+              radius="sm"
               startContent={<RefreshCcw className="w-4 h-4" />}
               onPress={reset}
             >
@@ -52,6 +53,7 @@ export default function Error({
             </Button>
             <Button
               variant="bordered"
+              radius="sm"
               startContent={<Home className="w-4 h-4" />}
               onPress={() => (window.location.href = "/")}
             >
