@@ -1,0 +1,30 @@
+import { Suspense } from "react";
+import { Card, CardBody } from "@heroui/card";
+
+import { ResetPasswordForm } from "@/components/auth/ResetPasswordForm";
+import { getDictionary } from "@/app/dictionaries";
+
+export default async function ResetPasswordPage() {
+  const dict = await getDictionary("ko");
+
+  return (
+    <div className="flex min-h-screen items-center justify-center p-4">
+      <Card className="w-full max-w-md">
+        <CardBody className="space-y-6 p-6">
+          <div className="text-center">
+            <h1 className="text-2xl font-bold">
+              {dict.auth.resetPassword.title}
+            </h1>
+            <p className="text-default-500 mt-2">
+              {dict.auth.resetPassword.subtitle}
+            </p>
+          </div>
+
+          <Suspense fallback={<div>{dict.common.loading}</div>}>
+            <ResetPasswordForm />
+          </Suspense>
+        </CardBody>
+      </Card>
+    </div>
+  );
+}
