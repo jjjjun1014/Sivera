@@ -7,7 +7,6 @@ import { ErrorSlice } from "./errorSlice";
 import { TeamDataSlice } from "./teamDataSlice";
 
 import { Team, TeamMemberWithProfile, TeamInvitation, UserRole } from "@/types";
-import { createClient } from "@/utils/supabase/client";
 import log from "@/utils/logger";
 import { TeamService } from "@/services/team/team.service";
 import { syncAllPlatformDataAction } from "@/app/[lang]/(private)/team/actions";

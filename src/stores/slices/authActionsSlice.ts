@@ -5,8 +5,6 @@ import { StateCreator } from "zustand";
 import { AuthDataSlice } from "./authDataSlice";
 import { LoadingSlice } from "./loadingSlice";
 
-import { createClient } from "@/utils/supabase/client";
-
 export interface AuthActionsSlice {
   signOut: () => Promise<void>;
 }
@@ -21,9 +19,7 @@ export const createAuthActionsSlice: StateCreator<
     set({ isLoading: true });
 
     try {
-      const supabase = createClient();
-
-      await supabase.auth.signOut();
+      // Static mode - just clear user state
       set({ user: null, isLoading: false });
     } catch (error) {
       set({ isLoading: false });

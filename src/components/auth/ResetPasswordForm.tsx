@@ -9,7 +9,6 @@ import { FaLock } from "react-icons/fa";
 
 import { updatePassword, type ResetPasswordState } from "./actions";
 
-import { createClient } from "@/utils/supabase/client";
 import log from "@/utils/logger";
 import { ErrorMessage } from "@/components/common/ErrorMessage";
 import { useDictionary } from "@/hooks/use-dictionary";

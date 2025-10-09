@@ -8,7 +8,6 @@ import { PlatformDataSlice } from "./platformDataSlice";
 
 import { PlatformCredential, PlatformType } from "@/types";
 import { Json } from "@/types/supabase.types";
-import { createClient } from "@/utils/supabase/client";
 import log from "@/utils/logger";
 import { revalidateCampaigns } from "@/app/[lang]/(private)/dashboard/actions";
 
