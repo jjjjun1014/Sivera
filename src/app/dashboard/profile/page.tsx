@@ -1,51 +1,17 @@
-import { redirect } from "next/navigation";
 import { Card, CardBody } from "@heroui/card";
 
-import { getProfileData, updateProfileAction } from "./actions";
-import { ProfileForm } from "./ProfileForm";
-import { Container } from "@/components/layouts/Container";
-import { getDictionary } from "@/app/dictionaries";
-
-const CONTAINER_MAX_2XL = "2xl" as const;
-
-export default async function ProfilePage() {
-  const dict = await getDictionary("ko");
-  let data;
-
-  try {
-    data = await getProfileData();
-  } catch {
-    redirect("/login");
-  }
-
-  const { user, profile } = data;
-
-  if (!profile) {
-    return (
-      <Container className="py-8" max={CONTAINER_MAX_2XL}>
-        <h1 className="text-3xl font-bold mb-8">{dict.profile.title}</h1>
-        <Card>
-          <CardBody className="p-8">
-            <p>{dict.profile.notFound}</p>
-          </CardBody>
-        </Card>
-      </Container>
-    );
-  }
-
+export default function ProfilePage() {
   return (
-    <Container className="py-8" max={CONTAINER_MAX_2XL}>
-      <h1 className="text-3xl font-bold mb-8">{dict.profile.title}</h1>
-
-      <Card>
-        <CardBody className="p-8">
-          <ProfileForm
-            profile={profile}
-            updateProfileAction={updateProfileAction}
-            user={user}
-          />
+    <div className="container mx-auto px-6 py-12">
+      <h1 className="text-3xl font-bold mb-6">프로필</h1>
+      <Card className="border-2 border-warning">
+        <CardBody className="text-center py-12">
+          <p className="text-warning font-semibold mb-2">⚠️ 개발 중</p>
+          <p className="text-default-500">
+            이 페이지는 AWS 연동 후 구현될 예정입니다.
+          </p>
         </CardBody>
       </Card>
-    </Container>
+    </div>
   );
 }

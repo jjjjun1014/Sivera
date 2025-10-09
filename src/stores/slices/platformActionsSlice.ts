@@ -9,7 +9,6 @@ import { PlatformDataSlice } from "./platformDataSlice";
 import { PlatformCredential, PlatformType } from "@/types";
 import { Json } from "@/types/supabase.types";
 import log from "@/utils/logger";
-import { revalidateCampaigns } from "@/app/[lang]/(private)/dashboard/actions";
 
 export interface PlatformActionsSlice {
   fetchCredentials: () => Promise<void>;
@@ -261,7 +260,6 @@ export const createPlatformActionsSlice: StateCreator<
         syncProgress: { ...state.syncProgress, [platform]: 100 },
       }));
 
-      await revalidateCampaigns();
 
       // Reset progress after 2 seconds
       setTimeout(() => {

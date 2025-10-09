@@ -1,72 +1,17 @@
-import { redirect } from "next/navigation";
-import { Suspense } from "react";
+import { Card, CardBody, CardHeader } from "@heroui/card";
 
-import { createClient } from "@/utils/supabase/server";
-import { getTeamId } from "@/utils/auth/server";
-import { AnalyticsServer } from "@/components/analytics/AnalyticsServer";
-import { AnalyticsCharts } from "@/components/analytics/AnalyticsChartsWrapper";
-import { Container } from "@/components/layouts/Container";
-import {
-  MetricCardSkeleton,
-  ChartSkeleton,
-} from "@/components/common/skeletons";
-import { getDictionary, type Locale } from "@/app/dictionaries";
-
-export default async function AnalyticsPage() {
-  const dict = await getDictionary("ko");
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) {
-    redirect("/login");
-  }
-
-  const teamId = await getTeamId();
-
-  if (!teamId) {
-    redirect("/team");
-  }
-
-  // Default date range: last 30 days
-  const dateRange = {
-    start: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000),
-    end: new Date(),
-  };
-
+export default function AnalyticsPage() {
   return (
-    <Container className="py-8">
-      <h1 className="text-3xl font-bold mb-8">{dict.nav.analytics}</h1>
-
-      {/* Server component with streaming support */}
-      <Suspense
-        fallback={
-          <div className="space-y-8">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
-              <MetricCardSkeleton />
-              <MetricCardSkeleton />
-              <MetricCardSkeleton />
-              <MetricCardSkeleton />
-              <MetricCardSkeleton />
-            </div>
-            <ChartSkeleton className="h-96" />
-          </div>
-        }
-      >
-        <AnalyticsServer
-          dateRange={dateRange}
-          teamId={teamId}
-          locale={"ko" as Locale}
-        />
-      </Suspense>
-
-      {/* Client-side charts with independent suspense */}
-      <Suspense fallback={<ChartSkeleton className="h-96 mt-8" />}>
-        <div className="mt-8">
-          <AnalyticsCharts />
-        </div>
-      </Suspense>
-    </Container>
+    <div className="container mx-auto px-6 py-12">
+      <h1 className="text-3xl font-bold mb-6">통합 분석</h1>
+      <Card className="border-2 border-warning">
+        <CardBody className="text-center py-12">
+          <p className="text-warning font-semibold mb-2">⚠️ 개발 중</p>
+          <p className="text-default-500">
+            이 페이지는 AWS 연동 후 구현될 예정입니다.
+          </p>
+        </CardBody>
+      </Card>
+    </div>
   );
 }

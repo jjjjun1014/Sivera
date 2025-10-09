@@ -9,7 +9,6 @@ import { TeamDataSlice } from "./teamDataSlice";
 import { Team, TeamMemberWithProfile, TeamInvitation, UserRole } from "@/types";
 import log from "@/utils/logger";
 import { TeamService } from "@/services/team/team.service";
-import { syncAllPlatformDataAction } from "@/app/[lang]/(private)/team/actions";
 
 // Type definitions
 
@@ -326,15 +325,11 @@ export const createTeamActionsSlice: StateCreator<
     }
   },
 
+
   syncAllPlatformData: async () => {
     set({ isLoading: true, error: null });
     try {
-      const result = await syncAllPlatformDataAction();
-
-      if (result?.error) {
-        throw new Error(result.error);
-      }
-
+      // TODO: AWS 연동 후 실제 동기화 로직 구현
       set({ isLoading: false });
       log.info("All platform data synced successfully.");
     } catch (error) {
