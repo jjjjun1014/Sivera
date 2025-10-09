@@ -5,6 +5,7 @@ import { Providers } from "./providers";
 import { getDictionary } from "./dictionaries";
 import { DictionaryProvider } from "@/hooks/use-dictionary";
 import { Footer } from "@/components/layouts/footer";
+import { Navbar } from "@/components/layouts/navbar";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -87,6 +88,7 @@ export default async function RootLayout({
       <body className={inter.className}>
         <DictionaryProvider dictionary={dictionary} locale="ko">
           <Providers>
+            <Navbar />
             {children}
             <Footer />
           </Providers>

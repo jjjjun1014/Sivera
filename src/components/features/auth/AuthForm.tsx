@@ -13,13 +13,13 @@ import { Checkbox } from "@heroui/checkbox";
 import { Tabs, Tab } from "@heroui/tabs";
 import { Card, CardBody, CardHeader } from "@heroui/card";
 
-import { clientLogin } from "@/app/[lang]/(auth)/login/client-actions";
-import { signup } from "@/app/[lang]/(auth)/login/actions";
+import { clientLogin } from "@/app/login/client-actions";
+import { signup } from "@/app/login/actions";
 import { toast } from "@/utils/toast";
 import { useDictionary } from "@/hooks/use-dictionary";
-import TermsOfServiceContent from "@/app/[lang]/(public)/terms/TermsOfServiceContent";
-import RefundPolicyContent from "@/app/[lang]/(public)/refund-policy/RefundPolicyContent";
-import CookiePolicyContent from "@/app/[lang]/(public)/cookies/CookiePolicyContent";
+import TermsOfServiceContent from "@/app/terms/TermsOfServiceContent";
+import RefundPolicyContent from "@/app/refund-policy/RefundPolicyContent";
+import CookiePolicyContent from "@/app/cookies/CookiePolicyContent";
 import { ActionState } from "@/types/actions";
 
 interface AuthFormProps {

@@ -21,7 +21,7 @@ import { useShallow } from "zustand/shallow";
 import { motion, useReducedMotion } from "framer-motion";
 
 import { useAuthStore } from "@/stores/useAuthStore";
-import { clientLogout } from "@/app/[lang]/(auth)/login/client-actions";
+import { clientLogout } from "@/app/login/client-actions";
 import { useDictionary } from "@/hooks/use-dictionary";
 
 export function UserDropdown() {
