@@ -123,11 +123,13 @@ const menuItems = [
 
 interface DashboardSidebarProps {
   isOpen: boolean;
+  isCollapsed: boolean;
   onClose: () => void;
 }
 
 export default function DashboardSidebar({
   isOpen,
+  isCollapsed,
   onClose,
 }: DashboardSidebarProps) {
   const pathname = usePathname();
@@ -144,15 +146,20 @@ export default function DashboardSidebar({
 
       {/* Sidebar */}
       <aside
-        className={`fixed top-0 left-0 h-full w-64 bg-content1 border-r border-divider z-50 transform transition-transform duration-300 ease-in-out lg:translate-x-0 ${
+        className={`fixed top-0 left-0 h-full bg-content1 border-r border-divider z-50 transform transition-all duration-300 ease-in-out lg:translate-x-0 ${
           isOpen ? "translate-x-0" : "-translate-x-full"
-        }`}
+        } ${isCollapsed ? "lg:w-20" : "w-64"}`}
       >
         <div className="flex flex-col h-full">
           {/* Logo */}
           <div className="flex items-center justify-between h-16 px-6 border-b border-divider">
             <NextLink href="/" className="flex items-center gap-2">
-              <span className="text-xl font-bold">Sivera</span>
+              <span className={`text-xl font-bold transition-opacity duration-300 ${isCollapsed ? "lg:opacity-0 lg:hidden" : "opacity-100"}`}>
+                Sivera
+              </span>
+              {isCollapsed && (
+                <span className="hidden lg:block text-xl font-bold">S</span>
+              )}
             </NextLink>
             <Button
               isIconOnly
@@ -191,10 +198,13 @@ export default function DashboardSidebar({
                         isActive
                           ? "bg-primary text-primary-foreground"
                           : "hover:bg-default-100"
-                      }`}
+                      } ${isCollapsed ? "lg:justify-center" : ""}`}
+                      title={isCollapsed ? item.label : ""}
                     >
                       {item.icon}
-                      <span className="font-medium">{item.label}</span>
+                      <span className={`font-medium transition-opacity duration-300 ${isCollapsed ? "lg:opacity-0 lg:hidden" : "opacity-100"}`}>
+                        {item.label}
+                      </span>
                     </NextLink>
                   </li>
                 );
@@ -208,16 +218,26 @@ export default function DashboardSidebar({
               <DropdownTrigger>
                 <Button
                   variant="flat"
-                  className="w-full justify-start"
+                  className={`w-full ${isCollapsed ? "lg:justify-center lg:px-0" : "justify-start"}`}
                   startContent={
+                    !isCollapsed ? (
+                      <Avatar
+                        size="sm"
+                        name="사용자"
+                        src="https://i.pravatar.cc/150?u=user"
+                      />
+                    ) : undefined
+                  }
+                >
+                  {isCollapsed ? (
                     <Avatar
                       size="sm"
                       name="사용자"
                       src="https://i.pravatar.cc/150?u=user"
+                      className="lg:block hidden"
                     />
-                  }
-                >
-                  <div className="flex flex-col items-start">
+                  ) : null}
+                  <div className={`flex flex-col items-start transition-opacity duration-300 ${isCollapsed ? "lg:opacity-0 lg:hidden" : "opacity-100"}`}>
                     <span className="text-sm font-medium">사용자</span>
                     <span className="text-xs text-default-500">
                       user@example.com
