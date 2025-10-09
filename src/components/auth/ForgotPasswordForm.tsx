@@ -1,40 +1,35 @@
 "use client";
 
-import { useActionState } from "react";
-import { useSearchParams } from "next/navigation";
+import { useState } from "react";
 import { Input } from "@heroui/input";
 import { Button } from "@heroui/button";
 import { Link } from "@heroui/link";
-import { Form } from "@heroui/form";
 import { FaEnvelope, FaArrowLeft } from "react-icons/fa";
 
-import { resetPassword, type ForgotPasswordState } from "./actions";
 import { useDictionary } from "@/hooks/use-dictionary";
-
-import { ErrorMessage } from "@/components/common/ErrorMessage";
+import { toast } from "@/utils/toast";
 
 export function ForgotPasswordForm() {
   const { dictionary: dict } = useDictionary();
-  const searchParams = useSearchParams();
-  const error = searchParams.get("error");
+  const [isLoading, setIsLoading] = useState(false);
 
-  const initialState: ForgotPasswordState = {
-    errors:
-      error === "session_expired"
-        ? {
-            general: dict.auth.forgotPassword.errors.sessionExpired,
-          }
-        : {},
+  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    setIsLoading(true);
+
+    toast.info({
+      title: "개발 중",
+      description: "AWS 연동 후 사용 가능합니다.",
+    });
+
+    setIsLoading(false);
   };
-  const [state, action] = useActionState(resetPassword, initialState);
 
   return (
-    <Form action={action} validationErrors={state.errors}>
+    <form onSubmit={handleSubmit}>
       <div className="flex flex-col gap-4">
         <Input
           isRequired
-          errorMessage={state.errors?.email}
-          isInvalid={!!state.errors?.email}
           label={dict.auth.forgotPassword.email}
           name="email"
           placeholder={dict.auth.forgotPassword.emailPlaceholder}
@@ -43,19 +38,11 @@ export function ForgotPasswordForm() {
           variant="bordered"
         />
 
-        {state.errors?.general && (
-          <ErrorMessage
-            isSuccess={state.success}
-            message={state.errors.general}
-          />
-        )}
-
-        <Button fullWidth color="primary" type="submit">
+        <Button fullWidth color="primary" type="submit" isLoading={isLoading}>
           {dict.auth.forgotPassword.submit}
         </Button>
 
         <Link
-          as={Link}
           className="flex items-center gap-1 justify-center text-default-500"
           href="/login"
           size="sm"
@@ -64,6 +51,6 @@ export function ForgotPasswordForm() {
           {dict.auth.forgotPassword.backToLogin}
         </Link>
       </div>
-    </Form>
+    </form>
   );
 }
