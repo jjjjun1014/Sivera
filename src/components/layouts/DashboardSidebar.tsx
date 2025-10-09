@@ -125,12 +125,14 @@ interface DashboardSidebarProps {
   isOpen: boolean;
   isCollapsed: boolean;
   onClose: () => void;
+  onToggleCollapse: () => void;
 }
 
 export default function DashboardSidebar({
   isOpen,
   isCollapsed,
   onClose,
+  onToggleCollapse,
 }: DashboardSidebarProps) {
   const pathname = usePathname();
 
@@ -151,16 +153,41 @@ export default function DashboardSidebar({
         } ${isCollapsed ? "lg:w-20" : "w-64"}`}
       >
         <div className="flex flex-col h-full">
-          {/* Logo */}
-          <div className="flex items-center justify-between h-16 px-6 border-b border-divider">
-            <NextLink href="/" className="flex items-center gap-2">
-              <span className={`text-xl font-bold transition-opacity duration-300 ${isCollapsed ? "lg:opacity-0 lg:hidden" : "opacity-100"}`}>
-                Sivera
-              </span>
-              {isCollapsed && (
-                <span className="hidden lg:block text-xl font-bold">S</span>
+          {/* Logo & Toggle */}
+          <div className="flex items-center justify-between h-16 px-4 border-b border-divider">
+            <div className="flex items-center gap-2">
+              {/* Desktop Toggle Button */}
+              <Button
+                isIconOnly
+                variant="light"
+                size="sm"
+                className="hidden lg:flex"
+                onPress={onToggleCollapse}
+              >
+                <svg
+                  className="w-5 h-5"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d={isCollapsed ? "M13 5l7 7-7 7M5 5l7 7-7 7" : "M11 19l-7-7 7-7m8 14l-7-7 7-7"}
+                  />
+                </svg>
+              </Button>
+
+              {/* Logo - only show when expanded */}
+              {!isCollapsed && (
+                <NextLink href="/" className="lg:block hidden">
+                  <span className="text-lg font-bold">Sivera</span>
+                </NextLink>
               )}
-            </NextLink>
+            </div>
+
+            {/* Mobile Close Button */}
             <Button
               isIconOnly
               variant="light"

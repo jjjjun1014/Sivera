@@ -18,6 +18,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
         isOpen={sidebarOpen}
         isCollapsed={sidebarCollapsed}
         onClose={() => setSidebarOpen(false)}
+        onToggleCollapse={() => setSidebarCollapsed(!sidebarCollapsed)}
       />
 
       {/* Main Content */}
@@ -25,56 +26,27 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
         {/* Top Header */}
         <header className="sticky top-0 z-30 h-16 bg-content1 border-b border-divider">
           <div className="flex items-center justify-between h-full px-4 lg:px-6">
-            <div className="flex items-center gap-2">
-              {/* Desktop Toggle Button */}
-              <Button
-                isIconOnly
-                variant="light"
-                className="hidden lg:flex"
-                onPress={() => setSidebarCollapsed(!sidebarCollapsed)}
+            {/* Mobile Menu Button */}
+            <Button
+              isIconOnly
+              variant="light"
+              className="lg:hidden"
+              onPress={() => setSidebarOpen(true)}
+            >
+              <svg
+                className="w-6 h-6"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
               >
-                <svg
-                  className="w-6 h-6"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M4 6h16M4 12h16M4 18h16"
-                  />
-                </svg>
-              </Button>
-
-              {/* Mobile Menu Button */}
-              <Button
-                isIconOnly
-                variant="light"
-                className="lg:hidden"
-                onPress={() => setSidebarOpen(true)}
-              >
-                <svg
-                  className="w-6 h-6"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M4 6h16M4 12h16M4 18h16"
-                  />
-                </svg>
-              </Button>
-
-              {/* Logo (Mobile) */}
-              <div className="lg:hidden">
-                <span className="text-xl font-bold">Sivera</span>
-              </div>
-            </div>
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M4 6h16M4 12h16M4 18h16"
+                />
+              </svg>
+            </Button>
 
             {/* Right side - can add notifications, etc */}
             <div className="flex items-center gap-2">
