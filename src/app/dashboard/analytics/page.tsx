@@ -1,14 +1,50 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Card, CardBody, CardHeader } from "@heroui/card";
 import { Table, TableHeader, TableColumn, TableBody, TableRow, TableCell } from "@heroui/table";
 import { Chip } from "@heroui/chip";
 import { Button } from "@heroui/button";
 import { Select, SelectItem } from "@heroui/select";
 import { DateRangePicker } from "@heroui/date-picker";
-import { Tabs, Tab } from "@heroui/tabs";
 import { Progress } from "@heroui/progress";
+import { getLocalTimeZone, today } from "@internationalized/date";
+import {
+  LineChart,
+  Line,
+  AreaChart,
+  Area,
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+  ResponsiveContainer,
+} from "recharts";
+
+// 14일간의 샘플 차트 데이터 생성
+const generateChartData = () => {
+  const data = [];
+  const startDate = new Date();
+  startDate.setDate(startDate.getDate() - 13); // 14일 전부터
+
+  for (let i = 0; i < 14; i++) {
+    const date = new Date(startDate);
+    date.setDate(date.getDate() + i);
+    const month = date.getMonth() + 1;
+    const day = date.getDate();
+    data.push({
+      date: `${month}/${day}`,
+      impressions: Math.floor(30000 + Math.random() * 10000),
+      clicks: Math.floor(1000 + Math.random() * 500),
+      conversions: Math.floor(30 + Math.random() * 20),
+      cost: Math.floor(150000 + Math.random() * 50000),
+    });
+  }
+  return data;
+};
 
 // 샘플 데이터
 const campaignData = [
@@ -82,6 +118,17 @@ const campaignData = [
 export default function AnalyticsPage() {
   const [selectedKeys, setSelectedKeys] = useState(new Set([]));
 
+  // 기본값: 오늘부터 14일 전
+  const todayDate = today(getLocalTimeZone());
+  const fourteenDaysAgo = todayDate.subtract({ days: 13 });
+
+  const [dateRange, setDateRange] = useState({
+    start: fourteenDaysAgo,
+    end: todayDate,
+  });
+
+  const chartData = useMemo(() => generateChartData(), []);
+
   const statusColorMap: Record<string, "success" | "warning" | "danger" | "default"> = {
     active: "success",
     paused: "warning",
@@ -112,6 +159,13 @@ export default function AnalyticsPage() {
               label="기간 선택"
               radius="sm"
               variant="bordered"
+              value={dateRange}
+              onChange={setDateRange}
+              defaultValue={{
+                start: fourteenDaysAgo,
+                end: todayDate,
+              }}
+              description="기본 14일 설정"
             />
             <Select
               label="플랫폼"
@@ -167,6 +221,90 @@ export default function AnalyticsPage() {
             <p className="text-sm text-default-500 mb-1">평균 ROAS</p>
             <p className="text-3xl font-bold">3.8x</p>
             <p className="text-xs text-danger mt-1">-2.1%</p>
+          </CardBody>
+        </Card>
+      </div>
+
+      {/* Charts */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+        {/* Impressions & Clicks Chart */}
+        <Card>
+          <CardHeader>
+            <h3 className="text-lg font-semibold">노출수 & 클릭수 추이</h3>
+          </CardHeader>
+          <CardBody>
+            <ResponsiveContainer width="100%" height={300}>
+              <AreaChart data={chartData}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="date" />
+                <YAxis />
+                <Tooltip />
+                <Legend />
+                <Area
+                  type="monotone"
+                  dataKey="impressions"
+                  stackId="1"
+                  stroke="#0070f3"
+                  fill="#0070f3"
+                  fillOpacity={0.6}
+                  name="노출수"
+                />
+                <Area
+                  type="monotone"
+                  dataKey="clicks"
+                  stackId="2"
+                  stroke="#7928ca"
+                  fill="#7928ca"
+                  fillOpacity={0.6}
+                  name="클릭수"
+                />
+              </AreaChart>
+            </ResponsiveContainer>
+          </CardBody>
+        </Card>
+
+        {/* Conversions Chart */}
+        <Card>
+          <CardHeader>
+            <h3 className="text-lg font-semibold">전환수 추이</h3>
+          </CardHeader>
+          <CardBody>
+            <ResponsiveContainer width="100%" height={300}>
+              <LineChart data={chartData}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="date" />
+                <YAxis />
+                <Tooltip />
+                <Legend />
+                <Line
+                  type="monotone"
+                  dataKey="conversions"
+                  stroke="#17c964"
+                  strokeWidth={2}
+                  name="전환수"
+                  dot={{ r: 4 }}
+                />
+              </LineChart>
+            </ResponsiveContainer>
+          </CardBody>
+        </Card>
+
+        {/* Cost Chart */}
+        <Card className="lg:col-span-2">
+          <CardHeader>
+            <h3 className="text-lg font-semibold">일별 광고비 지출</h3>
+          </CardHeader>
+          <CardBody>
+            <ResponsiveContainer width="100%" height={300}>
+              <BarChart data={chartData}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="date" />
+                <YAxis />
+                <Tooltip />
+                <Legend />
+                <Bar dataKey="cost" fill="#f5a524" name="광고비 (₩)" />
+              </BarChart>
+            </ResponsiveContainer>
           </CardBody>
         </Card>
       </div>
