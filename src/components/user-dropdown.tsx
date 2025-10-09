@@ -82,16 +82,16 @@ export function UserDropdown() {
         onAction={(key) => {
           switch (key) {
             case "profile":
-              router.push("/profile");
+              router.push("/dashboard/profile");
               break;
             case "settings":
-              router.push("/settings");
+              router.push("/dashboard/settings");
               break;
             case "team":
-              router.push("/team");
+              router.push("/dashboard/team");
               break;
             case "analytics":
-              router.push("/analytics");
+              router.push("/dashboard/analytics");
               break;
             case "help":
               router.push("/support");

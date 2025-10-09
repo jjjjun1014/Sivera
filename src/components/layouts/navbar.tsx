@@ -168,16 +168,6 @@ export const Navbar = () => {
           justify={"end"}
         >
           <NavbarItem className="hidden sm:flex gap-3">
-            <Button
-              as={NextLink}
-              color="primary"
-              href="/lab"
-              variant="flat"
-              data-testid="navbar-lab-button"
-              aria-label={dict.nav.lab}
-            >
-              {dict.nav.lab}
-            </Button>
             <LanguageSwitcher />
             <ThemeSwitch />
             <UserOrLogin />
@@ -185,16 +175,6 @@ export const Navbar = () => {
         </NavbarContent>
 
         <NavbarContent className="sm:hidden basis-1 pl-4" justify={"end"}>
-          <Button
-            as={NextLink}
-            color="primary"
-            href="/lab"
-            variant="flat"
-            data-testid="navbar-mobile-lab-button"
-            aria-label={dict.nav.lab}
-          >
-            {dict.nav.lab}
-          </Button>
           <LanguageSwitcher />
           <ThemeSwitch />
           <UserOrLogin />
