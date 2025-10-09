@@ -40,6 +40,7 @@ const generateChartData = () => {
       clicks: Math.floor(1000 + Math.random() * 500),
       conversions: Math.floor(30 + Math.random() * 20),
       cost: Math.floor(150000 + Math.random() * 50000),
+      roas: parseFloat((2.5 + Math.random() * 2.5).toFixed(2)),
     });
   }
   return data;
@@ -130,6 +131,7 @@ export default function AnalyticsPage() {
   const [chartMetrics, setChartMetrics] = useState({
     cost: true,
     conversions: true,
+    roas: false,
     impressions: false,
     clicks: false,
   });
@@ -256,6 +258,15 @@ export default function AnalyticsPage() {
               전환수
             </Checkbox>
             <Checkbox
+              isSelected={chartMetrics.roas}
+              onValueChange={(checked) =>
+                setChartMetrics({ ...chartMetrics, roas: checked })
+              }
+              size="sm"
+            >
+              ROAS
+            </Checkbox>
+            <Checkbox
               isSelected={chartMetrics.impressions}
               onValueChange={(checked) =>
                 setChartMetrics({ ...chartMetrics, impressions: checked })
@@ -313,6 +324,16 @@ export default function AnalyticsPage() {
                   strokeWidth={2}
                   name="전환수"
                   dot={false}
+                />
+              )}
+              {chartMetrics.roas && (
+                <Bar
+                  yAxisId="right"
+                  dataKey="roas"
+                  fill="#ff006e"
+                  fillOpacity={0.7}
+                  name="ROAS"
+                  barSize={20}
                 />
               )}
               {chartMetrics.impressions && (
