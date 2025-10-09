@@ -1,15 +1,21 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Input } from "@heroui/input";
 import { Button } from "@heroui/button";
 import { Link } from "@heroui/link";
 import { Divider } from "@heroui/divider";
 import { FaEnvelope, FaLock } from "react-icons/fa";
 import { Checkbox } from "@heroui/checkbox";
+import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter } from "@heroui/modal";
+import { Tabs, Tab } from "@heroui/tabs";
+import { Card, CardBody } from "@heroui/card";
 
 import { toast } from "@/utils/toast";
 import { useDictionary } from "@/hooks/use-dictionary";
+import TermsOfServiceContent from "@/app/terms/TermsOfServiceContent";
+import PrivacyPolicyContent from "@/app/privacy/PrivacyPolicyContent";
+import CookiePolicyContent from "@/app/cookies/CookiePolicyContent";
 
 interface AuthFormProps {
   initialMode?: "login" | "signup";
@@ -24,7 +30,31 @@ export function AuthForm({
 }: AuthFormProps) {
   const [isSignUp, setIsSignUp] = useState(initialMode === "signup");
   const [isTermsAgreed, setIsTermsAgreed] = useState(false);
+  const [showTermsModal, setShowTermsModal] = useState(false);
+  const [hasReadAllTerms, setHasReadAllTerms] = useState(false);
+  const [readTerms, setReadTerms] = useState({
+    terms: false,
+    privacy: false,
+    cookies: false,
+  });
   const { dictionary: dict } = useDictionary();
+
+  // 모든 약관을 읽었는지 확인
+  useEffect(() => {
+    if (readTerms.terms && readTerms.privacy && readTerms.cookies) {
+      setHasReadAllTerms(true);
+    }
+  }, [readTerms]);
+
+  // 스크롤을 끝까지 내렸는지 확인하는 함수
+  const handleScroll = (e: React.UIEvent<HTMLDivElement>, type: 'terms' | 'privacy' | 'cookies') => {
+    const element = e.currentTarget;
+    const isAtBottom = element.scrollHeight - element.scrollTop <= element.clientHeight + 50;
+
+    if (isAtBottom && !readTerms[type]) {
+      setReadTerms(prev => ({ ...prev, [type]: true }));
+    }
+  };
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -41,6 +71,27 @@ export function AuthForm({
       title: "개발 중",
       description: "AWS 연동 후 사용 가능합니다.",
     });
+  };
+
+  const handleTermsLinkClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    setShowTermsModal(true);
+  };
+
+  const handleModalClose = () => {
+    setShowTermsModal(false);
+  };
+
+  const handleAgreeTerms = () => {
+    if (hasReadAllTerms) {
+      setIsTermsAgreed(true);
+      setShowTermsModal(false);
+    } else {
+      toast.warning({
+        title: "약관을 모두 읽어주세요",
+        description: "모든 약관을 끝까지 스크롤하여 읽어야 동의할 수 있습니다.",
+      });
+    }
   };
 
   return (
@@ -79,26 +130,35 @@ export function AuthForm({
         />
 
         {isSignUp && (
-          <Checkbox
-            isSelected={isTermsAgreed}
-            onValueChange={setIsTermsAgreed}
-            size="sm"
-          >
-            <span className="text-sm">
-              {dict.auth.signup.termsAgree}{" "}
-              <Link href="/terms" size="sm" underline="always">
-                {dict.footer.terms}
-              </Link>
-              ,{" "}
-              <Link href="/privacy" size="sm" underline="always">
-                {dict.footer.privacy}
-              </Link>
-              ,{" "}
-              <Link href="/cookies" size="sm" underline="always">
-                {dict.footer.cookies}
-              </Link>
-            </span>
-          </Checkbox>
+          <div className="space-y-2">
+            <Checkbox
+              isSelected={isTermsAgreed}
+              onValueChange={(checked) => {
+                if (!checked) {
+                  setIsTermsAgreed(false);
+                } else {
+                  setShowTermsModal(true);
+                }
+              }}
+              size="sm"
+            >
+              <span className="text-sm">
+                {dict.auth.signup.termsAgree}{" "}
+                <button
+                  type="button"
+                  className="text-primary underline hover:text-primary-600"
+                  onClick={handleTermsLinkClick}
+                >
+                  이용약관, 개인정보처리방침, 쿠키정책
+                </button>
+              </span>
+            </Checkbox>
+            {!hasReadAllTerms && isTermsAgreed && (
+              <p className="text-xs text-warning ml-6">
+                약관을 모두 읽고 동의해주세요
+              </p>
+            )}
+          </div>
         )}
 
         <Button
@@ -138,6 +198,119 @@ export function AuthForm({
           </Button>
         </div>
       </form>
+
+      {/* 약관 모달 */}
+      <Modal
+        isOpen={showTermsModal}
+        onClose={handleModalClose}
+        size="5xl"
+        scrollBehavior="inside"
+      >
+        <ModalContent>
+          <ModalHeader>
+            <h2 className="text-2xl font-bold">이용약관 및 정책</h2>
+          </ModalHeader>
+          <ModalBody>
+            <Tabs aria-label="Terms tabs" fullWidth>
+              <Tab
+                key="terms"
+                title={
+                  <div className="flex items-center gap-2">
+                    <span>이용약관</span>
+                    {readTerms.terms && <span className="text-success">✓</span>}
+                  </div>
+                }
+              >
+                <Card>
+                  <CardBody
+                    className="max-h-[60vh] overflow-y-auto"
+                    onScroll={(e) => handleScroll(e, 'terms')}
+                  >
+                    <TermsOfServiceContent />
+                    {!readTerms.terms && (
+                      <div className="sticky bottom-0 bg-gradient-to-t from-background to-transparent pt-8 pb-2 text-center">
+                        <p className="text-sm text-warning">
+                          약관을 끝까지 스크롤하여 읽어주세요
+                        </p>
+                      </div>
+                    )}
+                  </CardBody>
+                </Card>
+              </Tab>
+              <Tab
+                key="privacy"
+                title={
+                  <div className="flex items-center gap-2">
+                    <span>개인정보처리방침</span>
+                    {readTerms.privacy && <span className="text-success">✓</span>}
+                  </div>
+                }
+              >
+                <Card>
+                  <CardBody
+                    className="max-h-[60vh] overflow-y-auto"
+                    onScroll={(e) => handleScroll(e, 'privacy')}
+                  >
+                    <PrivacyPolicyContent />
+                    {!readTerms.privacy && (
+                      <div className="sticky bottom-0 bg-gradient-to-t from-background to-transparent pt-8 pb-2 text-center">
+                        <p className="text-sm text-warning">
+                          약관을 끝까지 스크롤하여 읽어주세요
+                        </p>
+                      </div>
+                    )}
+                  </CardBody>
+                </Card>
+              </Tab>
+              <Tab
+                key="cookies"
+                title={
+                  <div className="flex items-center gap-2">
+                    <span>쿠키정책</span>
+                    {readTerms.cookies && <span className="text-success">✓</span>}
+                  </div>
+                }
+              >
+                <Card>
+                  <CardBody
+                    className="max-h-[60vh] overflow-y-auto"
+                    onScroll={(e) => handleScroll(e, 'cookies')}
+                  >
+                    <CookiePolicyContent />
+                    {!readTerms.cookies && (
+                      <div className="sticky bottom-0 bg-gradient-to-t from-background to-transparent pt-8 pb-2 text-center">
+                        <p className="text-sm text-warning">
+                          약관을 끝까지 스크롤하여 읽어주세요
+                        </p>
+                      </div>
+                    )}
+                  </CardBody>
+                </Card>
+              </Tab>
+            </Tabs>
+
+            {hasReadAllTerms && (
+              <div className="mt-4 p-3 bg-success-50 dark:bg-success-900/20 rounded-lg text-center">
+                <p className="text-success font-semibold">
+                  ✓ 모든 약관을 읽으셨습니다
+                </p>
+              </div>
+            )}
+          </ModalBody>
+          <ModalFooter>
+            <Button variant="light" onPress={handleModalClose}>
+              취소
+            </Button>
+            <Button
+              color="primary"
+              onPress={handleAgreeTerms}
+              isDisabled={!hasReadAllTerms}
+            >
+              {hasReadAllTerms ? "모두 동의하고 계속하기" : "약관을 모두 읽어주세요"}
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
     </div>
   );
 }
