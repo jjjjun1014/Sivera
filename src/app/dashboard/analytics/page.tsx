@@ -8,13 +8,12 @@ import { Button } from "@heroui/button";
 import { Select, SelectItem } from "@heroui/select";
 import { DateRangePicker } from "@heroui/date-picker";
 import { Progress } from "@heroui/progress";
+import { Checkbox } from "@heroui/checkbox";
 import { getLocalTimeZone, today } from "@internationalized/date";
 import {
-  LineChart,
+  ComposedChart,
   Line,
-  AreaChart,
   Area,
-  BarChart,
   Bar,
   XAxis,
   YAxis,
@@ -127,6 +126,14 @@ export default function AnalyticsPage() {
     end: todayDate,
   });
 
+  // 차트 지표 토글 상태
+  const [chartMetrics, setChartMetrics] = useState({
+    cost: true,
+    conversions: true,
+    impressions: false,
+    clicks: false,
+  });
+
   const chartData = useMemo(() => generateChartData(), []);
 
   const statusColorMap: Record<string, "success" | "warning" | "danger" | "default"> = {
@@ -225,89 +232,115 @@ export default function AnalyticsPage() {
         </Card>
       </div>
 
-      {/* Charts */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-        {/* Impressions & Clicks Chart */}
-        <Card>
-          <CardHeader>
-            <h3 className="text-lg font-semibold">노출수 & 클릭수 추이</h3>
-          </CardHeader>
-          <CardBody>
-            <ResponsiveContainer width="100%" height={300}>
-              <AreaChart data={chartData}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="date" />
-                <YAxis />
-                <Tooltip />
-                <Legend />
-                <Area
-                  type="monotone"
-                  dataKey="impressions"
-                  stackId="1"
-                  stroke="#0070f3"
-                  fill="#0070f3"
-                  fillOpacity={0.6}
-                  name="노출수"
-                />
-                <Area
-                  type="monotone"
-                  dataKey="clicks"
-                  stackId="2"
-                  stroke="#7928ca"
-                  fill="#7928ca"
-                  fillOpacity={0.6}
-                  name="클릭수"
-                />
-              </AreaChart>
-            </ResponsiveContainer>
-          </CardBody>
-        </Card>
-
-        {/* Conversions Chart */}
-        <Card>
-          <CardHeader>
-            <h3 className="text-lg font-semibold">전환수 추이</h3>
-          </CardHeader>
-          <CardBody>
-            <ResponsiveContainer width="100%" height={300}>
-              <LineChart data={chartData}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="date" />
-                <YAxis />
-                <Tooltip />
-                <Legend />
+      {/* Combined Chart */}
+      <Card className="mb-6">
+        <CardHeader className="flex flex-col gap-4">
+          <h3 className="text-lg font-semibold">통합 성과 지표</h3>
+          <div className="flex gap-6 flex-wrap">
+            <Checkbox
+              isSelected={chartMetrics.cost}
+              onValueChange={(checked) =>
+                setChartMetrics({ ...chartMetrics, cost: checked })
+              }
+              size="sm"
+            >
+              광고비
+            </Checkbox>
+            <Checkbox
+              isSelected={chartMetrics.conversions}
+              onValueChange={(checked) =>
+                setChartMetrics({ ...chartMetrics, conversions: checked })
+              }
+              size="sm"
+            >
+              전환수
+            </Checkbox>
+            <Checkbox
+              isSelected={chartMetrics.impressions}
+              onValueChange={(checked) =>
+                setChartMetrics({ ...chartMetrics, impressions: checked })
+              }
+              size="sm"
+            >
+              노출수
+            </Checkbox>
+            <Checkbox
+              isSelected={chartMetrics.clicks}
+              onValueChange={(checked) =>
+                setChartMetrics({ ...chartMetrics, clicks: checked })
+              }
+              size="sm"
+            >
+              클릭수
+            </Checkbox>
+          </div>
+        </CardHeader>
+        <CardBody>
+          <ResponsiveContainer width="100%" height={400}>
+            <ComposedChart data={chartData}>
+              <CartesianGrid strokeDasharray="3 3" vertical={false} />
+              <XAxis dataKey="date" />
+              <YAxis
+                yAxisId="left"
+                tickFormatter={(value) => value.toLocaleString()}
+              />
+              <YAxis
+                yAxisId="right"
+                orientation="right"
+                tickFormatter={(value) => value.toLocaleString()}
+              />
+              <Tooltip
+                formatter={(value: number) => value.toLocaleString()}
+              />
+              <Legend />
+              {chartMetrics.cost && (
                 <Line
+                  yAxisId="left"
                   type="monotone"
-                  dataKey="conversions"
+                  dataKey="cost"
                   stroke="#17c964"
                   strokeWidth={2}
-                  name="전환수"
-                  dot={{ r: 4 }}
+                  name="광고비"
+                  dot={false}
                 />
-              </LineChart>
-            </ResponsiveContainer>
-          </CardBody>
-        </Card>
-
-        {/* Cost Chart */}
-        <Card className="lg:col-span-2">
-          <CardHeader>
-            <h3 className="text-lg font-semibold">일별 광고비 지출</h3>
-          </CardHeader>
-          <CardBody>
-            <ResponsiveContainer width="100%" height={300}>
-              <BarChart data={chartData}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="date" />
-                <YAxis />
-                <Tooltip />
-                <Legend />
-                <Bar dataKey="cost" fill="#f5a524" name="광고비 (₩)" />
-              </BarChart>
-            </ResponsiveContainer>
-          </CardBody>
-        </Card>
-      </div>
+              )}
+              {chartMetrics.conversions && (
+                <Line
+                  yAxisId="right"
+                  type="monotone"
+                  dataKey="conversions"
+                  stroke="#f5a524"
+                  strokeWidth={2}
+                  name="전환수"
+                  dot={false}
+                />
+              )}
+              {chartMetrics.impressions && (
+                <Area
+                  yAxisId="left"
+                  type="monotone"
+                  dataKey="impressions"
+                  fill="#0070f3"
+                  fillOpacity={0.3}
+                  stroke="#0070f3"
+                  name="노출수"
+                />
+              )}
+              {chartMetrics.clicks && (
+                <Line
+                  yAxisId="left"
+                  type="monotone"
+                  dataKey="clicks"
+                  stroke="#7928ca"
+                  strokeWidth={2}
+                  name="클릭수"
+                  dot={false}
+                />
+              )}
+            </ComposedChart>
+          </ResponsiveContainer>
+        </CardBody>
+      </Card>
 
       {/* Data Table */}
       <Card>
