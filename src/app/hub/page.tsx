@@ -2,10 +2,12 @@ import { Card, CardBody, CardHeader } from "@heroui/card";
 import { Button } from "@heroui/button";
 import { Chip } from "@heroui/chip";
 import NextLink from "next/link";
+import DashboardLayout from "@/components/layouts/DashboardLayout";
 
 export default function HubPage() {
   return (
-    <div className="container mx-auto px-6 py-12 max-w-7xl">
+    <DashboardLayout>
+      <div className="container mx-auto px-6 py-8 max-w-7xl">
       {/* Header */}
       <div className="mb-8">
         <h1 className="text-4xl font-bold mb-2">허브</h1>
@@ -189,5 +191,6 @@ export default function HubPage() {
         </CardBody>
       </Card>
     </div>
+    </DashboardLayout>
   );
 }
