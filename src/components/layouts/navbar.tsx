@@ -10,11 +10,9 @@ import {
 } from "@heroui/navbar";
 import { Button } from "@heroui/button";
 import { Link } from "@heroui/link";
-import { Skeleton } from "@heroui/skeleton";
 import { link as linkStyles } from "@heroui/theme";
 import NextLink from "next/link";
 import clsx from "clsx";
-import { useShallow } from "zustand/shallow";
 import { useState } from "react";
 import {
   motion,
@@ -26,20 +24,11 @@ import {
 import { navbarVariants } from "@/utils/animations";
 import { siteConfig } from "@/config/site";
 import { ThemeSwitch } from "@/components/theme-switch";
-import { UserDropdown } from "@/components/user-dropdown";
-import { useAuthStore } from "@/stores/useAuthStore";
 import { LanguageSwitcher } from "@/components/language-switcher";
 import { useDictionary } from "@/hooks/use-dictionary";
 
 export const Navbar = () => {
   const { dictionary: dict } = useDictionary();
-  const { user, isLoading, isInitialized } = useAuthStore(
-    useShallow((state) => ({
-      user: state.user,
-      isLoading: state.isLoading,
-      isInitialized: state.isInitialized,
-    })),
-  );
 
   const getNavLabel = (label: string) => {
     const navMap: Record<string, string> = {
@@ -69,38 +58,29 @@ export const Navbar = () => {
     setLastScrollY(latest);
   });
 
-  const UserOrLogin = () =>
-    !isInitialized || isLoading ? (
-      <Skeleton
-        className="flex rounded-full w-10 h-10"
-        data-testid="navbar-user-skeleton"
-        aria-label={`${dict.common.loading} ${dict.nav.profile}`}
-      />
-    ) : user ? (
-      <UserDropdown />
-    ) : (
-      <>
-        <Button
-          as={NextLink}
-          href="/login"
-          variant="light"
-          data-testid="navbar-login-button"
-          aria-label={dict.nav.login}
-        >
-          {dict.nav.login}
-        </Button>
-        <Button
-          as={NextLink}
-          color="primary"
-          href="/login"
-          variant="flat"
-          data-testid="navbar-trial-button"
-          aria-label={dict.nav.freeTrial}
-        >
-          {dict.nav.freeTrial}
-        </Button>
-      </>
-    );
+  const LoginButtons = () => (
+    <>
+      <Button
+        as={NextLink}
+        href="/login"
+        variant="light"
+        data-testid="navbar-login-button"
+        aria-label={dict.nav.login}
+      >
+        {dict.nav.login}
+      </Button>
+      <Button
+        as={NextLink}
+        color="primary"
+        href="/signup"
+        variant="flat"
+        data-testid="navbar-signup-button"
+        aria-label={dict.nav.freeTrial}
+      >
+        {dict.nav.freeTrial}
+      </Button>
+    </>
+  );
 
   const effectiveHidden = prefersReducedMotion ? false : hidden;
 
@@ -170,14 +150,14 @@ export const Navbar = () => {
           <NavbarItem className="hidden sm:flex gap-3">
             <LanguageSwitcher />
             <ThemeSwitch />
-            <UserOrLogin />
+            <LoginButtons />
           </NavbarItem>
         </NavbarContent>
 
         <NavbarContent className="sm:hidden basis-1 pl-4" justify={"end"}>
           <LanguageSwitcher />
           <ThemeSwitch />
-          <UserOrLogin />
+          <LoginButtons />
         </NavbarContent>
 
         <NavbarMenu data-testid="navbar-mobile-menu">
@@ -197,23 +177,32 @@ export const Navbar = () => {
                 </Link>
               </NavbarMenuItem>
             ))}
-            {!user ? (
-              <NavbarMenuItem>
-                <Button
-                  as={NextLink}
-                  className="w-full mt-4"
-                  color="primary"
-                  href="/login"
-                  variant="flat"
-                  data-testid="navbar-mobile-login-button"
-                  aria-label={dict.nav.login}
-                >
-                  {dict.nav.login}
-                </Button>
-              </NavbarMenuItem>
-            ) : (
-              <UserDropdown />
-            )}
+            <NavbarMenuItem>
+              <Button
+                as={NextLink}
+                className="w-full mt-4"
+                color="primary"
+                href="/login"
+                variant="flat"
+                data-testid="navbar-mobile-login-button"
+                aria-label={dict.nav.login}
+              >
+                {dict.nav.login}
+              </Button>
+            </NavbarMenuItem>
+            <NavbarMenuItem>
+              <Button
+                as={NextLink}
+                className="w-full"
+                color="primary"
+                href="/signup"
+                variant="flat"
+                data-testid="navbar-mobile-signup-button"
+                aria-label={dict.nav.freeTrial}
+              >
+                {dict.nav.freeTrial}
+              </Button>
+            </NavbarMenuItem>
           </div>
         </NavbarMenu>
       </HeroUINavbar>
