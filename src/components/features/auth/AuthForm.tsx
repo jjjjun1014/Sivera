@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { Input } from "@heroui/input";
 import { Button } from "@heroui/button";
 import { Link } from "@heroui/link";
@@ -28,6 +29,7 @@ export function AuthForm({
   initialMode = "login",
   defaultEmail,
 }: AuthFormProps) {
+  const router = useRouter();
   const [isSignUp, setIsSignUp] = useState(initialMode === "signup");
   const [isTermsAgreed, setIsTermsAgreed] = useState(false);
   const [showTermsModal, setShowTermsModal] = useState(false);
@@ -67,10 +69,22 @@ export function AuthForm({
       return;
     }
 
-    toast.info({
-      title: "개발 중",
-      description: "AWS 연동 후 사용 가능합니다.",
-    });
+    // TODO: AWS 연동 후 실제 로그인/회원가입 로직 구현
+    // 임시로 로그인 시 /hub로 리다이렉트
+    if (!isSignUp) {
+      // 로그인
+      toast.success({
+        title: "로그인 성공 (임시)",
+        description: "허브 페이지로 이동합니다.",
+      });
+      router.push("/hub");
+    } else {
+      // 회원가입
+      toast.info({
+        title: "개발 중",
+        description: "AWS 연동 후 사용 가능합니다.",
+      });
+    }
   };
 
   const handleTermsLinkClick = (e: React.MouseEvent) => {
