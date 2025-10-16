@@ -14,6 +14,7 @@ import { Chip } from "@heroui/chip";
 import { Button } from "@heroui/button";
 import { Input } from "@heroui/input";
 import { Checkbox } from "@heroui/checkbox";
+import { Switch } from "@heroui/switch";
 import { DateRangePicker } from "@heroui/date-picker";
 import { getLocalTimeZone, today } from "@internationalized/date";
 import {
@@ -56,6 +57,7 @@ const initialCampaigns = [
     id: 1,
     name: "여름 세일 - 검색 광고",
     status: "active",
+    hasError: false,
     budget: 500000,
     spent: 387000,
     impressions: 125000,
@@ -70,6 +72,7 @@ const initialCampaigns = [
     id: 2,
     name: "브랜드 키워드 캠페인",
     status: "active",
+    hasError: true,
     budget: 300000,
     spent: 245000,
     impressions: 89000,
@@ -84,6 +87,7 @@ const initialCampaigns = [
     id: 3,
     name: "디스플레이 - 리타겟팅",
     status: "paused",
+    hasError: false,
     budget: 200000,
     spent: 156000,
     impressions: 456000,
@@ -98,6 +102,7 @@ const initialCampaigns = [
     id: 4,
     name: "쇼핑 광고 - 신제품",
     status: "active",
+    hasError: false,
     budget: 400000,
     spent: 312000,
     impressions: 67000,
@@ -173,13 +178,19 @@ export default function GoogleAdsPage() {
   const handleCampaignChange = (
     id: number,
     field: string,
-    value: string | number
+    value: string | number | boolean
   ) => {
     setCampaigns((prev) =>
       prev.map((campaign) =>
         campaign.id === id ? { ...campaign, [field]: value } : campaign
       )
     );
+  };
+
+  const handleToggleStatus = (id: number, currentStatus: string) => {
+    const newStatus = currentStatus === "active" ? "paused" : "active";
+    handleCampaignChange(id, "status", newStatus);
+    // TODO: AWS 연동 후 실제 API 호출
   };
 
   return (
@@ -406,13 +417,21 @@ export default function GoogleAdsPage() {
                       )}
                     </TableCell>
                     <TableCell>
-                      <Chip
-                        color={statusColorMap[campaign.status]}
-                        size="sm"
-                        variant="flat"
-                      >
-                        {statusTextMap[campaign.status]}
-                      </Chip>
+                      <div className="flex items-center gap-2">
+                        <Switch
+                          size="sm"
+                          isSelected={campaign.status === "active"}
+                          onValueChange={() =>
+                            handleToggleStatus(campaign.id, campaign.status)
+                          }
+                          color="success"
+                        />
+                        {campaign.hasError && (
+                          <Chip color="danger" size="sm" variant="flat">
+                            오류!
+                          </Chip>
+                        )}
+                      </div>
                     </TableCell>
                     <TableCell className="text-right">
                       {isEditing ? (
