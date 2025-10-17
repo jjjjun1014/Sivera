@@ -6,6 +6,7 @@ import { Input } from "@heroui/input";
 import { Button } from "@heroui/button";
 import { Avatar } from "@heroui/avatar";
 import { Divider } from "@heroui/divider";
+import { toast } from "@/utils/toast";
 
 export default function ProfilePage() {
   const [profile, setProfile] = useState({
@@ -33,26 +34,48 @@ export default function ProfilePage() {
 
   // 프로필 저장
   const handleSaveProfile = () => {
-    localStorage.setItem("userProfile", JSON.stringify(profile));
-    alert("프로필이 저장되었습니다!");
+    try {
+      localStorage.setItem("userProfile", JSON.stringify(profile));
+      toast.success({
+        title: "프로필 저장 완료",
+        description: "프로필 정보가 성공적으로 저장되었습니다.",
+      });
+    } catch (error) {
+      toast.error({
+        title: "프로필 저장 실패",
+        description: "프로필 저장 중 오류가 발생했습니다.",
+      });
+    }
   };
 
   // 비밀번호 변경
   const handleChangePassword = () => {
     if (!password.current || !password.new || !password.confirm) {
-      alert("모든 필드를 입력해주세요.");
+      toast.error({
+        title: "입력 오류",
+        description: "모든 필드를 입력해주세요.",
+      });
       return;
     }
     if (password.new !== password.confirm) {
-      alert("새 비밀번호가 일치하지 않습니다.");
+      toast.error({
+        title: "비밀번호 불일치",
+        description: "새 비밀번호가 일치하지 않습니다.",
+      });
       return;
     }
     if (password.new.length < 8) {
-      alert("비밀번호는 8자 이상이어야 합니다.");
+      toast.error({
+        title: "비밀번호 길이 오류",
+        description: "비밀번호는 8자 이상이어야 합니다.",
+      });
       return;
     }
     // TODO: AWS 연동 후 실제 비밀번호 변경 로직
-    alert("비밀번호가 변경되었습니다!");
+    toast.warning({
+      title: "기능 준비 중",
+      description: "AWS 연동 후 사용 가능합니다. Sivera 관리자에게 문의해주세요.",
+    });
     setPassword({ current: "", new: "", confirm: "" });
   };
 

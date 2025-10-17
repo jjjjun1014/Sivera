@@ -27,6 +27,7 @@ import {
 import { SiKakao, SiNaver } from "react-icons/si";
 
 import { PlatformType } from "@/types";
+import { toast } from "@/utils/toast";
 import {
   getPlatformDisplayName,
   isPlatformOAuthSupported,
@@ -122,15 +123,16 @@ export function PlatformIntegrations() {
 
     if (success === "platform_connected" && platform && account) {
       log.info("Platform connected successfully", { platform, account });
-      // Show success notification using a toast or alert
-      alert(
-        dict.integrations.success.connected
+      // Show success notification
+      toast.success({
+        title: "플랫폼 연동 성공",
+        description: dict.integrations.success.connected
           .replace(
             "{{platform}}",
             getPlatformDisplayName(platform.toUpperCase() as PlatformType),
           )
           .replace("{{account}}", decodeURIComponent(account)),
-      );
+      });
       // Clear URL params
       window.history.replaceState({}, "", window.location.pathname);
       // Refresh data
@@ -159,9 +161,10 @@ export function PlatformIntegrations() {
 
       log.error("Platform connection failed", { error, platform, message });
       // Show error notification
-      alert(
-        `${getPlatformDisplayName(platform.toUpperCase() as PlatformType)} ${dict.integrations.errors.connectionFailed}\n${errorMessage}`,
-      );
+      toast.error({
+        title: `${getPlatformDisplayName(platform.toUpperCase() as PlatformType)} 연동 실패`,
+        description: errorMessage,
+      });
       window.history.replaceState({}, "", window.location.pathname);
     }
   }, [dict, fetchRefreshStatus]);

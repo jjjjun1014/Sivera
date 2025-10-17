@@ -6,6 +6,7 @@ import { Switch } from "@heroui/switch";
 import { Select, SelectItem } from "@heroui/select";
 import { Input } from "@heroui/input";
 import { Button } from "@heroui/button";
+import { toast } from "@/utils/toast";
 
 const CURRENCIES = [
   { key: "KRW", label: "KRW (₩)" },
@@ -75,14 +76,24 @@ export default function SettingsPage() {
 
   // 설정 저장
   const handleSave = () => {
-    const settings = {
-      notifications,
-      dashboardSettings,
-      integrations,
-      dataSettings,
-    };
-    localStorage.setItem("appSettings", JSON.stringify(settings));
-    alert("설정이 저장되었습니다!");
+    try {
+      const settings = {
+        notifications,
+        dashboardSettings,
+        integrations,
+        dataSettings,
+      };
+      localStorage.setItem("appSettings", JSON.stringify(settings));
+      toast.success({
+        title: "설정 저장 완료",
+        description: "모든 설정이 성공적으로 저장되었습니다.",
+      });
+    } catch (error) {
+      toast.error({
+        title: "설정 저장 실패",
+        description: "설정 저장 중 오류가 발생했습니다.",
+      });
+    }
   };
 
   return (
