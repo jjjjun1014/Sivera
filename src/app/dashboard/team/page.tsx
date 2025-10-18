@@ -10,6 +10,7 @@ import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, useDisclosure
 import { Input } from "@heroui/input";
 import { Select, SelectItem } from "@heroui/select";
 import { Avatar } from "@heroui/avatar";
+import { toast } from "@/utils/toast";
 
 // 샘플 데이터
 const teamMembers = [
@@ -75,6 +76,8 @@ const pendingInvites = [
 export default function TeamPage() {
   const [selectedKeys, setSelectedKeys] = useState(new Set([]));
   const { isOpen, onOpen, onClose } = useDisclosure();
+  const [inviteEmail, setInviteEmail] = useState("");
+  const [inviteRole, setInviteRole] = useState("");
 
   const roleColorMap: Record<string, "primary" | "success" | "default"> = {
     master: "primary",
@@ -86,6 +89,64 @@ export default function TeamPage() {
     master: "마스터",
     team_mate: "팀원",
     viewer: "뷰어",
+  };
+
+  const handleInvite = () => {
+    if (!inviteEmail || !inviteRole) {
+      toast.error({
+        title: "입력 오류",
+        description: "이메일과 역할을 모두 입력해주세요.",
+      });
+      return;
+    }
+
+    // 이메일 유효성 검사
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(inviteEmail)) {
+      toast.error({
+        title: "이메일 형식 오류",
+        description: "올바른 이메일 주소를 입력해주세요.",
+      });
+      return;
+    }
+
+    // TODO: 실제 초대 이메일 전송 로직 구현
+    toast.success({
+      title: "초대 이메일 전송 완료",
+      description: `${inviteEmail}로 초대 링크가 전송되었습니다.`,
+    });
+
+    setInviteEmail("");
+    setInviteRole("");
+    onClose();
+  };
+
+  const handleRoleChange = (memberId: number, memberName: string) => {
+    toast.warning({
+      title: "기능 준비 중",
+      description: "팀 관리자에게 문의하여 역할을 변경해주세요.",
+    });
+  };
+
+  const handleRemoveMember = (memberId: number, memberName: string) => {
+    toast.error({
+      title: "팀원 제거 확인",
+      description: `${memberName}을(를) 팀에서 제거하시겠습니까? 이 작업은 되돌릴 수 없습니다.`,
+    });
+  };
+
+  const handleResendInvite = (email: string) => {
+    toast.success({
+      title: "초대 재전송 완료",
+      description: `${email}로 초대 링크를 다시 전송했습니다.`,
+    });
+  };
+
+  const handleCancelInvite = (email: string) => {
+    toast.success({
+      title: "초대 취소",
+      description: `${email}의 초대를 취소했습니다.`,
+    });
   };
 
   return (
@@ -200,6 +261,7 @@ export default function TeamPage() {
                         color="primary"
                         radius="sm"
                         isDisabled={member.role === "master"}
+                        onPress={() => handleRoleChange(member.id, member.name)}
                       >
                         역할 변경
                       </Button>
@@ -209,6 +271,7 @@ export default function TeamPage() {
                         color="danger"
                         radius="sm"
                         isDisabled={member.role === "master"}
+                        onPress={() => handleRemoveMember(member.id, member.name)}
                       >
                         제거
                       </Button>
@@ -263,6 +326,7 @@ export default function TeamPage() {
                         variant="flat"
                         color="primary"
                         radius="sm"
+                        onPress={() => handleResendInvite(invite.email)}
                       >
                         재전송
                       </Button>
@@ -271,6 +335,7 @@ export default function TeamPage() {
                         variant="flat"
                         color="danger"
                         radius="sm"
+                        onPress={() => handleCancelInvite(invite.email)}
                       >
                         취소
                       </Button>
@@ -343,6 +408,8 @@ export default function TeamPage() {
                 variant="bordered"
                 type="email"
                 isRequired
+                value={inviteEmail}
+                onChange={(e) => setInviteEmail(e.target.value)}
               />
 
               <Select
@@ -351,6 +418,8 @@ export default function TeamPage() {
                 radius="sm"
                 variant="bordered"
                 isRequired
+                selectedKeys={inviteRole ? [inviteRole] : []}
+                onSelectionChange={(keys) => setInviteRole(Array.from(keys)[0] as string)}
               >
                 <SelectItem key="team_mate">팀원 (생성, 수정, 삭제 가능)</SelectItem>
                 <SelectItem key="viewer">뷰어 (조회만 가능)</SelectItem>
@@ -367,7 +436,7 @@ export default function TeamPage() {
             <Button variant="light" onPress={onClose}>
               취소
             </Button>
-            <Button color="primary" onPress={onClose}>
+            <Button color="primary" onPress={handleInvite}>
               초대 보내기
             </Button>
           </ModalFooter>

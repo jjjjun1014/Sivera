@@ -12,7 +12,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
         <AuthProvider>
           {children}
           <Toaster
-            position="top-right"
+            position="bottom-right"
             richColors
             expand={false}
             duration={4000}
