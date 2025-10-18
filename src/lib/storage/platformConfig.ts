@@ -167,20 +167,37 @@ class PlatformConfigStorage {
   }
 
   /**
-   * AWS/DB로 마이그레이션 (추후 구현)
+   * AWS API Gateway로 동기화
    *
-   * 예상 API 구조:
-   * - GET /api/users/{userId}/platforms/{platform}/configs
-   * - POST /api/users/{userId}/platforms/{platform}/configs
-   * - PUT /api/users/{userId}/platforms/{platform}/configs/{configId}
-   * - DELETE /api/users/{userId}/platforms/{platform}/configs/{configId}
+   * 구현 방법:
+   * 1. src/lib/aws/api-gateway.ts import
+   * 2. apiGateway.getPlatformConfigs(userId, platform) 호출
+   * 3. 로컬과 서버 데이터 병합 (lastUpdated 기준)
+   * 4. apiGateway.savePlatformConfig(userId, platform, config) 호출
+   *
+   * API 엔드포인트:
+   * - GET    /users/{userId}/platforms/{platform}/configs
+   * - POST   /users/{userId}/platforms/{platform}/configs
+   * - PUT    /users/{userId}/platforms/{platform}/configs/{configId}
+   * - DELETE /users/{userId}/platforms/{platform}/configs/{configId}
    */
   async syncWithServer(platform: string, userId: string): Promise<void> {
-    // TODO: AWS 연동 시 구현
-    // 1. 로컬 데이터를 서버로 업로드
-    // 2. 서버에서 최신 데이터 가져오기
-    // 3. 충돌 해결 (lastUpdated 기준)
-    console.log(`[Future] Sync ${platform} config for user ${userId}`);
+    // TODO: AWS API Gateway 연동
+    // import { apiGateway } from "@/lib/aws/api-gateway";
+    //
+    // const localSettings = this.load(platform, userId);
+    // const serverSettings = await apiGateway.getPlatformConfigs(userId, platform);
+    //
+    // // 병합 로직 (lastUpdated 기준)
+    // const mergedSettings = this.mergeSettings(localSettings, serverSettings);
+    //
+    // // 서버에 저장
+    // await apiGateway.savePlatformConfig(userId, platform, mergedSettings);
+    //
+    // // 로컬 업데이트
+    // this.save(mergedSettings, userId);
+
+    console.log(`[Future] Sync ${platform} config for user ${userId} with AWS`);
   }
 }
 
