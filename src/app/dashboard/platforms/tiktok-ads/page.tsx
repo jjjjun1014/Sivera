@@ -3,23 +3,22 @@
 import { useState, useMemo } from "react";
 import { Card, CardBody, CardHeader } from "@heroui/card";
 import { Button } from "@heroui/button";
-import { Checkbox } from "@heroui/checkbox";
 import { DateRangePicker } from "@heroui/date-picker";
+import { useDisclosure } from "@heroui/modal";
 import { getLocalTimeZone, today } from "@internationalized/date";
 import { CampaignTable, Campaign } from "@/components/tables/CampaignTable";
+import { MetricSelectorModal, MetricOption } from "@/components/modals/MetricSelectorModal";
+import { Settings2 } from "lucide-react";
 import {
   ComposedChart,
   Line,
-  Bar,
   XAxis,
   YAxis,
   CartesianGrid,
   Tooltip,
-  Legend,
   ResponsiveContainer,
 } from "recharts";
 
-// 14일간의 샘플 차트 데이터 생성
 const generateChartData = () => {
   const data = [];
   const startDate = new Date();
@@ -30,18 +29,30 @@ const generateChartData = () => {
     date.setDate(date.getDate() + i);
     const month = date.getMonth() + 1;
     const day = date.getDate();
+    const impressions = Math.floor(32000 + Math.random() * 12000);
+    const clicks = Math.floor(950 + Math.random() * 550);
+    const conversions = Math.floor(22 + Math.random() * 16);
+    const cost = Math.floor(95000 + Math.random() * 50000);
+    const budget = Math.floor(120000 + Math.random() * 70000);
+    const spent = Math.floor(cost * (0.7 + Math.random() * 0.3));
+
     data.push({
       date: `${month}/${day}`,
-      impressions: Math.floor(32000 + Math.random() * 12000),
-      clicks: Math.floor(950 + Math.random() * 550),
-      conversions: Math.floor(22 + Math.random() * 16),
-      cost: Math.floor(95000 + Math.random() * 50000),
+      impressions,
+      clicks,
+      conversions,
+      cost,
+      budget,
+      spent,
+      ctr: ((clicks / impressions) * 100),
+      cpc: Math.floor(cost / clicks),
+      cpa: Math.floor(cost / conversions),
+      roas: (2.8 + Math.random() * 2.5),
     });
   }
   return data;
 };
 
-// 샘플 캠페인 데이터
 const initialCampaigns: Campaign[] = [
   {
     id: 1,
@@ -105,29 +116,26 @@ export default function TikTokAdsPage() {
     end: todayDate,
   });
 
-  const [chartMetrics, setChartMetrics] = useState({
-    cost: true,
-    conversions: true,
-    impressions: false,
-    clicks: false,
-  });
+  const { isOpen: isMetricModalOpen, onOpen: onMetricModalOpen, onClose: onMetricModalClose } = useDisclosure();
+
+  const [selectedMetrics, setSelectedMetrics] = useState<Set<string>>(
+    new Set(["cost", "conversions"])
+  );
+
+  const availableMetrics: MetricOption[] = [
+    { key: "cost", label: "광고비", color: "#17C964", category: "cost" },
+    { key: "budget", label: "예산", color: "#10B981", category: "cost" },
+    { key: "spent", label: "소진", color: "#F59E0B", category: "cost" },
+    { key: "impressions", label: "노출수", color: "#0072F5", category: "performance" },
+    { key: "clicks", label: "클릭수", color: "#9353D3", category: "performance" },
+    { key: "conversions", label: "전환수", color: "#F5A524", category: "performance" },
+    { key: "ctr", label: "CTR", color: "#F31260", category: "efficiency" },
+    { key: "cpc", label: "CPC", color: "#06B7DB", category: "efficiency" },
+    { key: "cpa", label: "CPA", color: "#EC4899", category: "efficiency" },
+    { key: "roas", label: "ROAS", color: "#8B5CF6", category: "efficiency" },
+  ];
 
   const chartData = useMemo(() => generateChartData(), []);
-
-  const statusColorMap: Record<
-    string,
-    "success" | "warning" | "danger" | "default"
-  > = {
-    active: "success",
-    paused: "warning",
-    stopped: "danger",
-  };
-
-  const statusTextMap: Record<string, string> = {
-    active: "활성",
-    paused: "일시정지",
-    stopped: "중지됨",
-  };
 
   const handleEditCampaign = (id: number) => {
     setEditingCampaigns((prev) => {
@@ -142,7 +150,6 @@ export default function TikTokAdsPage() {
   };
 
   const handleSaveCampaign = (id: number) => {
-    // TODO: AWS 연동 후 실제 저장 로직 구현
     setEditingCampaigns((prev) => {
       const newSet = new Set(prev);
       newSet.delete(id);
@@ -165,12 +172,10 @@ export default function TikTokAdsPage() {
   const handleToggleStatus = (id: number, currentStatus: string) => {
     const newStatus = currentStatus === "active" ? "paused" : "active";
     handleCampaignChange(id, "status", newStatus);
-    // TODO: AWS 연동 후 실제 API 호출
   };
 
   return (
     <div className="container mx-auto px-6 py-8">
-      {/* Header */}
       <div className="mb-6">
         <h1 className="text-3xl font-bold mb-2">TikTok Ads</h1>
         <p className="text-default-500">
@@ -178,7 +183,6 @@ export default function TikTokAdsPage() {
         </p>
       </div>
 
-      {/* Date Range Picker */}
       <Card className="mb-6">
         <CardBody>
           <DateRangePicker
@@ -197,7 +201,6 @@ export default function TikTokAdsPage() {
         </CardBody>
       </Card>
 
-      {/* Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
         <Card>
           <CardBody className="text-center py-6">
@@ -229,113 +232,140 @@ export default function TikTokAdsPage() {
         </Card>
       </div>
 
-      {/* Chart */}
       <Card className="mb-6">
         <CardHeader className="flex flex-col gap-4">
-          <h3 className="text-lg font-semibold">성과 추이</h3>
-          <div className="flex gap-6 flex-wrap">
-            <Checkbox
-              isSelected={chartMetrics.cost}
-              onValueChange={(checked) =>
-                setChartMetrics({ ...chartMetrics, cost: checked })
-              }
+          <div className="flex justify-between items-center w-full">
+            <h3 className="text-lg font-semibold">성과 추이</h3>
+            <Button
+              variant="flat"
               size="sm"
+              startContent={<Settings2 className="w-4 h-4" />}
+              onPress={onMetricModalOpen}
             >
-              광고비
-            </Checkbox>
-            <Checkbox
-              isSelected={chartMetrics.conversions}
-              onValueChange={(checked) =>
-                setChartMetrics({ ...chartMetrics, conversions: checked })
-              }
-              size="sm"
-            >
-              전환수
-            </Checkbox>
-            <Checkbox
-              isSelected={chartMetrics.impressions}
-              onValueChange={(checked) =>
-                setChartMetrics({ ...chartMetrics, impressions: checked })
-              }
-              size="sm"
-            >
-              노출수
-            </Checkbox>
-            <Checkbox
-              isSelected={chartMetrics.clicks}
-              onValueChange={(checked) =>
-                setChartMetrics({ ...chartMetrics, clicks: checked })
-              }
-              size="sm"
-            >
-              클릭수
-            </Checkbox>
+              차트 메트릭 선택 ({selectedMetrics.size})
+            </Button>
           </div>
         </CardHeader>
-        <CardBody>
-          <ResponsiveContainer width="100%" height={350}>
-            <ComposedChart data={chartData}>
-              <CartesianGrid strokeDasharray="3 3" vertical={false} />
-              <XAxis dataKey="date" />
+        <CardBody className="pt-2">
+          <ResponsiveContainer width="100%" height={400}>
+            <ComposedChart
+              data={chartData}
+              margin={{ top: 10, right: 30, left: 0, bottom: 0 }}
+            >
+              <CartesianGrid
+                strokeDasharray="3 3"
+                vertical={false}
+                horizontal={true}
+                stroke="#3f3f46"
+                opacity={0.3}
+              />
+              <XAxis
+                dataKey="date"
+                tick={{ fill: "#a1a1aa", fontSize: 12 }}
+                axisLine={{ stroke: "#52525b" }}
+                tickLine={false}
+              />
               <YAxis
                 yAxisId="left"
-                tickFormatter={(value) => value.toLocaleString()}
+                tick={{ fill: "#a1a1aa", fontSize: 12 }}
+                axisLine={{ stroke: "#52525b" }}
+                tickLine={false}
+                tickFormatter={(value) =>
+                  value >= 1000 ? `${(value / 1000).toFixed(0)}K` : value
+                }
               />
               <YAxis
                 yAxisId="right"
                 orientation="right"
+                tick={{ fill: "#a1a1aa", fontSize: 12 }}
+                axisLine={{ stroke: "#52525b" }}
+                tickLine={false}
                 tickFormatter={(value) => value.toLocaleString()}
               />
-              <Tooltip formatter={(value: number) => value.toLocaleString()} />
-              <Legend />
-              {chartMetrics.cost && (
-                <Line
-                  yAxisId="left"
-                  type="monotone"
-                  dataKey="cost"
-                  stroke="#17c964"
-                  strokeWidth={2}
-                  name="광고비"
-                  dot={false}
-                />
-              )}
-              {chartMetrics.conversions && (
-                <Line
-                  yAxisId="right"
-                  type="monotone"
-                  dataKey="conversions"
-                  stroke="#f5a524"
-                  strokeWidth={2}
-                  name="전환수"
-                  dot={false}
-                />
-              )}
-              {chartMetrics.impressions && (
-                <Bar
-                  yAxisId="left"
-                  dataKey="impressions"
-                  fill="#0070f3"
-                  fillOpacity={0.6}
-                  name="노출수"
-                />
-              )}
-              {chartMetrics.clicks && (
-                <Line
-                  yAxisId="left"
-                  type="monotone"
-                  dataKey="clicks"
-                  stroke="#7928ca"
-                  strokeWidth={2}
-                  name="클릭수"
-                  dot={false}
-                />
-              )}
+              <Tooltip
+                contentStyle={{
+                  backgroundColor: "#27272a",
+                  border: "1px solid #3f3f46",
+                  borderRadius: "12px",
+                  boxShadow: "0 4px 20px rgba(0, 0, 0, 0.3)",
+                  padding: "12px",
+                }}
+                labelStyle={{
+                  color: "#fafafa",
+                  fontWeight: 600,
+                  marginBottom: "8px",
+                  fontSize: "13px",
+                }}
+                itemStyle={{
+                  color: "#e4e4e7",
+                  fontSize: "12px",
+                  padding: "4px 0",
+                }}
+                labelFormatter={(label) => `날짜: ${label}`}
+                formatter={(value: number, name: string) => {
+                  const metric = availableMetrics.find((m) => m.label === name);
+                  if (!metric) return [value.toLocaleString(), name];
+
+                  let formattedValue = "";
+                  let unit = "";
+
+                  switch (metric.key) {
+                    case "cost":
+                    case "budget":
+                    case "spent":
+                    case "cpc":
+                    case "cpa":
+                      formattedValue = `₩${value.toLocaleString()}`;
+                      break;
+                    case "conversions":
+                    case "clicks":
+                    case "impressions":
+                      formattedValue = value.toLocaleString();
+                      unit = "회";
+                      break;
+                    case "ctr":
+                      formattedValue = value.toFixed(2);
+                      unit = "%";
+                      break;
+                    case "roas":
+                      formattedValue = value.toFixed(1);
+                      unit = "x";
+                      break;
+                    default:
+                      formattedValue = value.toLocaleString();
+                  }
+
+                  return [`${formattedValue}${unit}`, name];
+                }}
+              />
+              {Array.from(selectedMetrics).map((metricKey) => {
+                const metric = availableMetrics.find((m) => m.key === metricKey);
+                if (!metric) return null;
+
+                return (
+                  <Line
+                    key={metricKey}
+                    yAxisId="left"
+                    type="monotone"
+                    dataKey={metricKey}
+                    stroke={metric.color}
+                    strokeWidth={3}
+                    name={metric.label}
+                    dot={{
+                      fill: metric.color,
+                      strokeWidth: 2,
+                      r: 4,
+                      stroke: "#fff",
+                    }}
+                    activeDot={{ r: 6 }}
+                  />
+                );
+              })}
             </ComposedChart>
           </ResponsiveContainer>
         </CardBody>
       </Card>
 
-      {/* Campaign Table */}
       <Card>
         <CardHeader className="flex justify-between items-center">
           <h3 className="text-xl font-semibold">캠페인 목록</h3>
@@ -354,6 +384,15 @@ export default function TikTokAdsPage() {
           />
         </CardBody>
       </Card>
+
+      <MetricSelectorModal
+        isOpen={isMetricModalOpen}
+        onClose={onMetricModalClose}
+        metrics={availableMetrics}
+        selectedMetrics={selectedMetrics}
+        onApply={setSelectedMetrics}
+        maxSelection={4}
+      />
     </div>
   );
 }

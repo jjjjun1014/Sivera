@@ -1,12 +1,19 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
+import { platformConfigStorage } from "@/lib/storage/platformConfig";
 import { Card, CardBody, CardHeader } from "@heroui/card";
 import { Button } from "@heroui/button";
-import { Checkbox } from "@heroui/checkbox";
 import { DateRangePicker } from "@heroui/date-picker";
+import { Dropdown, DropdownTrigger, DropdownMenu, DropdownItem } from "@heroui/dropdown";
+import { Popover, PopoverTrigger, PopoverContent } from "@heroui/popover";
+import { Input } from "@heroui/input";
+import { useDisclosure } from "@heroui/modal";
 import { getLocalTimeZone, today } from "@internationalized/date";
 import { CampaignTable, Campaign } from "@/components/tables/CampaignTable";
+import { MetricsConfigModal, MetricOption } from "@/components/modals/MetricsConfigModal";
+import { SaveConfigModal } from "@/components/modals/SaveConfigModal";
+import { Settings2, ChevronDown, Star, Trash2, Edit2 } from "lucide-react";
 import { toast } from "@/utils/toast";
 import {
   ComposedChart,
@@ -20,6 +27,8 @@ import {
   ResponsiveContainer,
 } from "recharts";
 
+const CHART_COLORS = ["#17C964", "#0072F5", "#F5A524", "#9353D3"];
+
 // 14일간의 샘플 차트 데이터 생성
 const generateChartData = () => {
   const data = [];
@@ -31,12 +40,25 @@ const generateChartData = () => {
     date.setDate(date.getDate() + i);
     const month = date.getMonth() + 1;
     const day = date.getDate();
+    const impressions = Math.floor(25000 + Math.random() * 8000);
+    const clicks = Math.floor(800 + Math.random() * 400);
+    const conversions = Math.floor(25 + Math.random() * 15);
+    const cost = Math.floor(120000 + Math.random() * 40000);
+    const budget = Math.floor(150000 + Math.random() * 50000);
+    const spent = Math.floor(cost * (0.7 + Math.random() * 0.3));
+
     data.push({
       date: `${month}/${day}`,
-      impressions: Math.floor(25000 + Math.random() * 8000),
-      clicks: Math.floor(800 + Math.random() * 400),
-      conversions: Math.floor(25 + Math.random() * 15),
-      cost: Math.floor(120000 + Math.random() * 40000),
+      impressions,
+      clicks,
+      conversions,
+      cost,
+      budget,
+      spent,
+      ctr: ((clicks / impressions) * 100),
+      cpc: Math.floor(cost / clicks),
+      cpa: Math.floor(cost / conversions),
+      roas: (3 + Math.random() * 3),
     });
   }
   return data;
@@ -106,6 +128,8 @@ const initialCampaigns = [
   },
 ];
 
+const PLATFORM_NAME = "google-ads";
+
 export default function GoogleAdsPage() {
   const [selectedKeys, setSelectedKeys] = useState(new Set([]));
   const [campaigns, setCampaigns] = useState(initialCampaigns);
@@ -121,14 +145,120 @@ export default function GoogleAdsPage() {
     end: todayDate,
   });
 
-  const [chartMetrics, setChartMetrics] = useState({
-    cost: true,
-    conversions: true,
-    impressions: false,
-    clicks: false,
-  });
+  // 메트릭 모달 제어 (요약 카드와 차트 공통 사용)
+  const { isOpen: isMetricModalOpen, onOpen: onMetricModalOpen, onClose: onMetricModalClose } = useDisclosure();
+
+  // 저장 모달 제어
+  const { isOpen: isSaveModalOpen, onOpen: onSaveModalOpen, onClose: onSaveModalClose } = useDisclosure();
+
+  // 선택된 메트릭 (요약 카드 4개 + 차트 4개)
+  const [selectedSummaryMetrics, setSelectedSummaryMetrics] = useState<string[]>([
+    "cost",
+    "conversions",
+    "cpa",
+    "roas",
+  ]);
+
+  const [selectedChartMetrics, setSelectedChartMetrics] = useState<string[]>([
+    "cost",
+    "conversions",
+  ]);
+
+  // localStorage에서 초기 데이터 로드
+  const [isLoaded, setIsLoaded] = useState(false);
+
+  useEffect(() => {
+    // 클라이언트에서만 실행
+    const settings = platformConfigStorage.load(PLATFORM_NAME);
+
+    if (settings) {
+      // 저장된 설정이 있으면 복원
+      setSavedConfigs(settings.configs);
+      setCurrentConfigId(settings.currentConfigId);
+
+      // 현재 적용 중인 설정이 있으면 적용
+      if (settings.currentConfigId) {
+        const currentConfig = settings.configs.find((c) => c.id === settings.currentConfigId);
+        if (currentConfig) {
+          setSelectedSummaryMetrics(currentConfig.summaryMetrics);
+          setSelectedChartMetrics(currentConfig.chartMetrics);
+          if (currentConfig.tableColumnOrder) {
+            setTableColumnOrder(currentConfig.tableColumnOrder);
+          }
+          if (currentConfig.tableColumnVisibility) {
+            setTableColumnVisibility(currentConfig.tableColumnVisibility);
+          }
+        }
+      }
+    }
+
+    setIsLoaded(true);
+  }, []);
+
+  // 저장된 설정들
+  interface SavedConfig {
+    id: string;
+    name: string;
+    summaryMetrics: string[];
+    chartMetrics: string[];
+    tableColumnOrder?: string[];
+    tableColumnVisibility?: Record<string, boolean>;
+    isDefault: boolean;
+  }
+
+  const [savedConfigs, setSavedConfigs] = useState<SavedConfig[]>([]);
+  const [editingConfigId, setEditingConfigId] = useState<string | null>(null);
+  const [editingConfigName, setEditingConfigName] = useState("");
+  const [currentConfigId, setCurrentConfigId] = useState<string | null>(null);
+
+  // 테이블 상태 (CampaignTable에서 전달받을 예정)
+  const [tableColumnOrder, setTableColumnOrder] = useState<string[]>([]);
+  const [tableColumnVisibility, setTableColumnVisibility] = useState<Record<string, boolean>>({});
+
+  // 현재 설정 이름 가져오기
+  const currentConfigName = useMemo(() => {
+    if (!currentConfigId) return "커스텀 저장";
+    const config = savedConfigs.find((c) => c.id === currentConfigId);
+    return config ? config.name : "커스텀 저장";
+  }, [currentConfigId, savedConfigs]);
+
+  // 사용 가능한 메트릭 정의 (테이블 컬럼 기반)
+  const availableMetrics: MetricOption[] = [
+    { key: "cost", label: "광고비", color: "#17C964", category: "cost" },
+    { key: "budget", label: "예산", color: "#10B981", category: "cost" },
+    { key: "spent", label: "소진", color: "#F59E0B", category: "cost" },
+    { key: "impressions", label: "노출수", color: "#0072F5", category: "performance" },
+    { key: "clicks", label: "클릭수", color: "#9353D3", category: "performance" },
+    { key: "conversions", label: "전환수", color: "#F5A524", category: "performance" },
+    { key: "ctr", label: "CTR", color: "#F31260", category: "efficiency" },
+    { key: "cpc", label: "CPC", color: "#06B7DB", category: "efficiency" },
+    { key: "cpa", label: "CPA", color: "#EC4899", category: "efficiency" },
+    { key: "roas", label: "ROAS", color: "#8B5CF6", category: "efficiency" },
+  ];
 
   const chartData = useMemo(() => generateChartData(), []);
+
+  // 요약 카드 데이터 계산
+  const summaryData = useMemo(() => {
+    const totalCost = campaigns.reduce((sum, c) => sum + c.spent, 0);
+    const totalConversions = campaigns.reduce((sum, c) => sum + c.conversions, 0);
+    const totalClicks = campaigns.reduce((sum, c) => sum + c.clicks, 0);
+    const totalImpressions = campaigns.reduce((sum, c) => sum + c.impressions, 0);
+    const totalBudget = campaigns.reduce((sum, c) => sum + c.budget, 0);
+
+    return {
+      cost: { value: `₩${(totalCost / 1000).toFixed(1)}K`, change: "+8.5%" },
+      budget: { value: `₩${(totalBudget / 1000).toFixed(1)}K`, change: "+5.2%" },
+      spent: { value: `₩${(totalCost / 1000).toFixed(1)}K`, change: "+8.5%" },
+      impressions: { value: totalImpressions.toLocaleString(), change: "+12.3%" },
+      clicks: { value: totalClicks.toLocaleString(), change: "+10.1%" },
+      conversions: { value: totalConversions.toString(), change: "+12.3%" },
+      ctr: { value: `${((totalClicks / totalImpressions) * 100).toFixed(2)}%`, change: "-0.8%" },
+      cpc: { value: `₩${Math.floor(totalCost / totalClicks).toLocaleString()}`, change: "+3.2%" },
+      cpa: { value: `₩${Math.floor(totalCost / totalConversions).toLocaleString()}`, change: "+3.2%" },
+      roas: { value: `${(campaigns.reduce((sum, c) => sum + c.roas, 0) / campaigns.length).toFixed(1)}x`, change: "+5.8%" },
+    };
+  }, [campaigns]);
 
   const statusColorMap: Record<
     string,
@@ -184,6 +314,106 @@ export default function GoogleAdsPage() {
     // TODO: AWS 연동 후 실제 API 호출
   };
 
+  // 설정 저장
+  const handleSaveConfig = (name: string) => {
+    const newConfig = platformConfigStorage.addConfig(PLATFORM_NAME, {
+      name,
+      summaryMetrics: selectedSummaryMetrics,
+      chartMetrics: selectedChartMetrics,
+      tableColumnOrder: tableColumnOrder.length > 0 ? tableColumnOrder : undefined,
+      tableColumnVisibility: Object.keys(tableColumnVisibility).length > 0 ? tableColumnVisibility : undefined,
+      isDefault: savedConfigs.length === 0,
+    });
+
+    setSavedConfigs((prev) => [...prev, newConfig]);
+    toast.success({
+      title: "설정 저장 완료",
+      description: `"${name}" 설정이 저장되었습니다. (차트, 요약, 테이블 포함)`,
+    });
+  };
+
+  // 설정 불러오기
+  const handleLoadConfig = (configId: string) => {
+    const config = savedConfigs.find((c) => c.id === configId);
+    if (config) {
+      setSelectedSummaryMetrics(config.summaryMetrics);
+      setSelectedChartMetrics(config.chartMetrics);
+
+      // 테이블 설정도 복원
+      if (config.tableColumnOrder) {
+        setTableColumnOrder(config.tableColumnOrder);
+      }
+      if (config.tableColumnVisibility) {
+        setTableColumnVisibility(config.tableColumnVisibility);
+      }
+
+      // 현재 설정 ID 업데이트 (localStorage에도 저장)
+      setCurrentConfigId(configId);
+      platformConfigStorage.setCurrentConfig(PLATFORM_NAME, configId);
+
+      toast.success({
+        title: "설정 불러오기 완료",
+        description: `"${config.name}" 설정을 적용했습니다.`,
+      });
+    }
+  };
+
+  // 설정 삭제
+  const handleDeleteConfig = (configId: string) => {
+    const config = savedConfigs.find((c) => c.id === configId);
+
+    // localStorage에서 삭제
+    platformConfigStorage.deleteConfig(PLATFORM_NAME, configId);
+
+    setSavedConfigs((prev) => prev.filter((c) => c.id !== configId));
+
+    // 현재 적용 중인 설정이 삭제되면 currentConfigId 초기화
+    if (currentConfigId === configId) {
+      setCurrentConfigId(null);
+    }
+
+    toast.success({
+      title: "설정 삭제 완료",
+      description: `"${config?.name}" 설정이 삭제되었습니다.`,
+    });
+  };
+
+  // 기본값 설정
+  const handleSetDefault = (configId: string) => {
+    // localStorage에 저장
+    platformConfigStorage.setDefaultConfig(PLATFORM_NAME, configId);
+
+    setSavedConfigs((prev) =>
+      prev.map((c) => ({
+        ...c,
+        isDefault: c.id === configId,
+      }))
+    );
+    const config = savedConfigs.find((c) => c.id === configId);
+    toast.success({
+      title: "기본값 설정 완료",
+      description: `"${config?.name}" 설정이 기본값으로 설정되었습니다.`,
+    });
+  };
+
+  // 설정 이름 수정
+  const handleRenameConfig = (configId: string, newName: string) => {
+    // localStorage에 저장
+    platformConfigStorage.updateConfig(PLATFORM_NAME, configId, { name: newName });
+
+    setSavedConfigs((prev) =>
+      prev.map((c) =>
+        c.id === configId ? { ...c, name: newName } : c
+      )
+    );
+    setEditingConfigId(null);
+    setEditingConfigName("");
+    toast.success({
+      title: "이름 수정 완료",
+      description: `설정 이름이 "${newName}"으로 변경되었습니다.`,
+    });
+  };
+
   return (
     <div className="container mx-auto px-6 py-8">
       {/* Header */}
@@ -194,55 +424,167 @@ export default function GoogleAdsPage() {
         </p>
       </div>
 
-      {/* Date Range Picker */}
+      {/* Date Range Picker & Controls */}
       <Card className="mb-6">
         <CardBody>
-          <DateRangePicker
-            label="기간 선택"
-            radius="sm"
-            variant="bordered"
-            value={dateRange}
-            onChange={setDateRange}
-            defaultValue={{
-              start: fourteenDaysAgo,
-              end: todayDate,
-            }}
-            description="기본 14일 설정"
-            className="max-w-xs"
-          />
+          <div className="flex justify-between items-center gap-4">
+            <DateRangePicker
+              label="기간 선택"
+              radius="sm"
+              variant="bordered"
+              value={dateRange}
+              onChange={setDateRange}
+              defaultValue={{
+                start: fourteenDaysAgo,
+                end: todayDate,
+              }}
+              className="max-w-xs"
+            />
+            <div className="flex items-center gap-2">
+              <Button
+                variant="flat"
+                size="sm"
+                startContent={<Settings2 className="w-4 h-4" />}
+                onPress={onMetricModalOpen}
+              >
+                지표 선택
+              </Button>
+              <Dropdown>
+                <DropdownTrigger>
+                  <Button
+                    variant="flat"
+                    size="sm"
+                    endContent={<ChevronDown className="w-4 h-4" />}
+                  >
+                    {currentConfigName}
+                  </Button>
+                </DropdownTrigger>
+                <DropdownMenu
+                  aria-label="커스텀 설정 저장"
+                  onAction={(key) => {
+                    if (key === "save") {
+                      onSaveModalOpen();
+                    } else if (key === "default") {
+                      // 기본값으로 돌아가기
+                      setSelectedSummaryMetrics(["cost", "conversions", "cpa", "roas"]);
+                      setSelectedChartMetrics(["cost", "conversions"]);
+                      setTableColumnOrder([]);
+                      setTableColumnVisibility({});
+                      setCurrentConfigId(null);
+                      platformConfigStorage.setCurrentConfig(PLATFORM_NAME, null);
+                      toast.success({
+                        title: "기본값 적용",
+                        description: "기본 설정으로 돌아갔습니다.",
+                      });
+                    } else {
+                      // 저장된 설정 불러오기
+                      handleLoadConfig(key as string);
+                    }
+                  }}
+                >
+                  <DropdownItem key="save">현재 설정 저장</DropdownItem>
+                  <DropdownItem key="default">기본값으로 돌아가기</DropdownItem>
+                  {savedConfigs.length > 0 && (
+                    <DropdownItem key="divider" isReadOnly className="opacity-0 h-0 p-0">
+                      ---
+                    </DropdownItem>
+                  )}
+                  {savedConfigs.map((config) => (
+                    <DropdownItem
+                      key={config.id}
+                      textValue={config.name}
+                      className="py-2"
+                    >
+                      <div className="flex items-center justify-between w-full gap-2">
+                        <div className="flex items-center gap-2 flex-1" onClick={() => handleLoadConfig(config.id)}>
+                          {config.isDefault && (
+                            <Star className="w-3 h-3 fill-warning text-warning flex-shrink-0" />
+                          )}
+                          <span className="text-sm">{config.name}</span>
+                        </div>
+                        <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
+                          <Popover placement="left">
+                            <PopoverTrigger>
+                              <Button
+                                isIconOnly
+                                size="sm"
+                                variant="light"
+                                className="min-w-unit-6 w-6 h-6"
+                              >
+                                <Edit2 className="w-3 h-3" />
+                              </Button>
+                            </PopoverTrigger>
+                            <PopoverContent className="p-3">
+                              <div className="flex flex-col gap-2">
+                                <Input
+                                  size="sm"
+                                  label="이름 변경"
+                                  defaultValue={config.name}
+                                  onKeyDown={(e) => {
+                                    if (e.key === "Enter") {
+                                      const newName = (e.target as HTMLInputElement).value;
+                                      if (newName.trim()) {
+                                        handleRenameConfig(config.id, newName.trim());
+                                      }
+                                    }
+                                  }}
+                                />
+                              </div>
+                            </PopoverContent>
+                          </Popover>
+                          <Button
+                            isIconOnly
+                            size="sm"
+                            variant="light"
+                            onPress={() => handleSetDefault(config.id)}
+                            className="min-w-unit-6 w-6 h-6"
+                          >
+                            <Star className={`w-3 h-3 ${config.isDefault ? "fill-warning text-warning" : ""}`} />
+                          </Button>
+                          <Button
+                            isIconOnly
+                            size="sm"
+                            variant="light"
+                            color="danger"
+                            onPress={() => handleDeleteConfig(config.id)}
+                            className="min-w-unit-6 w-6 h-6"
+                          >
+                            <Trash2 className="w-3 h-3" />
+                          </Button>
+                        </div>
+                      </div>
+                    </DropdownItem>
+                  ))}
+                </DropdownMenu>
+              </Dropdown>
+            </div>
+          </div>
         </CardBody>
       </Card>
 
       {/* Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-        <Card>
-          <CardBody className="text-center py-6">
-            <p className="text-sm text-default-500 mb-1">총 지출</p>
-            <p className="text-3xl font-bold">₩1.1M</p>
-            <p className="text-xs text-success mt-1">+8.5%</p>
-          </CardBody>
-        </Card>
-        <Card>
-          <CardBody className="text-center py-6">
-            <p className="text-sm text-default-500 mb-1">총 전환수</p>
-            <p className="text-3xl font-bold">460</p>
-            <p className="text-xs text-success mt-1">+12.3%</p>
-          </CardBody>
-        </Card>
-        <Card>
-          <CardBody className="text-center py-6">
-            <p className="text-sm text-default-500 mb-1">평균 CPA</p>
-            <p className="text-3xl font-bold">₩2,391</p>
-            <p className="text-xs text-danger mt-1">+3.2%</p>
-          </CardBody>
-        </Card>
-        <Card>
-          <CardBody className="text-center py-6">
-            <p className="text-sm text-default-500 mb-1">평균 ROAS</p>
-            <p className="text-3xl font-bold">4.4x</p>
-            <p className="text-xs text-success mt-1">+5.8%</p>
-          </CardBody>
-        </Card>
+      <div className="mb-6">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          {selectedSummaryMetrics.map((metricKey) => {
+            const metric = availableMetrics.find((m) => m.key === metricKey);
+            if (!metric) return null;
+
+            const data = summaryData[metricKey as keyof typeof summaryData];
+            const isPositive = data.change.startsWith("+");
+
+            return (
+              <Card key={metricKey}>
+                <CardBody className="text-center py-6">
+                  <p className="text-sm text-default-500 mb-1">{metric.label}</p>
+                  <p className="text-3xl font-bold">{data.value}</p>
+                  <p className={`text-xs mt-1 ${isPositive ? "text-success" : "text-danger"}`}>
+                    {data.change}
+                  </p>
+                </CardBody>
+              </Card>
+            );
+          })}
+        </div>
       </div>
 
       {/* Chart */}
@@ -250,66 +592,6 @@ export default function GoogleAdsPage() {
         <CardHeader className="flex flex-col gap-4">
           <div className="flex justify-between items-center w-full">
             <h3 className="text-lg font-semibold">성과 추이</h3>
-            <div className="flex gap-3 flex-wrap">
-              <button
-                onClick={() =>
-                  setChartMetrics({ ...chartMetrics, cost: !chartMetrics.cost })
-                }
-                className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
-                  chartMetrics.cost
-                    ? "bg-success/20 text-success border border-success/50"
-                    : "bg-default-100 text-default-500 border border-transparent hover:border-default-300"
-                }`}
-              >
-                <span className="inline-block w-2 h-2 rounded-full bg-success mr-2"></span>
-                광고비
-              </button>
-              <button
-                onClick={() =>
-                  setChartMetrics({
-                    ...chartMetrics,
-                    conversions: !chartMetrics.conversions,
-                  })
-                }
-                className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
-                  chartMetrics.conversions
-                    ? "bg-warning/20 text-warning border border-warning/50"
-                    : "bg-default-100 text-default-500 border border-transparent hover:border-default-300"
-                }`}
-              >
-                <span className="inline-block w-2 h-2 rounded-full bg-warning mr-2"></span>
-                전환수
-              </button>
-              <button
-                onClick={() =>
-                  setChartMetrics({
-                    ...chartMetrics,
-                    impressions: !chartMetrics.impressions,
-                  })
-                }
-                className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
-                  chartMetrics.impressions
-                    ? "bg-primary/20 text-primary border border-primary/50"
-                    : "bg-default-100 text-default-500 border border-transparent hover:border-default-300"
-                }`}
-              >
-                <span className="inline-block w-2 h-2 rounded-full bg-primary mr-2"></span>
-                노출수
-              </button>
-              <button
-                onClick={() =>
-                  setChartMetrics({ ...chartMetrics, clicks: !chartMetrics.clicks })
-                }
-                className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
-                  chartMetrics.clicks
-                    ? "bg-secondary/20 text-secondary border border-secondary/50"
-                    : "bg-default-100 text-default-500 border border-transparent hover:border-default-300"
-                }`}
-              >
-                <span className="inline-block w-2 h-2 rounded-full bg-secondary mr-2"></span>
-                클릭수
-              </button>
-            </div>
           </div>
         </CardHeader>
         <CardBody className="pt-2">
@@ -375,91 +657,70 @@ export default function GoogleAdsPage() {
                 }}
                 labelFormatter={(label) => `날짜: ${label}`}
                 formatter={(value: number, name: string) => {
+                  const metric = availableMetrics.find((m) => m.label === name);
+                  if (!metric) return [value.toLocaleString(), name];
+
                   let formattedValue = "";
                   let unit = "";
 
-                  if (name === "광고비") {
-                    formattedValue = `₩${value.toLocaleString()}`;
-                    unit = "";
-                  } else if (name === "전환수" || name === "클릭수" || name === "노출수") {
-                    formattedValue = value.toLocaleString();
-                    unit = "회";
-                  } else {
-                    formattedValue = value.toLocaleString();
+                  switch (metric.key) {
+                    case "cost":
+                    case "budget":
+                    case "spent":
+                    case "cpc":
+                    case "cpa":
+                      formattedValue = `₩${value.toLocaleString()}`;
+                      break;
+                    case "conversions":
+                    case "clicks":
+                    case "impressions":
+                      formattedValue = value.toLocaleString();
+                      unit = "회";
+                      break;
+                    case "ctr":
+                      formattedValue = value.toFixed(2);
+                      unit = "%";
+                      break;
+                    case "roas":
+                      formattedValue = value.toFixed(1);
+                      unit = "x";
+                      break;
+                    default:
+                      formattedValue = value.toLocaleString();
                   }
 
                   return [`${formattedValue}${unit}`, name];
                 }}
               />
-              {chartMetrics.impressions && (
-                <Line
-                  yAxisId="left"
-                  type="monotone"
-                  dataKey="impressions"
-                  stroke="#0072F5"
-                  strokeWidth={3}
-                  name="노출수"
-                  dot={{
-                    fill: "#0072F5",
-                    strokeWidth: 2,
-                    r: 4,
-                    stroke: "#fff",
-                  }}
-                  activeDot={{ r: 6 }}
-                />
-              )}
-              {chartMetrics.cost && (
-                <Line
-                  yAxisId="left"
-                  type="monotone"
-                  dataKey="cost"
-                  stroke="#17C964"
-                  strokeWidth={3}
-                  name="광고비"
-                  dot={{
-                    fill: "#17C964",
-                    strokeWidth: 2,
-                    r: 4,
-                    stroke: "#fff",
-                  }}
-                  activeDot={{ r: 6 }}
-                />
-              )}
-              {chartMetrics.conversions && (
-                <Line
-                  yAxisId="right"
-                  type="monotone"
-                  dataKey="conversions"
-                  stroke="#F5A524"
-                  strokeWidth={3}
-                  name="전환수"
-                  dot={{
-                    fill: "#F5A524",
-                    strokeWidth: 2,
-                    r: 4,
-                    stroke: "#fff",
-                  }}
-                  activeDot={{ r: 6 }}
-                />
-              )}
-              {chartMetrics.clicks && (
-                <Line
-                  yAxisId="left"
-                  type="monotone"
-                  dataKey="clicks"
-                  stroke="#9353D3"
-                  strokeWidth={3}
-                  name="클릭수"
-                  dot={{
-                    fill: "#9353D3",
-                    strokeWidth: 2,
-                    r: 4,
-                    stroke: "#fff",
-                  }}
-                  activeDot={{ r: 6 }}
-                  strokeDasharray="5 5"
-                />
-              )}
+              {selectedChartMetrics.map((metricKey, index) => {
+                const metric = availableMetrics.find((m) => m.key === metricKey);
+                if (!metric) return null;
+
+                const color = CHART_COLORS[index % CHART_COLORS.length];
+
+                // 큰 값들은 왼쪽 축, 작은 값들은 오른쪽 축 사용
+                const largeValueMetrics = ["cost", "budget", "spent", "impressions", "clicks", "cpc", "cpa"];
+                const yAxisId = largeValueMetrics.includes(metricKey) ? "left" : "right";
+
+                return (
+                  <Line
+                    key={metricKey}
+                    yAxisId={yAxisId}
+                    type="monotone"
+                    dataKey={metricKey}
+                    stroke={color}
+                    strokeWidth={3}
+                    name={metric.label}
+                    dot={{
+                      fill: color,
+                      strokeWidth: 2,
+                      r: 4,
+                      stroke: "#fff",
+                    }}
+                    activeDot={{ r: 6 }}
+                  />
+                );
+              })}
             </ComposedChart>
           </ResponsiveContainer>
         </CardBody>
@@ -481,9 +742,33 @@ export default function GoogleAdsPage() {
             editingCampaigns={editingCampaigns}
             onEditCampaign={handleEditCampaign}
             onSaveCampaign={handleSaveCampaign}
+            initialColumnOrder={tableColumnOrder}
+            initialColumnVisibility={tableColumnVisibility}
+            onColumnOrderChange={setTableColumnOrder}
+            onColumnVisibilityChange={setTableColumnVisibility}
           />
         </CardBody>
       </Card>
+
+      {/* Metrics Config Modal */}
+      <MetricsConfigModal
+        isOpen={isMetricModalOpen}
+        onClose={onMetricModalClose}
+        metrics={availableMetrics}
+        selectedSummaryMetrics={selectedSummaryMetrics}
+        selectedChartMetrics={selectedChartMetrics}
+        onApply={(summary, chart) => {
+          setSelectedSummaryMetrics(summary);
+          setSelectedChartMetrics(chart);
+        }}
+      />
+
+      {/* Save Config Modal */}
+      <SaveConfigModal
+        isOpen={isSaveModalOpen}
+        onClose={onSaveModalClose}
+        onSave={handleSaveConfig}
+      />
     </div>
   );
 }

@@ -50,6 +50,7 @@ import {
 } from "@heroui/modal";
 import { GripVertical, ChevronUp, ChevronDown, Settings2 } from "lucide-react";
 import { toast } from "@/utils/toast";
+import { ColumnManagerModal, ColumnOption } from "@/components/modals/ColumnManagerModal";
 
 export interface Campaign {
   id: number;
@@ -74,10 +75,14 @@ interface CampaignTableProps {
   editingCampaigns?: Set<number>;
   onEditCampaign?: (id: number) => void;
   onSaveCampaign?: (id: number) => void;
+  initialColumnOrder?: string[];
+  initialColumnVisibility?: Record<string, boolean>;
+  onColumnOrderChange?: (order: string[]) => void;
+  onColumnVisibilityChange?: (visibility: Record<string, boolean>) => void;
 }
 
 // 고정된 컬럼 ID (드래그 불가)
-const PINNED_COLUMN_IDS = ["select", "actions"];
+const PINNED_COLUMN_IDS = ["select", "status-toggle"];
 
 // 드래그 가능한 헤더 컴포넌트
 function DraggableTableHeader({ header }: { header: any }) {
@@ -109,16 +114,19 @@ function DraggableTableHeader({ header }: { header: any }) {
           <div
             {...attributes}
             {...listeners}
-            className="cursor-move hover:text-primary"
+            className="cursor-move hover:bg-primary/10 px-1 rounded transition-colors"
           >
-            <GripVertical className="w-4 h-4" />
+            <div className="flex gap-0.5">
+              <div className="w-0.5 h-4 bg-default-300 rounded-full"></div>
+              <div className="w-0.5 h-4 bg-default-300 rounded-full"></div>
+            </div>
           </div>
         )}
         <button
           onClick={header.column.getToggleSortingHandler()}
           className={`flex items-center gap-1 ${
             canSort ? "cursor-pointer hover:text-primary" : ""
-          } ${isPinned ? "ml-1" : ""}`}
+          }`}
           disabled={!canSort}
         >
           <span>
@@ -130,7 +138,12 @@ function DraggableTableHeader({ header }: { header: any }) {
                 <ChevronUp className="w-3 h-3" />
               ) : sortDirection === "desc" ? (
                 <ChevronDown className="w-3 h-3" />
-              ) : null}
+              ) : (
+                <div className="flex flex-col">
+                  <ChevronUp className="w-3 h-3 -mb-1 opacity-30" />
+                  <ChevronDown className="w-3 h-3 opacity-30" />
+                </div>
+              )}
             </span>
           )}
         </button>
@@ -146,12 +159,29 @@ export function CampaignTable({
   editingCampaigns = new Set(),
   onEditCampaign,
   onSaveCampaign,
+  initialColumnOrder = [],
+  initialColumnVisibility = {},
+  onColumnOrderChange,
+  onColumnVisibilityChange,
 }: CampaignTableProps) {
   const [sorting, setSorting] = useState<SortingState>([]);
-  const [columnOrder, setColumnOrder] = useState<ColumnOrderState>([]);
+  const [columnOrder, setColumnOrder] = useState<ColumnOrderState>(initialColumnOrder);
   const [globalFilter, setGlobalFilter] = useState("");
   const [selectedRows, setSelectedRows] = useState<Record<string, boolean>>({});
-  const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
+  const [columnVisibility, setColumnVisibility] = useState<VisibilityState>(initialColumnVisibility);
+
+  // 초기 값이 변경되면 상태 업데이트
+  useEffect(() => {
+    if (initialColumnOrder.length > 0) {
+      setColumnOrder(initialColumnOrder);
+    }
+  }, [initialColumnOrder]);
+
+  useEffect(() => {
+    if (Object.keys(initialColumnVisibility).length > 0) {
+      setColumnVisibility(initialColumnVisibility);
+    }
+  }, [initialColumnVisibility]);
   const [editingCell, setEditingCell] = useState<{ id: number; field: string } | null>(null);
   const [tempValues, setTempValues] = useState<Record<string, any>>({});
   const [pendingChange, setPendingChange] = useState<{
@@ -161,6 +191,26 @@ export function CampaignTable({
     oldValue: any;
   } | null>(null);
   const { isOpen, onOpen, onClose } = useDisclosure();
+
+  // 컬럼 관리 모달
+  const { isOpen: isColumnModalOpen, onOpen: onColumnModalOpen, onClose: onColumnModalClose } = useDisclosure();
+
+  // 컬럼 옵션 정의
+  const columnOptions: ColumnOption[] = [
+    { id: "name", label: "캠페인명", category: "basic" },
+    { id: "status", label: "상태", category: "basic" },
+    { id: "budget", label: "예산", category: "basic" },
+    { id: "spent", label: "소진", category: "basic" },
+    { id: "impressions", label: "노출수", category: "performance" },
+    { id: "clicks", label: "클릭수", category: "performance" },
+    { id: "conversions", label: "전환수", category: "performance" },
+    { id: "ctr", label: "CTR", category: "efficiency" },
+    { id: "cpc", label: "CPC", category: "efficiency" },
+    { id: "cpa", label: "CPA", category: "efficiency" },
+    { id: "roas", label: "ROAS", category: "efficiency" },
+    { id: "select", label: "선택", category: "basic", isPinned: true },
+    { id: "status-toggle", label: "활성화", category: "basic", isPinned: true },
+  ];
 
   // 변경 확인 및 적용
   const confirmChange = () => {
@@ -218,6 +268,21 @@ export function CampaignTable({
         ),
         size: 50,
         enableSorting: false,
+      },
+      {
+        id: "status-toggle",
+        accessorKey: "status",
+        header: "활성화",
+        cell: ({ row }) => (
+          <Switch
+            size="sm"
+            isSelected={row.original.status === "active"}
+            onValueChange={() =>
+              onToggleStatus?.(row.original.id, row.original.status)
+            }
+          />
+        ),
+        size: 80,
       },
       {
         id: "name",
@@ -361,7 +426,21 @@ export function CampaignTable({
                   return;
                 }
 
-                onCampaignChange?.(row.original.id, "budget", numValue);
+                const oldValue = getValue() as number;
+
+                // 값이 변경되지 않았으면 그냥 종료
+                if (numValue === oldValue) {
+                  setEditingCell(null);
+                  return;
+                }
+
+                setPendingChange({
+                  id: row.original.id,
+                  field: "budget",
+                  value: numValue,
+                  oldValue,
+                });
+                onOpen();
                 setEditingCell(null);
               }}
               onKeyDown={(e) => {
@@ -383,7 +462,21 @@ export function CampaignTable({
                     return;
                   }
 
-                  onCampaignChange?.(row.original.id, "budget", numValue);
+                  const oldValue = getValue() as number;
+
+                  // 값이 변경되지 않았으면 그냥 종료
+                  if (numValue === oldValue) {
+                    setEditingCell(null);
+                    return;
+                  }
+
+                  setPendingChange({
+                    id: row.original.id,
+                    field: "budget",
+                    value: numValue,
+                    oldValue,
+                  });
+                  onOpen();
                   setEditingCell(null);
                 } else if (e.key === "Escape") {
                   setEditingCell(null);
@@ -472,26 +565,8 @@ export function CampaignTable({
           </span>
         ),
       },
-      {
-        id: "actions",
-        header: "작업",
-        enableSorting: false,
-        cell: ({ row }) => {
-          return (
-            <div className="flex gap-2 items-center justify-center">
-              <Switch
-                size="sm"
-                isSelected={row.original.status === "active"}
-                onValueChange={() =>
-                  onToggleStatus?.(row.original.id, row.original.status)
-                }
-              />
-            </div>
-          );
-        },
-      },
     ],
-    [onCampaignChange, onToggleStatus, editingCell, tempValues]
+    [onCampaignChange, onToggleStatus, editingCell, tempValues, onOpen]
   );
 
   const table = useReactTable({
@@ -553,11 +628,26 @@ export function CampaignTable({
 
   // 컬럼 가시성 토글
   const toggleColumnVisibility = (columnId: string) => {
-    setColumnVisibility((prev) => ({
-      ...prev,
-      [columnId]: !prev[columnId],
-    }));
+    setColumnVisibility((prev) => {
+      const currentVisibility = prev[columnId] ?? true; // 기본값은 true
+      const newVisibility = {
+        ...prev,
+        [columnId]: !currentVisibility,
+      };
+
+      // 부모에게 알림
+      onColumnVisibilityChange?.(newVisibility);
+
+      return newVisibility;
+    });
   };
+
+  // columnOrder 변경시 부모에게 알림
+  useEffect(() => {
+    if (columnOrder.length > 0) {
+      onColumnOrderChange?.(columnOrder);
+    }
+  }, [columnOrder, onColumnOrderChange]);
 
   // 드래그 가능한 컬럼만 필터링
   const draggableColumnIds = columnOrder.filter(
@@ -579,39 +669,14 @@ export function CampaignTable({
           <div className="text-sm text-default-500">
             선택됨: {Object.keys(selectedRows).length}개
           </div>
-          <Dropdown>
-            <DropdownTrigger>
-              <Button size="sm" variant="flat" startContent={<Settings2 className="w-4 h-4" />}>
-                컬럼 표시
-              </Button>
-            </DropdownTrigger>
-            <DropdownMenu
-              aria-label="컬럼 표시 설정"
-              closeOnSelect={false}
-              selectionMode="multiple"
-            >
-              {table.getAllLeafColumns().map((column) => {
-                // select와 actions 컬럼은 제외
-                if (PINNED_COLUMN_IDS.includes(column.id)) return null;
-
-                return (
-                  <DropdownItem
-                    key={column.id}
-                    textValue={column.id}
-                  >
-                    <Checkbox
-                      isSelected={column.getIsVisible()}
-                      onValueChange={() => toggleColumnVisibility(column.id)}
-                    >
-                      {typeof column.columnDef.header === "string"
-                        ? column.columnDef.header
-                        : column.id}
-                    </Checkbox>
-                  </DropdownItem>
-                );
-              })}
-            </DropdownMenu>
-          </Dropdown>
+          <Button
+            size="sm"
+            variant="flat"
+            startContent={<Settings2 className="w-4 h-4" />}
+            onPress={onColumnModalOpen}
+          >
+            컬럼 관리
+          </Button>
         </div>
       </div>
 
@@ -688,6 +753,73 @@ export function CampaignTable({
           </Button>
         </div>
       </div>
+
+      {/* 변경 확인 모달 */}
+      <Modal isOpen={isOpen} onClose={cancelChange}>
+        <ModalContent>
+          {(onClose) => (
+            <>
+              <ModalHeader className="flex flex-col gap-1">
+                변경 사항 확인
+              </ModalHeader>
+              <ModalBody>
+                {pendingChange && (
+                  <div className="space-y-3">
+                    <p className="text-sm text-default-600">
+                      다음과 같이 변경하시겠습니까?
+                    </p>
+                    <div className="bg-default-100 rounded-lg p-4 space-y-2">
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm font-medium text-default-700">
+                          {pendingChange.field === "name" ? "캠페인명" : "예산"}
+                        </span>
+                      </div>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <p className="text-xs text-default-500 mb-1">변경 전</p>
+                          <p className="text-sm font-medium text-danger">
+                            {pendingChange.field === "budget"
+                              ? `₩${pendingChange.oldValue.toLocaleString()}`
+                              : pendingChange.oldValue}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-default-500 mb-1">변경 후</p>
+                          <p className="text-sm font-medium text-success">
+                            {pendingChange.field === "budget"
+                              ? `₩${pendingChange.value.toLocaleString()}`
+                              : pendingChange.value}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </ModalBody>
+              <ModalFooter>
+                <Button color="danger" variant="light" onPress={cancelChange}>
+                  취소
+                </Button>
+                <Button color="primary" onPress={confirmChange}>
+                  확인
+                </Button>
+              </ModalFooter>
+            </>
+          )}
+        </ModalContent>
+      </Modal>
+
+      {/* 컬럼 관리 모달 */}
+      <ColumnManagerModal
+        isOpen={isColumnModalOpen}
+        onClose={onColumnModalClose}
+        columns={columnOptions}
+        visibleColumns={columnVisibility}
+        onApply={(visible) => {
+          setColumnVisibility(visible);
+          onColumnVisibilityChange?.(visible);
+        }}
+      />
     </div>
   );
 }
