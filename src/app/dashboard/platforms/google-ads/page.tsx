@@ -2,21 +2,12 @@
 
 import { useState, useMemo } from "react";
 import { Card, CardBody, CardHeader } from "@heroui/card";
-import {
-  Table,
-  TableHeader,
-  TableColumn,
-  TableBody,
-  TableRow,
-  TableCell,
-} from "@heroui/table";
-import { Chip } from "@heroui/chip";
 import { Button } from "@heroui/button";
-import { Input } from "@heroui/input";
 import { Checkbox } from "@heroui/checkbox";
-import { Switch } from "@heroui/switch";
 import { DateRangePicker } from "@heroui/date-picker";
 import { getLocalTimeZone, today } from "@internationalized/date";
+import { CampaignTable, Campaign } from "@/components/tables/CampaignTable";
+import { toast } from "@/utils/toast";
 import {
   ComposedChart,
   Line,
@@ -257,71 +248,181 @@ export default function GoogleAdsPage() {
       {/* Chart */}
       <Card className="mb-6">
         <CardHeader className="flex flex-col gap-4">
-          <h3 className="text-lg font-semibold">성과 추이</h3>
-          <div className="flex gap-6 flex-wrap">
-            <Checkbox
-              isSelected={chartMetrics.cost}
-              onValueChange={(checked) =>
-                setChartMetrics({ ...chartMetrics, cost: checked })
-              }
-              size="sm"
-            >
-              광고비
-            </Checkbox>
-            <Checkbox
-              isSelected={chartMetrics.conversions}
-              onValueChange={(checked) =>
-                setChartMetrics({ ...chartMetrics, conversions: checked })
-              }
-              size="sm"
-            >
-              전환수
-            </Checkbox>
-            <Checkbox
-              isSelected={chartMetrics.impressions}
-              onValueChange={(checked) =>
-                setChartMetrics({ ...chartMetrics, impressions: checked })
-              }
-              size="sm"
-            >
-              노출수
-            </Checkbox>
-            <Checkbox
-              isSelected={chartMetrics.clicks}
-              onValueChange={(checked) =>
-                setChartMetrics({ ...chartMetrics, clicks: checked })
-              }
-              size="sm"
-            >
-              클릭수
-            </Checkbox>
+          <div className="flex justify-between items-center w-full">
+            <h3 className="text-lg font-semibold">성과 추이</h3>
+            <div className="flex gap-3 flex-wrap">
+              <button
+                onClick={() =>
+                  setChartMetrics({ ...chartMetrics, cost: !chartMetrics.cost })
+                }
+                className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+                  chartMetrics.cost
+                    ? "bg-success/20 text-success border border-success/50"
+                    : "bg-default-100 text-default-500 border border-transparent hover:border-default-300"
+                }`}
+              >
+                <span className="inline-block w-2 h-2 rounded-full bg-success mr-2"></span>
+                광고비
+              </button>
+              <button
+                onClick={() =>
+                  setChartMetrics({
+                    ...chartMetrics,
+                    conversions: !chartMetrics.conversions,
+                  })
+                }
+                className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+                  chartMetrics.conversions
+                    ? "bg-warning/20 text-warning border border-warning/50"
+                    : "bg-default-100 text-default-500 border border-transparent hover:border-default-300"
+                }`}
+              >
+                <span className="inline-block w-2 h-2 rounded-full bg-warning mr-2"></span>
+                전환수
+              </button>
+              <button
+                onClick={() =>
+                  setChartMetrics({
+                    ...chartMetrics,
+                    impressions: !chartMetrics.impressions,
+                  })
+                }
+                className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+                  chartMetrics.impressions
+                    ? "bg-primary/20 text-primary border border-primary/50"
+                    : "bg-default-100 text-default-500 border border-transparent hover:border-default-300"
+                }`}
+              >
+                <span className="inline-block w-2 h-2 rounded-full bg-primary mr-2"></span>
+                노출수
+              </button>
+              <button
+                onClick={() =>
+                  setChartMetrics({ ...chartMetrics, clicks: !chartMetrics.clicks })
+                }
+                className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+                  chartMetrics.clicks
+                    ? "bg-secondary/20 text-secondary border border-secondary/50"
+                    : "bg-default-100 text-default-500 border border-transparent hover:border-default-300"
+                }`}
+              >
+                <span className="inline-block w-2 h-2 rounded-full bg-secondary mr-2"></span>
+                클릭수
+              </button>
+            </div>
           </div>
         </CardHeader>
-        <CardBody>
-          <ResponsiveContainer width="100%" height={350}>
-            <ComposedChart data={chartData}>
-              <CartesianGrid strokeDasharray="3 3" vertical={false} />
-              <XAxis dataKey="date" />
+        <CardBody className="pt-2">
+          <ResponsiveContainer width="100%" height={400}>
+            <ComposedChart
+              data={chartData}
+              margin={{ top: 10, right: 30, left: 0, bottom: 0 }}
+            >
+              <defs>
+                <linearGradient id="colorImpressions" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor="#0072F5" stopOpacity={0.3} />
+                  <stop offset="95%" stopColor="#0072F5" stopOpacity={0} />
+                </linearGradient>
+              </defs>
+              <CartesianGrid
+                strokeDasharray="3 3"
+                vertical={false}
+                horizontal={true}
+                stroke="#3f3f46"
+                opacity={0.3}
+              />
+              <XAxis
+                dataKey="date"
+                tick={{ fill: "#a1a1aa", fontSize: 12 }}
+                axisLine={{ stroke: "#52525b" }}
+                tickLine={false}
+              />
               <YAxis
                 yAxisId="left"
-                tickFormatter={(value) => value.toLocaleString()}
+                tick={{ fill: "#a1a1aa", fontSize: 12 }}
+                axisLine={{ stroke: "#52525b" }}
+                tickLine={false}
+                tickFormatter={(value) =>
+                  value >= 1000 ? `${(value / 1000).toFixed(0)}K` : value
+                }
               />
               <YAxis
                 yAxisId="right"
                 orientation="right"
+                tick={{ fill: "#a1a1aa", fontSize: 12 }}
+                axisLine={{ stroke: "#52525b" }}
+                tickLine={false}
                 tickFormatter={(value) => value.toLocaleString()}
               />
-              <Tooltip formatter={(value: number) => value.toLocaleString()} />
-              <Legend />
+              <Tooltip
+                contentStyle={{
+                  backgroundColor: "#27272a",
+                  border: "1px solid #3f3f46",
+                  borderRadius: "12px",
+                  boxShadow: "0 4px 20px rgba(0, 0, 0, 0.3)",
+                  padding: "12px",
+                }}
+                labelStyle={{
+                  color: "#fafafa",
+                  fontWeight: 600,
+                  marginBottom: "8px",
+                  fontSize: "13px",
+                }}
+                itemStyle={{
+                  color: "#e4e4e7",
+                  fontSize: "12px",
+                  padding: "4px 0",
+                }}
+                labelFormatter={(label) => `날짜: ${label}`}
+                formatter={(value: number, name: string) => {
+                  let formattedValue = "";
+                  let unit = "";
+
+                  if (name === "광고비") {
+                    formattedValue = `₩${value.toLocaleString()}`;
+                    unit = "";
+                  } else if (name === "전환수" || name === "클릭수" || name === "노출수") {
+                    formattedValue = value.toLocaleString();
+                    unit = "회";
+                  } else {
+                    formattedValue = value.toLocaleString();
+                  }
+
+                  return [`${formattedValue}${unit}`, name];
+                }}
+              />
+              {chartMetrics.impressions && (
+                <Line
+                  yAxisId="left"
+                  type="monotone"
+                  dataKey="impressions"
+                  stroke="#0072F5"
+                  strokeWidth={3}
+                  name="노출수"
+                  dot={{
+                    fill: "#0072F5",
+                    strokeWidth: 2,
+                    r: 4,
+                    stroke: "#fff",
+                  }}
+                  activeDot={{ r: 6 }}
+                />
+              )}
               {chartMetrics.cost && (
                 <Line
                   yAxisId="left"
                   type="monotone"
                   dataKey="cost"
-                  stroke="#17c964"
-                  strokeWidth={2}
+                  stroke="#17C964"
+                  strokeWidth={3}
                   name="광고비"
-                  dot={false}
+                  dot={{
+                    fill: "#17C964",
+                    strokeWidth: 2,
+                    r: 4,
+                    stroke: "#fff",
+                  }}
+                  activeDot={{ r: 6 }}
                 />
               )}
               {chartMetrics.conversions && (
@@ -329,19 +430,16 @@ export default function GoogleAdsPage() {
                   yAxisId="right"
                   type="monotone"
                   dataKey="conversions"
-                  stroke="#f5a524"
-                  strokeWidth={2}
+                  stroke="#F5A524"
+                  strokeWidth={3}
                   name="전환수"
-                  dot={false}
-                />
-              )}
-              {chartMetrics.impressions && (
-                <Bar
-                  yAxisId="left"
-                  dataKey="impressions"
-                  fill="#0070f3"
-                  fillOpacity={0.6}
-                  name="노출수"
+                  dot={{
+                    fill: "#F5A524",
+                    strokeWidth: 2,
+                    r: 4,
+                    stroke: "#fff",
+                  }}
+                  activeDot={{ r: 6 }}
                 />
               )}
               {chartMetrics.clicks && (
@@ -349,10 +447,17 @@ export default function GoogleAdsPage() {
                   yAxisId="left"
                   type="monotone"
                   dataKey="clicks"
-                  stroke="#7928ca"
-                  strokeWidth={2}
+                  stroke="#9353D3"
+                  strokeWidth={3}
                   name="클릭수"
-                  dot={false}
+                  dot={{
+                    fill: "#9353D3",
+                    strokeWidth: 2,
+                    r: 4,
+                    stroke: "#fff",
+                  }}
+                  activeDot={{ r: 6 }}
+                  strokeDasharray="5 5"
                 />
               )}
             </ComposedChart>
@@ -369,141 +474,14 @@ export default function GoogleAdsPage() {
           </Button>
         </CardHeader>
         <CardBody>
-          <Table
-            aria-label="Google Ads 캠페인"
-            selectionMode="multiple"
-            selectedKeys={selectedKeys}
-            onSelectionChange={setSelectedKeys as any}
-          >
-            <TableHeader>
-              <TableColumn>캠페인명</TableColumn>
-              <TableColumn>상태</TableColumn>
-              <TableColumn align="end">예산</TableColumn>
-              <TableColumn align="end">지출</TableColumn>
-              <TableColumn align="end">노출수</TableColumn>
-              <TableColumn align="end">클릭수</TableColumn>
-              <TableColumn align="end">CTR</TableColumn>
-              <TableColumn align="end">전환수</TableColumn>
-              <TableColumn align="end">CPC</TableColumn>
-              <TableColumn align="end">CPA</TableColumn>
-              <TableColumn align="end">ROAS</TableColumn>
-              <TableColumn align="center">작업</TableColumn>
-            </TableHeader>
-            <TableBody>
-              {campaigns.map((campaign) => {
-                const isEditing = editingCampaigns.has(campaign.id);
-                return (
-                  <TableRow key={campaign.id}>
-                    <TableCell>
-                      {isEditing ? (
-                        <Input
-                          size="sm"
-                          value={campaign.name}
-                          onChange={(e) =>
-                            handleCampaignChange(
-                              campaign.id,
-                              "name",
-                              e.target.value
-                            )
-                          }
-                        />
-                      ) : (
-                        <div>
-                          <p className="font-medium">{campaign.name}</p>
-                          <p className="text-xs text-default-500">
-                            ID: {campaign.id}
-                          </p>
-                        </div>
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-2">
-                        <Switch
-                          size="sm"
-                          isSelected={campaign.status === "active"}
-                          onValueChange={() =>
-                            handleToggleStatus(campaign.id, campaign.status)
-                          }
-                          color="success"
-                        />
-                        {campaign.hasError && (
-                          <Chip color="danger" size="sm" variant="flat">
-                            오류!
-                          </Chip>
-                        )}
-                      </div>
-                    </TableCell>
-                    <TableCell className="text-right">
-                      {isEditing ? (
-                        <Input
-                          size="sm"
-                          type="number"
-                          value={campaign.budget.toString()}
-                          onChange={(e) =>
-                            handleCampaignChange(
-                              campaign.id,
-                              "budget",
-                              parseInt(e.target.value)
-                            )
-                          }
-                        />
-                      ) : (
-                        `₩${(campaign.budget / 1000).toFixed(0)}K`
-                      )}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      ₩{(campaign.spent / 1000).toFixed(0)}K
-                    </TableCell>
-                    <TableCell className="text-right">
-                      {campaign.impressions.toLocaleString()}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      {campaign.clicks.toLocaleString()}
-                    </TableCell>
-                    <TableCell className="text-right">{campaign.ctr}%</TableCell>
-                    <TableCell className="text-right">
-                      {campaign.conversions}
-                    </TableCell>
-                    <TableCell className="text-right">₩{campaign.cpc}</TableCell>
-                    <TableCell className="text-right">
-                      ₩{campaign.cpa.toLocaleString()}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <span className="font-semibold text-success">
-                        {campaign.roas}x
-                      </span>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex gap-2 justify-center">
-                        {isEditing ? (
-                          <Button
-                            size="sm"
-                            color="primary"
-                            variant="flat"
-                            onPress={() => handleSaveCampaign(campaign.id)}
-                          >
-                            저장
-                          </Button>
-                        ) : (
-                          <Button
-                            size="sm"
-                            variant="light"
-                            onPress={() => handleEditCampaign(campaign.id)}
-                          >
-                            수정
-                          </Button>
-                        )}
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                );
-              })}
-            </TableBody>
-          </Table>
-
-          <div className="mt-4 text-sm text-default-500">
-            선택됨: {selectedKeys === "all" ? campaigns.length : selectedKeys.size}개
-          </div>
+          <CampaignTable
+            data={campaigns}
+            onCampaignChange={handleCampaignChange}
+            onToggleStatus={handleToggleStatus}
+            editingCampaigns={editingCampaigns}
+            onEditCampaign={handleEditCampaign}
+            onSaveCampaign={handleSaveCampaign}
+          />
         </CardBody>
       </Card>
     </div>

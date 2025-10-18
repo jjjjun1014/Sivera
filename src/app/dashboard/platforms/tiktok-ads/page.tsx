@@ -2,20 +2,11 @@
 
 import { useState, useMemo } from "react";
 import { Card, CardBody, CardHeader } from "@heroui/card";
-import {
-  Table,
-  TableHeader,
-  TableColumn,
-  TableBody,
-  TableRow,
-  TableCell,
-} from "@heroui/table";
-import { Chip } from "@heroui/chip";
 import { Button } from "@heroui/button";
-import { Input } from "@heroui/input";
 import { Checkbox } from "@heroui/checkbox";
 import { DateRangePicker } from "@heroui/date-picker";
 import { getLocalTimeZone, today } from "@internationalized/date";
+import { CampaignTable, Campaign } from "@/components/tables/CampaignTable";
 import {
   ComposedChart,
   Line,
@@ -51,11 +42,12 @@ const generateChartData = () => {
 };
 
 // 샘플 캠페인 데이터
-const initialCampaigns = [
+const initialCampaigns: Campaign[] = [
   {
     id: 1,
     name: "비디오 챌린지 캠페인",
     status: "active",
+    hasError: false,
     budget: 450000,
     spent: 368000,
     impressions: 285000,
@@ -70,6 +62,7 @@ const initialCampaigns = [
     id: 2,
     name: "인플루언서 협업",
     status: "active",
+    hasError: false,
     budget: 350000,
     spent: 289000,
     impressions: 198000,
@@ -84,6 +77,7 @@ const initialCampaigns = [
     id: 3,
     name: "브랜드 해시태그 광고",
     status: "paused",
+    hasError: false,
     budget: 200000,
     spent: 193000,
     impressions: 167000,
@@ -159,13 +153,19 @@ export default function TikTokAdsPage() {
   const handleCampaignChange = (
     id: number,
     field: string,
-    value: string | number
+    value: string | number | boolean
   ) => {
     setCampaigns((prev) =>
       prev.map((campaign) =>
         campaign.id === id ? { ...campaign, [field]: value } : campaign
       )
     );
+  };
+
+  const handleToggleStatus = (id: number, currentStatus: string) => {
+    const newStatus = currentStatus === "active" ? "paused" : "active";
+    handleCampaignChange(id, "status", newStatus);
+    // TODO: AWS 연동 후 실제 API 호출
   };
 
   return (
@@ -344,133 +344,14 @@ export default function TikTokAdsPage() {
           </Button>
         </CardHeader>
         <CardBody>
-          <Table
-            aria-label="TikTok Ads 캠페인"
-            selectionMode="multiple"
-            selectedKeys={selectedKeys}
-            onSelectionChange={setSelectedKeys as any}
-          >
-            <TableHeader>
-              <TableColumn>캠페인명</TableColumn>
-              <TableColumn>상태</TableColumn>
-              <TableColumn align="end">예산</TableColumn>
-              <TableColumn align="end">지출</TableColumn>
-              <TableColumn align="end">노출수</TableColumn>
-              <TableColumn align="end">클릭수</TableColumn>
-              <TableColumn align="end">CTR</TableColumn>
-              <TableColumn align="end">전환수</TableColumn>
-              <TableColumn align="end">CPC</TableColumn>
-              <TableColumn align="end">CPA</TableColumn>
-              <TableColumn align="end">ROAS</TableColumn>
-              <TableColumn align="center">작업</TableColumn>
-            </TableHeader>
-            <TableBody>
-              {campaigns.map((campaign) => {
-                const isEditing = editingCampaigns.has(campaign.id);
-                return (
-                  <TableRow key={campaign.id}>
-                    <TableCell>
-                      {isEditing ? (
-                        <Input
-                          size="sm"
-                          value={campaign.name}
-                          onChange={(e) =>
-                            handleCampaignChange(
-                              campaign.id,
-                              "name",
-                              e.target.value
-                            )
-                          }
-                        />
-                      ) : (
-                        <div>
-                          <p className="font-medium">{campaign.name}</p>
-                          <p className="text-xs text-default-500">
-                            ID: {campaign.id}
-                          </p>
-                        </div>
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      <Chip
-                        color={statusColorMap[campaign.status]}
-                        size="sm"
-                        variant="flat"
-                      >
-                        {statusTextMap[campaign.status]}
-                      </Chip>
-                    </TableCell>
-                    <TableCell className="text-right">
-                      {isEditing ? (
-                        <Input
-                          size="sm"
-                          type="number"
-                          value={campaign.budget.toString()}
-                          onChange={(e) =>
-                            handleCampaignChange(
-                              campaign.id,
-                              "budget",
-                              parseInt(e.target.value)
-                            )
-                          }
-                        />
-                      ) : (
-                        `₩${(campaign.budget / 1000).toFixed(0)}K`
-                      )}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      ₩{(campaign.spent / 1000).toFixed(0)}K
-                    </TableCell>
-                    <TableCell className="text-right">
-                      {campaign.impressions.toLocaleString()}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      {campaign.clicks.toLocaleString()}
-                    </TableCell>
-                    <TableCell className="text-right">{campaign.ctr}%</TableCell>
-                    <TableCell className="text-right">
-                      {campaign.conversions}
-                    </TableCell>
-                    <TableCell className="text-right">₩{campaign.cpc}</TableCell>
-                    <TableCell className="text-right">
-                      ₩{campaign.cpa.toLocaleString()}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <span className="font-semibold text-success">
-                        {campaign.roas}x
-                      </span>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex gap-2 justify-center">
-                        {isEditing ? (
-                          <Button
-                            size="sm"
-                            color="primary"
-                            variant="flat"
-                            onPress={() => handleSaveCampaign(campaign.id)}
-                          >
-                            저장
-                          </Button>
-                        ) : (
-                          <Button
-                            size="sm"
-                            variant="light"
-                            onPress={() => handleEditCampaign(campaign.id)}
-                          >
-                            수정
-                          </Button>
-                        )}
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                );
-              })}
-            </TableBody>
-          </Table>
-
-          <div className="mt-4 text-sm text-default-500">
-            선택됨: {selectedKeys === "all" ? campaigns.length : selectedKeys.size}개
-          </div>
+          <CampaignTable
+            data={campaigns}
+            onCampaignChange={handleCampaignChange}
+            onToggleStatus={handleToggleStatus}
+            editingCampaigns={editingCampaigns}
+            onEditCampaign={handleEditCampaign}
+            onSaveCampaign={handleSaveCampaign}
+          />
         </CardBody>
       </Card>
     </div>
