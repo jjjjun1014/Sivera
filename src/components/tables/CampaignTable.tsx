@@ -82,7 +82,7 @@ interface CampaignTableProps {
 }
 
 // 고정된 컬럼 ID (드래그 불가)
-const PINNED_COLUMN_IDS = ["select", "status-toggle"];
+const PINNED_COLUMN_IDS = ["select", "actions"];
 
 // 드래그 가능한 헤더 컴포넌트
 function DraggableTableHeader({ header }: { header: any }) {
@@ -209,7 +209,7 @@ export function CampaignTable({
     { id: "cpa", label: "CPA", category: "efficiency" },
     { id: "roas", label: "ROAS", category: "efficiency" },
     { id: "select", label: "선택", category: "basic", isPinned: true },
-    { id: "status-toggle", label: "활성화", category: "basic", isPinned: true },
+    { id: "actions", label: "작업", category: "basic", isPinned: true },
   ];
 
   // 변경 확인 및 적용
@@ -268,21 +268,6 @@ export function CampaignTable({
         ),
         size: 50,
         enableSorting: false,
-      },
-      {
-        id: "status-toggle",
-        accessorKey: "status",
-        header: "활성화",
-        cell: ({ row }) => (
-          <Switch
-            size="sm"
-            isSelected={row.original.status === "active"}
-            onValueChange={() =>
-              onToggleStatus?.(row.original.id, row.original.status)
-            }
-          />
-        ),
-        size: 80,
       },
       {
         id: "name",
@@ -564,6 +549,24 @@ export function CampaignTable({
             {(getValue() as number).toFixed(1)}x
           </span>
         ),
+      },
+      {
+        id: "actions",
+        header: "작업",
+        enableSorting: false,
+        cell: ({ row }) => {
+          return (
+            <div className="flex gap-2 items-center justify-center">
+              <Switch
+                size="sm"
+                isSelected={row.original.status === "active"}
+                onValueChange={() =>
+                  onToggleStatus?.(row.original.id, row.original.status)
+                }
+              />
+            </div>
+          );
+        },
       },
     ],
     [onCampaignChange, onToggleStatus, editingCell, tempValues, onOpen]

@@ -1,19 +1,24 @@
 "use client";
 
-import { useState, useMemo } from "react";
-import { Card, CardBody, CardHeader } from "@heroui/card";
-import { Table, TableHeader, TableColumn, TableBody, TableRow, TableCell } from "@heroui/table";
-import { Chip } from "@heroui/chip";
+import { useState, useMemo, useEffect } from "react";
+import { Card, CardBody } from "@heroui/card";
 import { Button } from "@heroui/button";
-import { Select, SelectItem } from "@heroui/select";
 import { DateRangePicker } from "@heroui/date-picker";
-import { Progress } from "@heroui/progress";
-import { Checkbox } from "@heroui/checkbox";
+import { Pagination } from "@heroui/pagination";
+import { useDisclosure } from "@heroui/modal";
+import { Target, TrendingUp, TrendingDown } from "lucide-react";
 import { getLocalTimeZone, today } from "@internationalized/date";
+import { GoalSettingModal, PlatformGoals } from "@/components/modals/GoalSettingModal";
+import { platformGoalsStorage } from "@/lib/storage/platformGoals";
+import { platformPerformance, topCampaigns } from "@/lib/mock-data";
+import { PLATFORM_COLORS } from "@/types";
+import { CHART_CONFIG } from "@/lib/constants";
+import { usePagination } from "@/hooks";
 import {
-  ComposedChart,
-  Line,
-  Area,
+  PieChart,
+  Pie,
+  Cell,
+  BarChart,
   Bar,
   XAxis,
   YAxis,
@@ -23,102 +28,33 @@ import {
   ResponsiveContainer,
 } from "recharts";
 
-// 14일간의 샘플 차트 데이터 생성
-const generateChartData = () => {
-  const data = [];
-  const startDate = new Date();
-  startDate.setDate(startDate.getDate() - 13); // 14일 전부터
+const PLATFORM_NAME = "integrated-dashboard";
 
-  for (let i = 0; i < 14; i++) {
-    const date = new Date(startDate);
-    date.setDate(date.getDate() + i);
-    const month = date.getMonth() + 1;
-    const day = date.getDate();
-    data.push({
-      date: `${month}/${day}`,
-      impressions: Math.floor(30000 + Math.random() * 10000),
-      clicks: Math.floor(1000 + Math.random() * 500),
-      conversions: Math.floor(30 + Math.random() * 20),
-      cost: Math.floor(150000 + Math.random() * 50000),
-      roas: parseFloat((2.5 + Math.random() * 2.5).toFixed(2)),
-    });
-  }
-  return data;
+// 파이 차트용 데이터
+const pieChartData = platformPerformance.map((p) => ({
+  name: p.platform,
+  value: p.spent,
+}));
+
+// 막대 차트용 데이터
+const barChartData = platformPerformance.map((p) => ({
+  platform: p.platform.replace(" Ads", ""),
+  전환수: p.conversions,
+  ROAS: p.roas,
+}));
+
+// 전체 합산 데이터
+const totalData = {
+  totalSpent: platformPerformance.reduce((sum, p) => sum + p.spent, 0),
+  totalConversions: platformPerformance.reduce((sum, p) => sum + p.conversions, 0),
+  avgROAS: platformPerformance.reduce((sum, p) => sum + p.roas, 0) / platformPerformance.length,
+  avgCPA: platformPerformance.reduce((sum, p) => sum + p.cpa, 0) / platformPerformance.length,
 };
 
-// 샘플 데이터
-const campaignData = [
-  {
-    id: 1,
-    name: "여름 세일 프로모션",
-    platform: "Google Ads",
-    status: "active",
-    impressions: 125000,
-    clicks: 4200,
-    conversions: 156,
-    cost: 850000,
-    ctr: 3.36,
-    cpc: 202,
-    roas: 4.2,
-  },
-  {
-    id: 2,
-    name: "신제품 런칭",
-    platform: "Meta Ads",
-    status: "active",
-    impressions: 89000,
-    clicks: 2800,
-    conversions: 92,
-    cost: 620000,
-    ctr: 3.15,
-    cpc: 221,
-    roas: 3.8,
-  },
-  {
-    id: 3,
-    name: "브랜드 인지도 향상",
-    platform: "TikTok Ads",
-    status: "paused",
-    impressions: 156000,
-    clicks: 3900,
-    conversions: 78,
-    cost: 480000,
-    ctr: 2.5,
-    cpc: 123,
-    roas: 2.9,
-  },
-  {
-    id: 4,
-    name: "재고 정리 특가",
-    platform: "Google Ads",
-    status: "active",
-    impressions: 67000,
-    clicks: 2100,
-    conversions: 134,
-    cost: 390000,
-    ctr: 3.13,
-    cpc: 186,
-    roas: 5.1,
-  },
-  {
-    id: 5,
-    name: "가을 신상품 홍보",
-    platform: "Meta Ads",
-    status: "review",
-    impressions: 45000,
-    clicks: 1500,
-    conversions: 42,
-    cost: 280000,
-    ctr: 3.33,
-    cpc: 187,
-    roas: 3.2,
-  },
-];
+export default function IntegratedDashboardPage() {
+  const [goals, setGoals] = useState<PlatformGoals>(platformGoalsStorage.getDefaultGoals());
+  const { isOpen: isGoalModalOpen, onOpen: onGoalModalOpen, onClose: onGoalModalClose } = useDisclosure();
 
-export default function AnalyticsPage() {
-  const [selectedKeys, setSelectedKeys] = useState(new Set([]));
-
-  // 기본값: 오늘부터 14일 전
   const todayDate = today(getLocalTimeZone());
   const fourteenDaysAgo = todayDate.subtract({ days: 13 });
 
@@ -127,398 +63,338 @@ export default function AnalyticsPage() {
     end: todayDate,
   });
 
-  // 차트 지표 토글 상태
-  const [chartMetrics, setChartMetrics] = useState({
-    cost: true,
-    conversions: true,
-    roas: false,
-    impressions: false,
-    clicks: false,
+  // 페이지네이션
+  const { currentPage, totalPages, paginatedData: paginatedCampaigns, setCurrentPage } = usePagination(topCampaigns, {
+    itemsPerPage: 5,
   });
 
-  const chartData = useMemo(() => generateChartData(), []);
+  // localStorage에서 목표 불러오기
+  useEffect(() => {
+    const loadedGoals = platformGoalsStorage.loadPlatform(PLATFORM_NAME);
+    if (loadedGoals) {
+      setGoals(loadedGoals);
+    }
+  }, []);
 
-  const statusColorMap: Record<string, "success" | "warning" | "danger" | "default"> = {
-    active: "success",
-    paused: "warning",
-    review: "default",
+  const handleSaveGoals = (newGoals: PlatformGoals) => {
+    setGoals(newGoals);
+    platformGoalsStorage.savePlatform(PLATFORM_NAME, newGoals);
   };
 
-  const statusTextMap: Record<string, string> = {
-    active: "활성",
-    paused: "일시정지",
-    review: "검토중",
+  // 달성률 계산
+  const calculateAchievement = (current: number, target: number): number => {
+    if (target === 0) return 0;
+    return Math.round((current / target) * 100);
   };
+
+  const calculateReversedAchievement = (current: number, target: number): number => {
+    if (target === 0 || current === 0) return 0;
+    return Math.round((target / current) * 100);
+  };
+
+  const getAchievementColor = (rate: number): string => {
+    if (rate >= 100) return "text-success";
+    if (rate >= 80) return "text-warning";
+    return "text-danger";
+  };
+
+  const getAchievementIcon = (rate: number) => {
+    if (rate >= 100) return <TrendingUp className="w-5 h-5 text-success" />;
+    if (rate >= 80) return <TrendingUp className="w-5 h-5 text-warning" />;
+    return <TrendingDown className="w-5 h-5 text-danger" />;
+  };
+
+  // 각 지표별 달성률
+  const budgetRate = calculateAchievement(totalData.totalSpent, goals.totalBudget);
+  const conversionRate = calculateAchievement(totalData.totalConversions, goals.targetConversions);
+  const cpaRate = calculateReversedAchievement(totalData.avgCPA, goals.targetCPA);
+  const roasRate = calculateAchievement(totalData.avgROAS, goals.targetROAS);
 
   return (
     <div className="container mx-auto px-6 py-8">
       {/* Header */}
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold mb-2">통합 분석</h1>
-        <p className="text-default-500">
-          모든 플랫폼의 광고 성과를 한눈에 확인하세요
-        </p>
-      </div>
-
-      {/* Filters */}
-      <Card className="mb-6">
-        <CardBody>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <DateRangePicker
-              label="기간 선택"
-              radius="sm"
-              variant="bordered"
-              value={dateRange}
-              onChange={setDateRange}
-              defaultValue={{
-                start: fourteenDaysAgo,
-                end: todayDate,
-              }}
-              description="기본 14일 설정"
-            />
-            <Select
-              label="플랫폼"
-              placeholder="전체 플랫폼"
-              radius="sm"
-              variant="bordered"
-            >
-              <SelectItem key="all">전체</SelectItem>
-              <SelectItem key="google">Google Ads</SelectItem>
-              <SelectItem key="meta">Meta Ads</SelectItem>
-              <SelectItem key="tiktok">TikTok Ads</SelectItem>
-            </Select>
-            <Select
-              label="상태"
-              placeholder="전체 상태"
-              radius="sm"
-              variant="bordered"
-            >
-              <SelectItem key="all">전체</SelectItem>
-              <SelectItem key="active">활성</SelectItem>
-              <SelectItem key="paused">일시정지</SelectItem>
-              <SelectItem key="review">검토중</SelectItem>
-            </Select>
-          </div>
-        </CardBody>
-      </Card>
-
-      {/* Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-        <Card>
-          <CardBody className="text-center py-6">
-            <p className="text-sm text-default-500 mb-1">총 노출수</p>
-            <p className="text-3xl font-bold">482K</p>
-            <p className="text-xs text-success mt-1">+12.5%</p>
-          </CardBody>
-        </Card>
-        <Card>
-          <CardBody className="text-center py-6">
-            <p className="text-sm text-default-500 mb-1">총 클릭수</p>
-            <p className="text-3xl font-bold">14.5K</p>
-            <p className="text-xs text-success mt-1">+8.3%</p>
-          </CardBody>
-        </Card>
-        <Card>
-          <CardBody className="text-center py-6">
-            <p className="text-sm text-default-500 mb-1">전환수</p>
-            <p className="text-3xl font-bold">502</p>
-            <p className="text-xs text-success mt-1">+15.2%</p>
-          </CardBody>
-        </Card>
-        <Card>
-          <CardBody className="text-center py-6">
-            <p className="text-sm text-default-500 mb-1">평균 ROAS</p>
-            <p className="text-3xl font-bold">3.8x</p>
-            <p className="text-xs text-danger mt-1">-2.1%</p>
-          </CardBody>
-        </Card>
-      </div>
-
-      {/* Combined Chart */}
-      <Card className="mb-6">
-        <CardHeader className="flex flex-col gap-4">
-          <h3 className="text-lg font-semibold">통합 성과 지표</h3>
-          <div className="flex gap-6 flex-wrap">
-            <Checkbox
-              isSelected={chartMetrics.cost}
-              onValueChange={(checked) =>
-                setChartMetrics({ ...chartMetrics, cost: checked })
-              }
-              size="sm"
-            >
-              광고비
-            </Checkbox>
-            <Checkbox
-              isSelected={chartMetrics.conversions}
-              onValueChange={(checked) =>
-                setChartMetrics({ ...chartMetrics, conversions: checked })
-              }
-              size="sm"
-            >
-              전환수
-            </Checkbox>
-            <Checkbox
-              isSelected={chartMetrics.roas}
-              onValueChange={(checked) =>
-                setChartMetrics({ ...chartMetrics, roas: checked })
-              }
-              size="sm"
-            >
-              ROAS
-            </Checkbox>
-            <Checkbox
-              isSelected={chartMetrics.impressions}
-              onValueChange={(checked) =>
-                setChartMetrics({ ...chartMetrics, impressions: checked })
-              }
-              size="sm"
-            >
-              노출수
-            </Checkbox>
-            <Checkbox
-              isSelected={chartMetrics.clicks}
-              onValueChange={(checked) =>
-                setChartMetrics({ ...chartMetrics, clicks: checked })
-              }
-              size="sm"
-            >
-              클릭수
-            </Checkbox>
-          </div>
-        </CardHeader>
-        <CardBody>
-          <ResponsiveContainer width="100%" height={400}>
-            <ComposedChart data={chartData}>
-              <CartesianGrid strokeDasharray="3 3" vertical={false} />
-              <XAxis dataKey="date" />
-              <YAxis
-                yAxisId="left"
-                tickFormatter={(value) => value.toLocaleString()}
-              />
-              <YAxis
-                yAxisId="right"
-                orientation="right"
-                tickFormatter={(value) => value.toLocaleString()}
-              />
-              <Tooltip
-                formatter={(value: number) => value.toLocaleString()}
-              />
-              <Legend />
-              {chartMetrics.cost && (
-                <Line
-                  yAxisId="left"
-                  type="monotone"
-                  dataKey="cost"
-                  stroke="#17c964"
-                  strokeWidth={2}
-                  name="광고비"
-                  dot={false}
-                />
-              )}
-              {chartMetrics.conversions && (
-                <Line
-                  yAxisId="right"
-                  type="monotone"
-                  dataKey="conversions"
-                  stroke="#f5a524"
-                  strokeWidth={2}
-                  name="전환수"
-                  dot={false}
-                />
-              )}
-              {chartMetrics.roas && (
-                <Bar
-                  yAxisId="right"
-                  dataKey="roas"
-                  fill="#ff006e"
-                  fillOpacity={0.7}
-                  name="ROAS"
-                  barSize={20}
-                />
-              )}
-              {chartMetrics.impressions && (
-                <Area
-                  yAxisId="left"
-                  type="monotone"
-                  dataKey="impressions"
-                  fill="#0070f3"
-                  fillOpacity={0.3}
-                  stroke="#0070f3"
-                  name="노출수"
-                />
-              )}
-              {chartMetrics.clicks && (
-                <Line
-                  yAxisId="left"
-                  type="monotone"
-                  dataKey="clicks"
-                  stroke="#7928ca"
-                  strokeWidth={2}
-                  name="클릭수"
-                  dot={false}
-                />
-              )}
-            </ComposedChart>
-          </ResponsiveContainer>
-        </CardBody>
-      </Card>
-
-      {/* Data Table */}
-      <Card>
-        <CardHeader className="flex justify-between items-center">
-          <h3 className="text-xl font-semibold">캠페인 성과</h3>
-          <Button color="primary" radius="sm" variant="flat" size="sm">
-            내보내기
-          </Button>
-        </CardHeader>
-        <CardBody>
-          <Table
-            aria-label="캠페인 성과 데이터"
-            selectionMode="multiple"
-            selectedKeys={selectedKeys}
-            onSelectionChange={setSelectedKeys as any}
+      <div className="mb-6 flex justify-between items-start">
+        <div>
+          <h1 className="text-3xl font-bold mb-2">통합 대시보드</h1>
+          <p className="text-default-500">
+            전체 계정의 광고 성과를 한눈에 확인하세요
+          </p>
+        </div>
+        <div className="flex gap-3">
+          <DateRangePicker
+            label="기간 선택"
+            radius="sm"
+            variant="bordered"
+            value={dateRange}
+            onChange={setDateRange}
+            defaultValue={{
+              start: fourteenDaysAgo,
+              end: todayDate,
+            }}
+            className="max-w-xs"
+          />
+          <Button
+            color="primary"
+            variant="flat"
+            startContent={<Target className="w-4 h-4" />}
+            onPress={onGoalModalOpen}
           >
-            <TableHeader>
-              <TableColumn>캠페인명</TableColumn>
-              <TableColumn>플랫폼</TableColumn>
-              <TableColumn>상태</TableColumn>
-              <TableColumn align="end">노출수</TableColumn>
-              <TableColumn align="end">클릭수</TableColumn>
-              <TableColumn align="end">전환수</TableColumn>
-              <TableColumn align="end">비용</TableColumn>
-              <TableColumn align="end">CTR</TableColumn>
-              <TableColumn align="end">CPC</TableColumn>
-              <TableColumn align="end">ROAS</TableColumn>
-            </TableHeader>
-            <TableBody>
-              {campaignData.map((campaign) => (
-                <TableRow key={campaign.id}>
-                  <TableCell>
-                    <div>
-                      <p className="font-medium">{campaign.name}</p>
-                      <p className="text-xs text-default-500">ID: {campaign.id}</p>
-                    </div>
-                  </TableCell>
-                  <TableCell>{campaign.platform}</TableCell>
-                  <TableCell>
-                    <Chip
-                      color={statusColorMap[campaign.status]}
-                      size="sm"
-                      variant="flat"
-                    >
-                      {statusTextMap[campaign.status]}
-                    </Chip>
-                  </TableCell>
-                  <TableCell className="text-right">
-                    {campaign.impressions.toLocaleString()}
-                  </TableCell>
-                  <TableCell className="text-right">
-                    {campaign.clicks.toLocaleString()}
-                  </TableCell>
-                  <TableCell className="text-right">
-                    {campaign.conversions}
-                  </TableCell>
-                  <TableCell className="text-right">
-                    ₩{(campaign.cost / 1000).toFixed(1)}K
-                  </TableCell>
-                  <TableCell className="text-right">{campaign.ctr}%</TableCell>
-                  <TableCell className="text-right">₩{campaign.cpc}</TableCell>
-                  <TableCell className="text-right">
-                    <span className="font-semibold text-success">
-                      {campaign.roas}x
-                    </span>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+            목표 설정
+          </Button>
+        </div>
+      </div>
 
-          <div className="mt-4 text-sm text-default-500">
-            선택됨: {selectedKeys === "all" ? campaignData.length : selectedKeys.size}개
-          </div>
-        </CardBody>
-      </Card>
+      {/* 전체 계정 요약 - 4 Cards */}
+      <div className="mb-6">
+        <h2 className="text-xl font-semibold mb-4">전체 계정 요약</h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          {/* 전체 광고비 */}
+          <Card>
+            <CardBody className="py-6">
+              <div className="flex items-start justify-between mb-2">
+                <p className="text-sm text-default-500">전체 광고비</p>
+                {goals.totalBudget > 0 && getAchievementIcon(budgetRate)}
+              </div>
+              <p className="text-2xl font-bold mb-1">₩{totalData.totalSpent.toLocaleString()}</p>
+              {goals.totalBudget > 0 && (
+                <div className="mt-2">
+                  <p className="text-xs text-default-400">목표: ₩{goals.totalBudget.toLocaleString()}</p>
+                  <p className={`text-sm font-semibold mt-1 ${getAchievementColor(budgetRate)}`}>
+                    {budgetRate}% 달성
+                  </p>
+                </div>
+              )}
+            </CardBody>
+          </Card>
 
-      {/* Platform Performance */}
-      <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-6">
+          {/* 전체 전환수 */}
+          <Card>
+            <CardBody className="py-6">
+              <div className="flex items-start justify-between mb-2">
+                <p className="text-sm text-default-500">전체 전환수</p>
+                {goals.targetConversions > 0 && getAchievementIcon(conversionRate)}
+              </div>
+              <p className="text-2xl font-bold mb-1">{totalData.totalConversions.toLocaleString()}건</p>
+              {goals.targetConversions > 0 && (
+                <div className="mt-2">
+                  <p className="text-xs text-default-400">목표: {goals.targetConversions.toLocaleString()}건</p>
+                  <p className={`text-sm font-semibold mt-1 ${getAchievementColor(conversionRate)}`}>
+                    {conversionRate}% 달성
+                  </p>
+                </div>
+              )}
+            </CardBody>
+          </Card>
+
+          {/* 평균 ROAS */}
+          <Card>
+            <CardBody className="py-6">
+              <div className="flex items-start justify-between mb-2">
+                <p className="text-sm text-default-500">평균 ROAS</p>
+                {goals.targetROAS > 0 && getAchievementIcon(roasRate)}
+              </div>
+              <p className="text-2xl font-bold mb-1">{totalData.avgROAS.toFixed(1)}x</p>
+              {goals.targetROAS > 0 && (
+                <div className="mt-2">
+                  <p className="text-xs text-default-400">목표: {goals.targetROAS.toFixed(1)}x</p>
+                  <p className={`text-sm font-semibold mt-1 ${getAchievementColor(roasRate)}`}>
+                    {roasRate}% 달성
+                  </p>
+                </div>
+              )}
+            </CardBody>
+          </Card>
+
+          {/* 평균 CPA */}
+          <Card>
+            <CardBody className="py-6">
+              <div className="flex items-start justify-between mb-2">
+                <p className="text-sm text-default-500">평균 CPA</p>
+                {goals.targetCPA > 0 && getAchievementIcon(cpaRate)}
+              </div>
+              <p className="text-2xl font-bold mb-1">₩{Math.round(totalData.avgCPA).toLocaleString()}</p>
+              {goals.targetCPA > 0 && (
+                <div className="mt-2">
+                  <p className="text-xs text-default-400">목표: ₩{goals.targetCPA.toLocaleString()}</p>
+                  <p className={`text-sm font-semibold mt-1 ${getAchievementColor(cpaRate)}`}>
+                    {cpaRate}% 달성 {cpaRate >= 100 && "(목표 이하)"}
+                  </p>
+                </div>
+              )}
+            </CardBody>
+          </Card>
+        </div>
+      </div>
+
+      {/* 플랫폼별 성과 비교 카드 */}
+      <div className="mb-6">
+        <h2 className="text-xl font-semibold mb-4">플랫폼별 성과</h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          {platformPerformance.map((platform) => (
+            <Card key={platform.platform} className="border-l-4" style={{ borderLeftColor: PLATFORM_COLORS[platform.platform] }}>
+              <CardBody className="py-6">
+                <div className="flex items-center justify-between mb-3">
+                  <p className="text-sm font-semibold" style={{ color: PLATFORM_COLORS[platform.platform] }}>
+                    {platform.platform}
+                  </p>
+                  <span className="text-xs text-default-400">{platform.sharePercent}%</span>
+                </div>
+                <div className="space-y-2">
+                  <div className="flex justify-between items-center">
+                    <span className="text-xs text-default-500">광고비</span>
+                    <span className="text-sm font-semibold">₩{(platform.spent / 1000).toFixed(0)}K</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-xs text-default-500">전환수</span>
+                    <span className="text-sm font-semibold">{platform.conversions}건</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-xs text-default-500">ROAS</span>
+                    <span className="text-sm font-semibold text-success">{platform.roas.toFixed(1)}x</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-xs text-default-500">CPA</span>
+                    <span className="text-sm font-semibold">₩{platform.cpa.toLocaleString()}</span>
+                  </div>
+                </div>
+              </CardBody>
+            </Card>
+          ))}
+        </div>
+      </div>
+
+      {/* 차트 섹션 */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+        {/* 파이 차트 - 광고비 비중 */}
         <Card>
-          <CardHeader>
-            <h3 className="text-lg font-semibold">Google Ads</h3>
-          </CardHeader>
-          <CardBody className="space-y-4">
-            <div>
-              <div className="flex justify-between mb-2">
-                <span className="text-sm">전환율</span>
-                <span className="text-sm font-semibold">3.2%</span>
-              </div>
-              <Progress value={64} color="primary" size="sm" />
-            </div>
-            <div>
-              <div className="flex justify-between mb-2">
-                <span className="text-sm">ROI</span>
-                <span className="text-sm font-semibold">4.5x</span>
-              </div>
-              <Progress value={90} color="success" size="sm" />
-            </div>
-            <div className="pt-4 border-t">
-              <p className="text-xs text-default-500">이번 달 지출</p>
-              <p className="text-2xl font-bold">₩1.24M</p>
-            </div>
+          <CardBody className="pt-6">
+            <h3 className="text-lg font-semibold mb-4">플랫폼별 광고비 비중</h3>
+            <ResponsiveContainer width="100%" height={300}>
+              <PieChart>
+                <Pie
+                  data={pieChartData}
+                  cx="50%"
+                  cy="50%"
+                  labelLine={false}
+                  label={({ name, percent }) => `${name.replace(" Ads", "")}: ${(percent * 100).toFixed(0)}%`}
+                  outerRadius={100}
+                  innerRadius={60}
+                  fill="#8884d8"
+                  dataKey="value"
+                  paddingAngle={5}
+                  cornerRadius={10}
+                >
+                  {pieChartData.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={PLATFORM_COLORS[entry.name]} />
+                  ))}
+                </Pie>
+                <Tooltip
+                  {...CHART_CONFIG.tooltip}
+                  formatter={(value: number) => [`₩${value.toLocaleString()}`, "광고비"]}
+                />
+              </PieChart>
+            </ResponsiveContainer>
           </CardBody>
         </Card>
 
+        {/* 막대 차트 - 플랫폼별 전환수 & ROAS */}
         <Card>
-          <CardHeader>
-            <h3 className="text-lg font-semibold">Meta Ads</h3>
-          </CardHeader>
-          <CardBody className="space-y-4">
-            <div>
-              <div className="flex justify-between mb-2">
-                <span className="text-sm">전환율</span>
-                <span className="text-sm font-semibold">2.8%</span>
-              </div>
-              <Progress value={56} color="primary" size="sm" />
-            </div>
-            <div>
-              <div className="flex justify-between mb-2">
-                <span className="text-sm">ROI</span>
-                <span className="text-sm font-semibold">3.5x</span>
-              </div>
-              <Progress value={70} color="success" size="sm" />
-            </div>
-            <div className="pt-4 border-t">
-              <p className="text-xs text-default-500">이번 달 지출</p>
-              <p className="text-2xl font-bold">₩900K</p>
-            </div>
-          </CardBody>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <h3 className="text-lg font-semibold">TikTok Ads</h3>
-          </CardHeader>
-          <CardBody className="space-y-4">
-            <div>
-              <div className="flex justify-between mb-2">
-                <span className="text-sm">전환율</span>
-                <span className="text-sm font-semibold">2.1%</span>
-              </div>
-              <Progress value={42} color="primary" size="sm" />
-            </div>
-            <div>
-              <div className="flex justify-between mb-2">
-                <span className="text-sm">ROI</span>
-                <span className="text-sm font-semibold">2.9x</span>
-              </div>
-              <Progress value={58} color="warning" size="sm" />
-            </div>
-            <div className="pt-4 border-t">
-              <p className="text-xs text-default-500">이번 달 지출</p>
-              <p className="text-2xl font-bold">₩480K</p>
-            </div>
+          <CardBody className="pt-6">
+            <h3 className="text-lg font-semibold mb-4">플랫폼별 전환수 & ROAS</h3>
+            <ResponsiveContainer width="100%" height={300}>
+              <BarChart
+                data={barChartData}
+                margin={{ top: 10, right: 30, left: 0, bottom: 0 }}
+              >
+                <CartesianGrid {...CHART_CONFIG.cartesianGrid} />
+                <XAxis dataKey="platform" {...CHART_CONFIG.axis} />
+                <YAxis
+                  yAxisId="left"
+                  {...CHART_CONFIG.axis}
+                  label={{ value: "전환수", angle: -90, position: "insideLeft", fill: CHART_CONFIG.axis.tick.fill }}
+                />
+                <YAxis
+                  yAxisId="right"
+                  orientation="right"
+                  {...CHART_CONFIG.axis}
+                  label={{ value: "ROAS", angle: 90, position: "insideRight", fill: CHART_CONFIG.axis.tick.fill }}
+                />
+                <Tooltip {...CHART_CONFIG.tooltip} />
+                <Legend {...CHART_CONFIG.legend} />
+                <Bar yAxisId="left" dataKey="전환수" fill="#17C964" radius={[8, 8, 0, 0]} />
+                <Bar yAxisId="right" dataKey="ROAS" fill="#F5A524" radius={[8, 8, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
           </CardBody>
         </Card>
       </div>
+
+      {/* 플랫폼별 TOP 5 캠페인 */}
+      <Card>
+        <CardBody className="pt-6">
+          <h3 className="text-lg font-semibold mb-4">전체 플랫폼 TOP 10 캠페인 (전환수 기준)</h3>
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead>
+                <tr className="border-b border-divider">
+                  <th className="text-left py-3 px-4 text-sm font-semibold text-default-700">순위</th>
+                  <th className="text-left py-3 px-4 text-sm font-semibold text-default-700">플랫폼</th>
+                  <th className="text-left py-3 px-4 text-sm font-semibold text-default-700">캠페인명</th>
+                  <th className="text-right py-3 px-4 text-sm font-semibold text-default-700">광고비</th>
+                  <th className="text-right py-3 px-4 text-sm font-semibold text-default-700">전환수</th>
+                  <th className="text-right py-3 px-4 text-sm font-semibold text-default-700">CPA</th>
+                  <th className="text-right py-3 px-4 text-sm font-semibold text-default-700">ROAS</th>
+                </tr>
+              </thead>
+              <tbody>
+                {paginatedCampaigns.map((campaign) => (
+                  <tr key={campaign.rank} className="border-b border-divider hover:bg-default-100 transition-colors">
+                    <td className="py-3 px-4 text-sm">{campaign.rank}</td>
+                    <td className="py-3 px-4 text-sm">
+                      <span
+                        className="px-2 py-1 rounded-full text-xs font-semibold"
+                        style={{
+                          backgroundColor: `${PLATFORM_COLORS[campaign.platform]}20`,
+                          color: PLATFORM_COLORS[campaign.platform],
+                        }}
+                      >
+                        {campaign.platform.replace(" Ads", "")}
+                      </span>
+                    </td>
+                    <td className="py-3 px-4 text-sm font-medium">{campaign.name}</td>
+                    <td className="py-3 px-4 text-sm text-right">₩{campaign.spent.toLocaleString()}</td>
+                    <td className="py-3 px-4 text-sm text-right font-semibold">{campaign.conversions}건</td>
+                    <td className="py-3 px-4 text-sm text-right">₩{campaign.cpa.toLocaleString()}</td>
+                    <td className="py-3 px-4 text-sm text-right">{campaign.roas.toFixed(1)}x</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Pagination */}
+          {totalPages > 1 && (
+            <div className="mt-6 flex justify-center">
+              <Pagination
+                total={totalPages}
+                page={currentPage}
+                onChange={setCurrentPage}
+                showControls
+                color="primary"
+              />
+            </div>
+          )}
+        </CardBody>
+      </Card>
+
+      {/* Goal Setting Modal */}
+      <GoalSettingModal
+        isOpen={isGoalModalOpen}
+        onClose={onGoalModalClose}
+        platformName="통합 계정"
+        currentGoals={goals}
+        onSave={handleSaveGoals}
+      />
     </div>
   );
 }

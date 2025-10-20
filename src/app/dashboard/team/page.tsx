@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { Card, CardBody, CardHeader } from "@heroui/card";
-import { Table, TableHeader, TableColumn, TableBody, TableRow, TableCell } from "@heroui/table";
+import { Table, TableHeader, TableColumn, TableBody, TableRow, TableCell, Selection } from "@heroui/table";
 import { Chip } from "@heroui/chip";
 import { Button } from "@heroui/button";
 import { User } from "@heroui/user";
@@ -10,7 +10,9 @@ import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, useDisclosure
 import { Input } from "@heroui/input";
 import { Select, SelectItem } from "@heroui/select";
 import { Avatar } from "@heroui/avatar";
+import { History } from "lucide-react";
 import { toast } from "@/utils/toast";
+import { AuditLogModal } from "@/components/modals/AuditLogModal";
 
 // 샘플 데이터
 const teamMembers = [
@@ -74,8 +76,9 @@ const pendingInvites = [
 ];
 
 export default function TeamPage() {
-  const [selectedKeys, setSelectedKeys] = useState(new Set([]));
+  const [selectedKeys, setSelectedKeys] = useState<Selection>(new Set([]));
   const { isOpen, onOpen, onClose } = useDisclosure();
+  const { isOpen: isAuditLogOpen, onOpen: onAuditLogOpen, onClose: onAuditLogClose } = useDisclosure();
   const [inviteEmail, setInviteEmail] = useState("");
   const [inviteRole, setInviteRole] = useState("");
 
@@ -159,13 +162,23 @@ export default function TeamPage() {
             팀원을 초대하고 권한을 관리하세요
           </p>
         </div>
-        <Button
-          color="primary"
-          radius="sm"
-          onPress={onOpen}
-        >
-          + 팀원 초대
-        </Button>
+        <div className="flex gap-3">
+          <Button
+            variant="flat"
+            radius="sm"
+            startContent={<History className="w-4 h-4" />}
+            onPress={onAuditLogOpen}
+          >
+            변경 이력
+          </Button>
+          <Button
+            color="primary"
+            radius="sm"
+            onPress={onOpen}
+          >
+            + 팀원 초대
+          </Button>
+        </div>
       </div>
 
       {/* Quick Stats */}
@@ -206,7 +219,7 @@ export default function TeamPage() {
             aria-label="팀원 목록 테이블"
             selectionMode="multiple"
             selectedKeys={selectedKeys}
-            onSelectionChange={setSelectedKeys as any}
+            onSelectionChange={setSelectedKeys}
           >
             <TableHeader>
               <TableColumn>팀원</TableColumn>
@@ -442,6 +455,9 @@ export default function TeamPage() {
           </ModalFooter>
         </ModalContent>
       </Modal>
+
+      {/* Audit Log Modal */}
+      <AuditLogModal isOpen={isAuditLogOpen} onClose={onAuditLogClose} />
     </div>
   );
 }

@@ -2,57 +2,25 @@
 
 import { useState } from "react";
 import { Card, CardBody, CardHeader } from "@heroui/card";
-import { Table, TableHeader, TableColumn, TableBody, TableRow, TableCell } from "@heroui/table";
+import { Table, TableHeader, TableColumn, TableBody, TableRow, TableCell, Selection } from "@heroui/table";
 import { Chip } from "@heroui/chip";
 import { Button } from "@heroui/button";
 import { Switch } from "@heroui/switch";
+import { Pagination } from "@heroui/pagination";
 import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, useDisclosure } from "@heroui/modal";
 import { Input } from "@heroui/input";
 import { Select, SelectItem } from "@heroui/select";
-
-// 샘플 데이터
-const platformData = [
-  {
-    id: 1,
-    platform: "Google Ads",
-    accountName: "메인 계정",
-    accountId: "123-456-7890",
-    status: "active",
-    lastSync: "2024-10-09 10:30",
-    campaigns: 5,
-  },
-  {
-    id: 2,
-    platform: "Meta Ads",
-    accountName: "Facebook 비즈니스",
-    accountId: "987654321",
-    status: "active",
-    lastSync: "2024-10-09 09:45",
-    campaigns: 4,
-  },
-  {
-    id: 3,
-    platform: "TikTok Ads",
-    accountName: "TikTok for Business",
-    accountId: "TT-456789",
-    status: "inactive",
-    lastSync: "2024-10-07 14:20",
-    campaigns: 3,
-  },
-  {
-    id: 4,
-    platform: "Google Ads",
-    accountName: "서브 계정",
-    accountId: "321-654-0987",
-    status: "error",
-    lastSync: "2024-10-08 16:00",
-    campaigns: 2,
-  },
-];
+import { platformAccounts } from "@/lib/mock-data";
+import { usePagination } from "@/hooks";
 
 export default function IntegratedPage() {
-  const [selectedKeys, setSelectedKeys] = useState(new Set([]));
+  const [selectedKeys, setSelectedKeys] = useState<Selection>(new Set([]));
   const { isOpen, onOpen, onClose } = useDisclosure();
+
+  // 페이지네이션
+  const { currentPage, totalPages, paginatedData, setCurrentPage } = usePagination(platformAccounts, {
+    itemsPerPage: 5,
+  });
 
   const statusColorMap: Record<string, "success" | "warning" | "danger"> = {
     active: "success",
@@ -96,19 +64,19 @@ export default function IntegratedPage() {
         <Card>
           <CardBody className="text-center py-6">
             <p className="text-sm text-default-500 mb-1">활성 계정</p>
-            <p className="text-3xl font-bold text-success">2</p>
+            <p className="text-3xl font-bold text-success">3</p>
           </CardBody>
         </Card>
         <Card>
           <CardBody className="text-center py-6">
             <p className="text-sm text-default-500 mb-1">총 캠페인</p>
-            <p className="text-3xl font-bold">14</p>
+            <p className="text-3xl font-bold">18</p>
           </CardBody>
         </Card>
         <Card>
           <CardBody className="text-center py-6">
             <p className="text-sm text-default-500 mb-1">마지막 동기화</p>
-            <p className="text-lg font-bold">10:30</p>
+            <p className="text-lg font-bold">11:15</p>
           </CardBody>
         </Card>
       </div>
@@ -123,7 +91,7 @@ export default function IntegratedPage() {
             aria-label="플랫폼 연동 테이블"
             selectionMode="multiple"
             selectedKeys={selectedKeys}
-            onSelectionChange={setSelectedKeys as any}
+            onSelectionChange={setSelectedKeys}
           >
             <TableHeader>
               <TableColumn>플랫폼</TableColumn>
@@ -136,7 +104,7 @@ export default function IntegratedPage() {
               <TableColumn align="center">작업</TableColumn>
             </TableHeader>
             <TableBody>
-              {platformData.map((item) => (
+              {paginatedData.map((item) => (
                 <TableRow key={item.id}>
                   <TableCell>
                     <div className="flex items-center gap-2">
@@ -201,8 +169,22 @@ export default function IntegratedPage() {
             </TableBody>
           </Table>
 
-          <div className="mt-4 text-sm text-default-500">
-            선택됨: {selectedKeys === "all" ? platformData.length : selectedKeys.size}개
+          <div className="mt-4 flex justify-between items-center">
+            <div className="text-sm text-default-500">
+              선택됨: {selectedKeys === "all" ? platformAccounts.length : selectedKeys.size}개
+            </div>
+
+            {/* Pagination */}
+            {totalPages > 1 && (
+              <Pagination
+                total={totalPages}
+                page={currentPage}
+                onChange={setCurrentPage}
+                showControls
+                color="primary"
+                size="sm"
+              />
+            )}
           </div>
         </CardBody>
       </Card>
@@ -210,7 +192,7 @@ export default function IntegratedPage() {
       {/* Platform Cards */}
       <div className="mt-6">
         <h3 className="text-xl font-semibold mb-4">사용 가능한 플랫폼</h3>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <Card className="hover:shadow-lg transition-shadow">
             <CardBody className="text-center py-8">
               <div className="w-16 h-16 bg-primary/10 rounded-lg mx-auto mb-4 flex items-center justify-center">
@@ -249,6 +231,21 @@ export default function IntegratedPage() {
               <h4 className="text-lg font-semibold mb-2">TikTok Ads</h4>
               <p className="text-sm text-default-500 mb-4">
                 TikTok 동영상 광고
+              </p>
+              <Button color="primary" variant="bordered" radius="sm" fullWidth>
+                연동하기
+              </Button>
+            </CardBody>
+          </Card>
+
+          <Card className="hover:shadow-lg transition-shadow">
+            <CardBody className="text-center py-8">
+              <div className="w-16 h-16 bg-danger/10 rounded-lg mx-auto mb-4 flex items-center justify-center">
+                <span className="text-3xl font-bold">A</span>
+              </div>
+              <h4 className="text-lg font-semibold mb-2">Amazon Ads</h4>
+              <p className="text-sm text-default-500 mb-4">
+                Amazon 스폰서 광고
               </p>
               <Button color="primary" variant="bordered" radius="sm" fullWidth>
                 연동하기

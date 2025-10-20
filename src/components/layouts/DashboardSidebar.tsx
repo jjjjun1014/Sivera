@@ -54,9 +54,28 @@ const menuItems = [
     ),
   },
   {
+    key: "notifications",
+    label: "알림",
+    href: "/dashboard/notifications",
+    icon: (
+      <svg
+        className="w-5 h-5"
+        fill="none"
+        stroke="currentColor"
+        viewBox="0 0 24 24"
+      >
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          strokeWidth={2}
+          d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"
+        />
+      </svg>
+    ),
+  },
+  {
     key: "google-ads",
     label: "Google Ads",
-    href: "/dashboard/platforms/google-ads",
     icon: (
       <svg
         className="w-5 h-5"
@@ -72,11 +91,17 @@ const menuItems = [
         />
       </svg>
     ),
+    subItems: [
+      { key: "google-ads-dashboard", label: "대시보드", href: "/dashboard/platforms/google-ads/dashboard" },
+      { key: "google-ads-search", label: "검색 광고", href: "/dashboard/platforms/google-ads/search" },
+      { key: "google-ads-display", label: "디스플레이 광고", href: "/dashboard/platforms/google-ads/display" },
+      { key: "google-ads-shopping", label: "쇼핑 광고", href: "/dashboard/platforms/google-ads/shopping" },
+      { key: "google-ads-pmax", label: "Performance Max", href: "/dashboard/platforms/google-ads/performance-max" },
+    ],
   },
   {
     key: "meta-ads",
     label: "Meta Ads",
-    href: "/dashboard/platforms/meta-ads",
     icon: (
       <svg
         className="w-5 h-5"
@@ -92,11 +117,15 @@ const menuItems = [
         />
       </svg>
     ),
+    subItems: [
+      { key: "meta-ads-dashboard", label: "대시보드", href: "/dashboard/platforms/meta-ads/dashboard" },
+      { key: "meta-ads-standard", label: "일반 광고", href: "/dashboard/platforms/meta-ads/standard" },
+      { key: "meta-ads-advantage", label: "Advantage+ 쇼핑", href: "/dashboard/platforms/meta-ads/advantage-plus" },
+    ],
   },
   {
     key: "tiktok-ads",
     label: "TikTok Ads",
-    href: "/dashboard/platforms/tiktok-ads",
     icon: (
       <svg
         className="w-5 h-5"
@@ -118,11 +147,15 @@ const menuItems = [
         />
       </svg>
     ),
+    subItems: [
+      { key: "tiktok-ads-dashboard", label: "대시보드", href: "/dashboard/platforms/tiktok-ads/dashboard" },
+      { key: "tiktok-ads-standard", label: "일반 광고", href: "/dashboard/platforms/tiktok-ads/standard" },
+      { key: "tiktok-ads-gmv", label: "GMV Max", href: "/dashboard/platforms/tiktok-ads/gmv-max" },
+    ],
   },
   {
     key: "amazon-ads",
     label: "Amazon Ads",
-    href: "/dashboard/platforms/amazon-ads",
     icon: (
       <svg
         className="w-5 h-5"
@@ -138,6 +171,13 @@ const menuItems = [
         />
       </svg>
     ),
+    subItems: [
+      { key: "amazon-ads-dashboard", label: "대시보드", href: "/dashboard/platforms/amazon-ads/dashboard" },
+      { key: "amazon-ads-products", label: "스폰서 제품", href: "/dashboard/platforms/amazon-ads/sponsored-products" },
+      { key: "amazon-ads-brands", label: "스폰서 브랜드", href: "/dashboard/platforms/amazon-ads/sponsored-brands" },
+      { key: "amazon-ads-display", label: "스폰서 디스플레이", href: "/dashboard/platforms/amazon-ads/sponsored-display" },
+      { key: "amazon-ads-dsp", label: "DSP", href: "/dashboard/platforms/amazon-ads/dsp" },
+    ],
   },
   {
     key: "integrated",
@@ -221,6 +261,19 @@ export default function DashboardSidebar({
   onToggleCollapse,
 }: DashboardSidebarProps) {
   const pathname = usePathname();
+  const [expandedItems, setExpandedItems] = useState<Set<string>>(new Set());
+
+  const toggleExpand = (key: string) => {
+    setExpandedItems((prev) => {
+      const newSet = new Set(prev);
+      if (newSet.has(key)) {
+        newSet.delete(key);
+      } else {
+        newSet.add(key);
+      }
+      return newSet;
+    });
+  };
 
   return (
     <>
@@ -299,26 +352,84 @@ export default function DashboardSidebar({
 
           {/* Navigation */}
           <nav className="flex-1 px-4 py-6 overflow-y-auto">
-            <ul className="space-y-2">
+            <ul className="space-y-1">
               {menuItems.map((item) => {
-                const isActive = pathname === item.href;
+                const hasSubItems = 'subItems' in item && item.subItems;
+                const isExpanded = expandedItems.has(item.key);
+                const isActive = hasSubItems
+                  ? item.subItems?.some((sub: any) => pathname === sub.href)
+                  : pathname === item.href;
+
                 return (
                   <li key={item.key}>
-                    <NextLink
-                      href={item.href}
-                      onClick={onClose}
-                      className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
-                        isActive
-                          ? "bg-primary text-primary-foreground"
-                          : "hover:bg-default-100"
-                      } ${isCollapsed ? "lg:justify-center" : ""}`}
-                      title={isCollapsed ? item.label : ""}
-                    >
-                      {item.icon}
-                      <span className={`font-medium transition-opacity duration-300 ${isCollapsed ? "lg:opacity-0 lg:hidden" : "opacity-100"}`}>
-                        {item.label}
-                      </span>
-                    </NextLink>
+                    {hasSubItems ? (
+                      <>
+                        <button
+                          onClick={() => toggleExpand(item.key)}
+                          className={`flex items-center justify-between w-full gap-3 px-4 py-3 rounded-lg transition-colors ${
+                            isActive
+                              ? "bg-default-100"
+                              : "hover:bg-default-100"
+                          } ${isCollapsed ? "lg:justify-center" : ""}`}
+                          title={isCollapsed ? item.label : ""}
+                        >
+                          <div className="flex items-center gap-3">
+                            {item.icon}
+                            <span className={`font-medium transition-opacity duration-300 ${isCollapsed ? "lg:opacity-0 lg:hidden" : "opacity-100"}`}>
+                              {item.label}
+                            </span>
+                          </div>
+                          {!isCollapsed && (
+                            <svg
+                              className={`w-4 h-4 transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''}`}
+                              fill="none"
+                              stroke="currentColor"
+                              viewBox="0 0 24 24"
+                            >
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                            </svg>
+                          )}
+                        </button>
+                        {isExpanded && !isCollapsed && (
+                          <ul className="ml-4 mt-1 space-y-1 border-l-2 border-default-200 pl-4">
+                            {item.subItems.map((subItem: any) => {
+                              const isSubActive = pathname === subItem.href;
+                              return (
+                                <li key={subItem.key}>
+                                  <NextLink
+                                    href={subItem.href}
+                                    onClick={onClose}
+                                    className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors ${
+                                      isSubActive
+                                        ? "bg-primary text-primary-foreground font-medium"
+                                        : "hover:bg-default-100"
+                                    }`}
+                                  >
+                                    {subItem.label}
+                                  </NextLink>
+                                </li>
+                              );
+                            })}
+                          </ul>
+                        )}
+                      </>
+                    ) : (
+                      <NextLink
+                        href={item.href || '#'}
+                        onClick={onClose}
+                        className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
+                          isActive
+                            ? "bg-primary text-primary-foreground"
+                            : "hover:bg-default-100"
+                        } ${isCollapsed ? "lg:justify-center" : ""}`}
+                        title={isCollapsed ? item.label : ""}
+                      >
+                        {item.icon}
+                        <span className={`font-medium transition-opacity duration-300 ${isCollapsed ? "lg:opacity-0 lg:hidden" : "opacity-100"}`}>
+                          {item.label}
+                        </span>
+                      </NextLink>
+                    )}
                   </li>
                 );
               })}

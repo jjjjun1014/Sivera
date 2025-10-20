@@ -3,6 +3,9 @@
 import { useState } from "react";
 import DashboardSidebar from "./DashboardSidebar";
 import { Button } from "@heroui/button";
+import { Badge } from "@heroui/badge";
+import { Bell } from "lucide-react";
+import { useRouter } from "next/navigation";
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
@@ -11,6 +14,10 @@ interface DashboardLayoutProps {
 export default function DashboardLayout({ children }: DashboardLayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const router = useRouter();
+
+  // TODO: 실제로는 API에서 읽지 않은 알림 개수를 가져와야 함
+  const unreadNotifications = 3;
 
   return (
     <div className="min-h-screen bg-background">
@@ -48,9 +55,18 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
               </svg>
             </Button>
 
-            {/* Right side - can add notifications, etc */}
+            {/* Right side - Notifications */}
             <div className="flex items-center gap-2">
-              {/* Placeholder for future features like notifications */}
+              <Badge content={unreadNotifications} color="danger" shape="circle" size="sm">
+                <Button
+                  isIconOnly
+                  variant="light"
+                  onPress={() => router.push("/dashboard/notifications")}
+                  aria-label="알림"
+                >
+                  <Bell className="w-5 h-5" />
+                </Button>
+              </Badge>
             </div>
           </div>
         </header>

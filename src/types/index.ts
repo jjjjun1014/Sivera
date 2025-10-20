@@ -125,6 +125,11 @@ export type {
 // Re-export platform types
 export * from "./platform";
 
+// Re-export UI-specific types
+export * from "./campaign";
+export * from "./notification";
+export * from "./platform-dashboard";
+
 // Type utilities for database <-> application layer conversion
 export * from "./type-utils";
 

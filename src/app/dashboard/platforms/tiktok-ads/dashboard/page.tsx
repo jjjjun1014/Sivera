@@ -29,7 +29,6 @@ import {
 
 const CHART_COLORS = ["#17C964", "#0072F5", "#F5A524", "#9353D3"];
 
-// 14일간의 샘플 차트 데이터 생성
 const generateChartData = () => {
   const data = [];
   const startDate = new Date();
@@ -40,11 +39,11 @@ const generateChartData = () => {
     date.setDate(date.getDate() + i);
     const month = date.getMonth() + 1;
     const day = date.getDate();
-    const impressions = Math.floor(25000 + Math.random() * 8000);
-    const clicks = Math.floor(800 + Math.random() * 400);
-    const conversions = Math.floor(25 + Math.random() * 15);
-    const cost = Math.floor(120000 + Math.random() * 40000);
-    const budget = Math.floor(150000 + Math.random() * 50000);
+    const impressions = Math.floor(32000 + Math.random() * 12000);
+    const clicks = Math.floor(950 + Math.random() * 550);
+    const conversions = Math.floor(22 + Math.random() * 16);
+    const cost = Math.floor(95000 + Math.random() * 50000);
+    const budget = Math.floor(120000 + Math.random() * 70000);
     const spent = Math.floor(cost * (0.7 + Math.random() * 0.3));
 
     data.push({
@@ -58,79 +57,63 @@ const generateChartData = () => {
       ctr: ((clicks / impressions) * 100),
       cpc: Math.floor(cost / clicks),
       cpa: Math.floor(cost / conversions),
-      roas: (3 + Math.random() * 3),
+      roas: (2.8 + Math.random() * 2.5),
     });
   }
   return data;
 };
 
-// 샘플 캠페인 데이터
-const initialCampaigns = [
+const initialCampaigns: Campaign[] = [
   {
     id: 1,
-    name: "여름 세일 - 검색 광고",
+    name: "비디오 챌린지 캠페인",
     status: "active",
     hasError: false,
-    budget: 500000,
-    spent: 387000,
-    impressions: 125000,
-    clicks: 4200,
-    ctr: 3.36,
-    conversions: 156,
-    cpc: 92,
-    cpa: 2481,
-    roas: 4.8,
+    budget: 450000,
+    spent: 368000,
+    impressions: 285000,
+    clicks: 6200,
+    ctr: 2.18,
+    conversions: 142,
+    cpc: 59,
+    cpa: 2592,
+    roas: 3.8,
   },
   {
     id: 2,
-    name: "브랜드 키워드 캠페인",
+    name: "인플루언서 협업",
     status: "active",
-    hasError: true,
-    budget: 300000,
-    spent: 245000,
-    impressions: 89000,
-    clicks: 2800,
-    ctr: 3.15,
-    conversions: 92,
-    cpc: 88,
-    cpa: 2663,
-    roas: 3.9,
+    hasError: false,
+    budget: 350000,
+    spent: 289000,
+    impressions: 198000,
+    clicks: 4800,
+    ctr: 2.42,
+    conversions: 112,
+    cpc: 60,
+    cpa: 2580,
+    roas: 3.5,
   },
   {
     id: 3,
-    name: "디스플레이 - 리타겟팅",
+    name: "브랜드 해시태그 광고",
     status: "paused",
     hasError: false,
     budget: 200000,
-    spent: 156000,
-    impressions: 456000,
-    clicks: 3900,
-    ctr: 0.86,
-    conversions: 78,
-    cpc: 40,
-    cpa: 2000,
-    roas: 3.2,
-  },
-  {
-    id: 4,
-    name: "쇼핑 광고 - 신제품",
-    status: "active",
-    hasError: false,
-    budget: 400000,
-    spent: 312000,
-    impressions: 67000,
-    clicks: 2100,
-    ctr: 3.13,
-    conversions: 134,
-    cpc: 149,
-    cpa: 2328,
-    roas: 5.6,
+    spent: 193000,
+    impressions: 167000,
+    clicks: 3500,
+    ctr: 2.1,
+    conversions: 66,
+    cpc: 55,
+    cpa: 2924,
+    roas: 3.4,
   },
 ];
 
-const PLATFORM_NAME = "google-ads";
+const PLATFORM_NAME = "tiktok-ads-dashboard";
 
-export default function GoogleAdsPage() {
+export default function TikTokAdsPage() {
   const [selectedKeys, setSelectedKeys] = useState(new Set([]));
   const [campaigns, setCampaigns] = useState(initialCampaigns);
   const [editingCampaigns, setEditingCampaigns] = useState<Set<number>>(
@@ -247,16 +230,16 @@ export default function GoogleAdsPage() {
     const totalBudget = campaigns.reduce((sum, c) => sum + c.budget, 0);
 
     return {
-      cost: { value: `₩${(totalCost / 1000).toFixed(1)}K`, change: "+8.5%" },
+      cost: { value: `₩${(totalCost / 1000).toFixed(1)}K`, change: "+9.3%" },
       budget: { value: `₩${(totalBudget / 1000).toFixed(1)}K`, change: "+5.2%" },
-      spent: { value: `₩${(totalCost / 1000).toFixed(1)}K`, change: "+8.5%" },
+      spent: { value: `₩${(totalCost / 1000).toFixed(1)}K`, change: "+9.3%" },
       impressions: { value: totalImpressions.toLocaleString(), change: "+12.3%" },
       clicks: { value: totalClicks.toLocaleString(), change: "+10.1%" },
-      conversions: { value: totalConversions.toString(), change: "+12.3%" },
+      conversions: { value: totalConversions.toString(), change: "+14.5%" },
       ctr: { value: `${((totalClicks / totalImpressions) * 100).toFixed(2)}%`, change: "-0.8%" },
       cpc: { value: `₩${Math.floor(totalCost / totalClicks).toLocaleString()}`, change: "+3.2%" },
-      cpa: { value: `₩${Math.floor(totalCost / totalConversions).toLocaleString()}`, change: "+3.2%" },
-      roas: { value: `${(campaigns.reduce((sum, c) => sum + c.roas, 0) / campaigns.length).toFixed(1)}x`, change: "+5.8%" },
+      cpa: { value: `₩${Math.floor(totalCost / totalConversions).toLocaleString()}`, change: "+2.8%" },
+      roas: { value: `${(campaigns.reduce((sum, c) => sum + c.roas, 0) / campaigns.length).toFixed(1)}x`, change: "+6.2%" },
     };
   }, [campaigns]);
 
@@ -418,9 +401,9 @@ export default function GoogleAdsPage() {
     <div className="container mx-auto px-6 py-8">
       {/* Header */}
       <div className="mb-6">
-        <h1 className="text-3xl font-bold mb-2">Google Ads</h1>
+        <h1 className="text-3xl font-bold mb-2">TikTok Ads - 대시보드</h1>
         <p className="text-default-500">
-          Google 검색 및 디스플레이 광고 성과를 관리하세요
+          전체 TikTok 광고 성과를 한눈에 확인하세요
         </p>
       </div>
 
