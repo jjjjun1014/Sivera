@@ -114,6 +114,37 @@ export const googleAdsCampaigns: Campaign[] = [
   spentRate: `${(70 + Math.random() * 25).toFixed(1)}%`,
 }));
 
+export const metaAdsCampaigns: Campaign[] = [
+  ...metaAdsStandardCampaigns.slice(0, 3),
+  ...metaAdsAdvantagePlusCampaigns.slice(0, 2),
+].map((c, i) => ({
+  ...c,
+  rank: i + 1,
+  id: i + 1,
+  spentRate: `${(70 + Math.random() * 25).toFixed(1)}%`,
+}));
+
+export const amazonAdsCampaigns: Campaign[] = [
+  ...amazonAdsSponsoredProductsCampaigns.slice(0, 2),
+  ...amazonAdsSponsoredBrandsCampaigns.slice(0, 2),
+  ...amazonAdsSponsoredDisplayCampaigns.slice(0, 1),
+].map((c, i) => ({
+  ...c,
+  rank: i + 1,
+  id: i + 1,
+  spentRate: `${(70 + Math.random() * 25).toFixed(1)}%`,
+}));
+
+export const tiktokAdsCampaigns: Campaign[] = [
+  ...tiktokAdsStandardCampaigns.slice(0, 3),
+  ...tiktokAdsGMVMaxCampaigns.slice(0, 2),
+].map((c, i) => ({
+  ...c,
+  rank: i + 1,
+  id: i + 1,
+  spentRate: `${(70 + Math.random() * 25).toFixed(1)}%`,
+}));
+
 // 통합 대시보드 TOP 10 캠페인
 export const topCampaigns: TopCampaign[] = [
   { rank: 1, platform: "Google Ads", name: "여름 세일 - 검색 광고", spent: 387000, conversions: 156, cpa: 2481, roas: 4.8 },
