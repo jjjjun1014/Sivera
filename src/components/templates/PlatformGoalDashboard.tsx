@@ -358,14 +358,16 @@ export function PlatformGoalDashboard({ config }: { config: PlatformGoalDashboar
                 {paginatedCampaigns.map((campaign) => (
                   <tr key={campaign.rank} className="border-b border-divider hover:bg-default-100 transition-colors">
                     <td className="py-3 px-4 text-sm">{campaign.rank}</td>
-                    <td className="py-3 px-4 text-sm font-medium">{campaign.name}</td>
+                    <td className="py-3 px-4 text-sm font-medium max-w-xs">
+                      <div className="truncate" title={campaign.name}>{campaign.name}</div>
+                    </td>
                     <td className="py-3 px-4 text-sm text-default-500">{campaign.type}</td>
-                    <td className="py-3 px-4 text-sm text-right">{campaign.spentRate}</td>
-                    <td className="py-3 px-4 text-sm text-right font-semibold">{campaign.conversions}건</td>
-                    <td className="py-3 px-4 text-sm text-right">₩{campaign.cpa.toLocaleString()}</td>
-                    <td className="py-3 px-4 text-sm text-right">{campaign.roas.toFixed(1)}x</td>
+                    <td className="py-3 px-4 text-sm text-right whitespace-nowrap">{campaign.spentRate}</td>
+                    <td className="py-3 px-4 text-sm text-right font-semibold whitespace-nowrap">{campaign.conversions}건</td>
+                    <td className="py-3 px-4 text-sm text-right whitespace-nowrap">₩{campaign.cpa.toLocaleString()}</td>
+                    <td className="py-3 px-4 text-sm text-right whitespace-nowrap">{campaign.roas.toFixed(1)}x</td>
                     <td className="py-3 px-4 text-sm text-center">
-                      <span className={`px-2 py-1 rounded-full text-xs ${campaign.status === "활성" ? "bg-success/20 text-success" : "bg-warning/20 text-warning"}`}>
+                      <span className={`px-2 py-1 rounded-full text-xs whitespace-nowrap ${campaign.status === "활성" ? "bg-success/20 text-success" : "bg-warning/20 text-warning"}`}>
                         {campaign.status === "active" ? "활성" : campaign.status === "paused" ? "일시정지" : "중지됨"}
                       </span>
                     </td>

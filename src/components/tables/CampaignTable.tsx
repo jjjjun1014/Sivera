@@ -335,13 +335,13 @@ export function CampaignTable({
             />
           ) : (
             <div
-              className="cursor-pointer hover:bg-default-100 p-2 rounded transition-colors"
+              className="cursor-pointer hover:bg-default-100 p-2 rounded transition-colors max-w-xs"
               onClick={() => {
                 setEditingCell({ id: row.original.id, field: "name" });
                 setTempValues((prev) => ({ ...prev, [key]: getValue() as string }));
               }}
             >
-              <div className="font-medium">{getValue() as string}</div>
+              <div className="font-medium truncate" title={getValue() as string}>{getValue() as string}</div>
               <div className="text-xs text-default-500">ID: {row.original.id}</div>
             </div>
           );
