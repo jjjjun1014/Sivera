@@ -27,19 +27,24 @@
 - 👥 **팀 협업**: 팀 생성, 초대, 역할 관리
 - 🔐 **보안**: AWS Cognito 인증, KMS 암호화 자격증명
 
-### 현재 개발 상태 (2025-10-19)
+### 현재 개발 상태 (2025-10-20)
 - ✅ UI/UX 기본 구조 완성
 - ✅ 플랫폼별 대시보드 페이지 구현 (Google/Meta/TikTok/Amazon)
+  - ✅ 각 플랫폼별 세부 캠페인 타입 페이지 (14개 페이지)
+  - ✅ 플랫폼 통합 대시보드 (PlatformGoalDashboard 템플릿)
 - ✅ 통합 분석 대시보드 (목표 추적, 플랫폼 비교, 차트)
 - ✅ 커스터마이징 시스템 (localStorage 기반)
-- ✅ 목표 설정 및 달성률 표시
+- ✅ 목표 설정 및 달성률 표시 (전체 플랫폼)
 - ✅ 천 단위 구분자 자동 포맷팅
 - ✅ 날짜 선택 기능
-- ⏳ AWS 인프라 연동 준비 완료 (구현 대기)
+- ✅ TanStack Table - 드래그앤드롭, 인라인 편집, 컬럼 관리
+- ✅ 테이블 텍스트 truncation (ellipsis)
+- ✅ 알림/노티피케이션 페이지 (UI 완성)
+- ✅ 팀 관리 페이지 (초대, 역할, 변경 이력 UI)
+- ✅ AWS 인프라 연동 준비 완료 (타입, 인터페이스, API 클라이언트)
 - ⏳ 실제 광고 플랫폼 API 연동 (구현 대기)
-- ⏳ 알림/노티피케이션 시스템 (작업 예정)
-- ⏳ 일괄 작업 기능 (작업 예정)
-- ⏳ 팀 관리 및 변경 이력 (작업 예정)
+- ⏳ AWS Lambda/DynamoDB/Cognito 백엔드 구현 (구현 대기)
+- ⏳ 일괄 작업 기능 백엔드 연동 (UI 완성, 연동 대기)
 
 ---
 
@@ -103,19 +108,29 @@ src/
 │   ├── modals/                   # 모달 컴포넌트
 │   │   ├── MetricsConfigModal.tsx      # ⭐ 차트/요약 카드 메트릭 선택
 │   │   ├── SaveConfigModal.tsx         # 설정 저장
-│   │   └── ColumnManagerModal.tsx      # 테이블 컬럼 관리
+│   │   ├── ColumnManagerModal.tsx      # 테이블 컬럼 관리
+│   │   ├── GoalSettingModal.tsx        # 목표 설정
+│   │   └── AuditLogModal.tsx           # 변경 이력
 │   ├── tables/                   # 테이블 컴포넌트
 │   │   └── CampaignTable.tsx     # ⭐ 캠페인 테이블 (드래그앤드롭, 정렬, 편집)
+│   ├── templates/                # ⭐ 페이지 템플릿
+│   │   └── PlatformGoalDashboard.tsx   # 플랫폼 대시보드 템플릿
 │   ├── features/                 # 기능별 컴포넌트
+│   │   └── BulkActionsBar.tsx    # 일괄 작업 바
 │   └── ui/                       # 기본 UI 컴포넌트
 │
 ├── lib/                          # 라이브러리 및 유틸리티
-│   ├── aws/                      # ⭐ AWS 클라이언트
-│   │   ├── cognito.ts            # 인증
-│   │   ├── dynamodb.ts           # 데이터베이스
-│   │   └── api-gateway.ts        # API 통신
-│   ├── storage/                  # ⭐ 스토리지 관리
-│   │   └── platformConfig.ts     # 플랫폼 설정 저장/로드
+│   ├── aws/                      # ⭐ AWS 클라이언트 (백엔드 연동 준비 완료)
+│   │   ├── cognito.ts            # 인증 (인터페이스 정의 완료)
+│   │   ├── dynamodb.ts           # 데이터베이스 (테이블 구조 문서화)
+│   │   └── api-gateway.ts        # API 통신 (RESTful 엔드포인트 정의)
+│   ├── storage/                  # ⭐ 스토리지 관리 (현재 localStorage)
+│   │   ├── platformConfig.ts     # 플랫폼 설정 저장/로드
+│   │   ├── platformGoals.ts      # 플랫폼 목표 관리
+│   │   ├── auditLog.ts           # 변경 이력 관리
+│   │   └── BaseStorage.ts        # 스토리지 베이스 클래스
+│   ├── config/platforms/         # 플랫폼별 설정
+│   ├── mock-data/                # 목업 데이터
 │   └── utils.ts                  # 유틸리티 함수
 │
 ├── stores/                       # Zustand 스토어
@@ -185,52 +200,70 @@ import { Button } from "@nextui-org/react";
 
 ## 주요 컴포넌트 및 패턴
 
-### 1. 플랫폼 페이지 구조 (Google Ads 기준)
+### 1. 플랫폼 페이지 구조
 
-**위치**: `src/app/dashboard/platforms/google-ads/page.tsx`
+**두 가지 페이지 타입**:
 
-**구조**:
+#### A. 플랫폼 대시보드 (목표 기반)
+**위치**: `src/app/dashboard/platforms/{platform}/dashboard/page.tsx`
+**예시**: Google Ads Dashboard, Meta Ads Dashboard
+
+**구조**: PlatformGoalDashboard 템플릿 사용
 ```tsx
-export default function GoogleAdsPage() {
+export default function GoogleAdsDashboardPage() {
+  const config = {
+    platformKey: "google-ads-dashboard",
+    platformName: "Google Ads",
+    platformDisplayName: "Google Ads - 대시보드",
+    description: "전체 Google 광고 성과를 한눈에 확인하세요",
+    campaigns: googleAdsCampaigns,
+    sampleTotalData: { /* 메트릭 합계 */ },
+  };
+  return <PlatformGoalDashboard config={config} />;
+}
+```
+
+**포함 요소**:
+- 6개 메트릭 카드 (광고비, 예산, 전환수, CPA, ROAS, CTR)
+- 목표 설정 및 달성률 표시
+- TOP 10 캠페인 테이블
+
+#### B. 세부 캠페인 타입 페이지
+**위치**: `src/app/dashboard/platforms/{platform}/{campaign-type}/page.tsx`
+**예시**: Google Ads Search, Meta Ads Standard
+
+**구조**: 커스터마이징 가능한 상세 페이지
+```tsx
+export default function GoogleAdsSearchPage() {
   // 1. 상태 관리
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
   const [selectedSummaryMetrics, setSelectedSummaryMetrics] = useState([]);
   const [selectedChartMetrics, setSelectedChartMetrics] = useState([]);
-  const [tableColumnOrder, setTableColumnOrder] = useState([]);
-  const [tableColumnVisibility, setTableColumnVisibility] = useState({});
 
-  // 2. localStorage 로드 (useEffect)
+  // 2. localStorage 로드
   useEffect(() => {
-    const settings = platformConfigStorage.load("google-ads");
-    // 설정 복원
+    const settings = platformConfigStorage.load("google-ads-search");
   }, []);
 
-  // 3. 설정 저장/불러오기 핸들러
-  const handleSaveConfig = (name: string) => {
-    platformConfigStorage.addConfig(...);
-  };
-
-  // 4. UI 렌더링
+  // 3. UI 렌더링
   return (
     <div>
-      {/* 헤더 */}
       {/* 날짜 선택 + 지표 선택 + 커스텀 저장 */}
       {/* 요약 카드 (4개) */}
-      {/* 차트 */}
-      {/* 캠페인 테이블 */}
-      {/* 모달들 */}
+      {/* 차트 (듀얼 Y축) */}
+      {/* CampaignTable (전체 기능) */}
     </div>
   );
 }
 ```
 
-**반드시 포함해야 할 요소**:
-1. **날짜 선택**: DateRangePicker
-2. **지표 선택 버튼**: MetricsConfigModal 트리거
-3. **커스텀 저장 드롭다운**: 설정 저장/불러오기/관리
-4. **요약 카드**: 선택된 메트릭 4개 표시
-5. **차트**: 선택된 메트릭 표시 (최대 4개, 듀얼 Y축)
-6. **테이블**: CampaignTable 컴포넌트
+**포함 요소**:
+1. DateRangePicker
+2. MetricsConfigModal 트리거
+3. 커스텀 저장 드롭다운
+4. 요약 카드 4개
+5. 차트 (최대 4개 메트릭, 듀얼 Y축)
+6. CampaignTable (드래그앤드롭, 인라인 편집, 컬럼 관리)
 
 ### 2. CampaignTable 컴포넌트
 
@@ -332,16 +365,36 @@ interface SavedConfig {
 
 ### 신규 플랫폼 페이지 추가 시
 
-1. **템플릿**: `src/app/dashboard/platforms/google-ads/page.tsx`
-   - 이 파일을 복사해서 새 플랫폼 페이지 생성
-   - 플랫폼명만 변경 (`PLATFORM_NAME` 상수)
+#### 1. 플랫폼 대시보드 (목표 기반)
+**템플릿**: `src/app/dashboard/platforms/google-ads/dashboard/page.tsx`
+```tsx
+// 1. 캠페인 데이터 준비 (src/lib/mock-data/campaigns.ts)
+export const newPlatformCampaigns: Campaign[] = [...];
 
-2. **테이블**: `src/components/tables/CampaignTable.tsx`
-   - 테이블 구조 참고
-   - 플랫폼별로 컬럼 다르면 새로 만들기
+// 2. 페이지 생성
+export default function NewPlatformDashboardPage() {
+  const config = {
+    platformKey: "new-platform-dashboard",
+    platformName: "New Platform",
+    platformDisplayName: "New Platform - 대시보드",
+    description: "설명",
+    campaigns: newPlatformCampaigns,
+    sampleTotalData: { /* 합계 데이터 */ },
+  };
+  return <PlatformGoalDashboard config={config} />;
+}
+```
 
-3. **타입**: `src/types/campaign.types.ts`
-   - Campaign 타입 정의 확인/수정
+#### 2. 세부 캠페인 타입 페이지
+**템플릿**: `src/app/dashboard/platforms/google-ads/search/page.tsx`
+- 복사 후 PLATFORM_NAME 변경
+- availableMetrics 수정 (플랫폼별 메트릭)
+- 필요시 테이블 컬럼 커스터마이징
+
+#### 3. 관련 파일 수정
+- **타입**: `src/types/campaign.types.ts`
+- **Mock 데이터**: `src/lib/mock-data/campaigns.ts`
+- **네비게이션**: DashboardSidebar에 메뉴 추가
 
 ### 차트 수정 시
 
@@ -671,16 +724,28 @@ import { ComposedChart, Line, XAxis, YAxis, Tooltip } from "recharts";
 
 ### Q1: 새 플랫폼 페이지를 어떻게 추가하나요?
 
+#### 플랫폼 대시보드 (간단, 5분):
 ```bash
-# 1. Google Ads 페이지 복사
-cp -r src/app/dashboard/platforms/google-ads src/app/dashboard/platforms/new-platform
+# 1. 템플릿 복사
+cp src/app/dashboard/platforms/google-ads/dashboard/page.tsx \
+   src/app/dashboard/platforms/new-platform/dashboard/page.tsx
 
-# 2. page.tsx에서 PLATFORM_NAME 변경
-const PLATFORM_NAME = "new-platform";
+# 2. config 객체만 수정
+platformKey: "new-platform-dashboard"
+platformName: "New Platform"
+campaigns: newPlatformCampaigns  # mock-data/campaigns.ts에 추가
+```
 
-# 3. 메트릭 정의 수정 (플랫폼마다 다를 수 있음)
+#### 세부 캠페인 페이지 (복잡, 30분):
+```bash
+# 1. 템플릿 복사
+cp src/app/dashboard/platforms/google-ads/search/page.tsx \
+   src/app/dashboard/platforms/new-platform/standard/page.tsx
 
-# 4. 네비게이션 추가 (필요시)
+# 2. PLATFORM_NAME 변경
+const PLATFORM_NAME = "new-platform-standard";
+
+# 3. availableMetrics 수정 (플랫폼별 메트릭)
 ```
 
 ### Q2: 테이블에 새 컬럼을 어떻게 추가하나요?
@@ -795,6 +860,34 @@ const yAxisId = largeValueMetrics.includes(metricKey) ? "left" : "right";
 
 ---
 
+## 최근 주요 변경사항 (2025-10-20)
+
+### 1. 템플릿 기반 리팩토링
+- **PlatformGoalDashboard 템플릿 도입**: 플랫폼 대시보드 코드 ~1,500줄 절감
+- **페이지 구조 이원화**:
+  - 대시보드 (템플릿): 목표 기반, 빠른 개요
+  - 세부 페이지 (커스텀): 전체 기능, 커스터마이징
+
+### 2. 전체 플랫폼 기능 통일
+- **4개 플랫폼 모두 목표 설정 지원**: Google/Meta/TikTok/Amazon
+- **14개 세부 페이지**: 각 플랫폼별 캠페인 타입 페이지 완성
+- **목표 달성률 시각화**: 모든 대시보드에서 동일한 UX
+
+### 3. 테이블 개선
+- **텍스트 truncation**: 긴 캠페인명 ellipsis 처리
+- **Hydration 에러 수정**: Table 컴포넌트 안정화
+
+### 4. AWS 통합 준비 완료
+- **백엔드 개발자 연동 준비 완료**:
+  - RESTful API 엔드포인트 정의
+  - DynamoDB 테이블 구조 문서화
+  - Cognito 인증 인터페이스 완성
+  - KMS 암호화 플로우 설계
+- **localStorage → AWS 마이그레이션 경로 명확**:
+  - 모든 스토리지 파일에 TODO 주석 및 API 마이그레이션 방법 명시
+
+---
+
 ## 마치며
 
 이 문서는 **살아있는 문서**입니다.
@@ -816,5 +909,12 @@ const yAxisId = largeValueMetrics.includes(metricKey) ? "left" : "right";
 2. 유사한 코드 참고
 3. Git 히스토리 확인
 4. 사용자에게 물어보기
+
+**다음 단계 (백엔드 개발자)**:
+1. AWS 인프라 프로비저닝 (CloudFormation/Terraform)
+2. Lambda 함수 작성 (API Gateway 엔드포인트)
+3. DynamoDB 테이블 생성
+4. Cognito User Pool 설정
+5. 플랫폼 OAuth 연동 (Google/Meta/TikTok/Amazon Ads API)
 
 **Good Luck! 🚀**
