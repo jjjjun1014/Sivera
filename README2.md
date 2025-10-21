@@ -27,18 +27,26 @@
 - 👥 **팀 협업**: 팀 생성, 초대, 역할 관리
 - 🔐 **보안**: AWS Cognito 인증, KMS 암호화 자격증명
 
-### 현재 개발 상태 (2025-10-20)
+### 현재 개발 상태 (2025-10-21)
 - ✅ UI/UX 기본 구조 완성
 - ✅ 플랫폼별 대시보드 페이지 구현 (Google/Meta/TikTok/Amazon)
   - ✅ 각 플랫폼별 세부 캠페인 타입 페이지 (14개 페이지)
   - ✅ 플랫폼 통합 대시보드 (PlatformGoalDashboard 템플릿)
+  - ✅ 탭 기반 계층 구조 (캠페인 → 광고그룹 → 광고)
 - ✅ 통합 분석 대시보드 (목표 추적, 플랫폼 비교, 차트)
 - ✅ 커스터마이징 시스템 (localStorage 기반)
 - ✅ 목표 설정 및 달성률 표시 (전체 플랫폼)
 - ✅ 천 단위 구분자 자동 포맷팅
 - ✅ 날짜 선택 기능
-- ✅ TanStack Table - 드래그앤드롭, 인라인 편집, 컬럼 관리
+- ✅ TanStack Table 통합 - 캠페인/광고그룹/광고 테이블 모두 적용
+  - ✅ 드래그앤드롭 컬럼 정렬
+  - ✅ 인라인 이름 편집 (Edit 아이콘)
+  - ✅ 컬럼 관리 모달
+  - ✅ 정렬, 필터, 페이지네이션
+  - ✅ 계층 필터링 (캠페인 클릭 → 광고그룹 필터, 광고그룹 클릭 → 광고 필터)
 - ✅ 테이블 텍스트 truncation (ellipsis)
+- ✅ 텍스트 줄바꿈 방지 (whitespace-nowrap)
+- ✅ 예산 편집 로직 (campaignType 기반 자동 판별)
 - ✅ 알림/노티피케이션 페이지 (UI 완성)
 - ✅ 팀 관리 페이지 (초대, 역할, 변경 이력 UI)
 - ✅ AWS 인프라 연동 준비 완료 (타입, 인터페이스, API 클라이언트)
@@ -232,26 +240,71 @@ export default function GoogleAdsDashboardPage() {
 **위치**: `src/app/dashboard/platforms/{platform}/{campaign-type}/page.tsx`
 **예시**: Google Ads Search, Meta Ads Standard
 
-**구조**: 커스터마이징 가능한 상세 페이지
+**구조**: 계층 구조 탭 기반 페이지
 ```tsx
 export default function GoogleAdsSearchPage() {
   // 1. 상태 관리
+  const [selectedTab, setSelectedTab] = useState("campaigns");
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
-  const [selectedSummaryMetrics, setSelectedSummaryMetrics] = useState([]);
-  const [selectedChartMetrics, setSelectedChartMetrics] = useState([]);
+  const [adGroups, setAdGroups] = useState<AdGroup[]>([]);
+  const [ads, setAds] = useState<Ad[]>([]);
 
-  // 2. localStorage 로드
-  useEffect(() => {
-    const settings = platformConfigStorage.load("google-ads-search");
-  }, []);
+  // 2. 필터 상태
+  const [selectedCampaignId, setSelectedCampaignId] = useState<number | null>(null);
+  const [selectedAdGroupId, setSelectedAdGroupId] = useState<number | string | null>(null);
 
-  // 3. UI 렌더링
+  // 3. 필터 핸들러
+  const handleCampaignClick = (campaignId: number) => {
+    setSelectedCampaignId(campaignId);
+    setSelectedTab("adgroups");  // 자동으로 광고그룹 탭 전환
+  };
+
+  const handleAdGroupClick = (adGroupId: number | string) => {
+    setSelectedAdGroupId(adGroupId);
+    setSelectedTab("ads");  // 자동으로 광고 탭 전환
+  };
+
+  // 4. 필터링된 데이터
+  const filteredAdGroups = useMemo(() => {
+    if (!selectedCampaignId) return adGroups;
+    return adGroups.filter(ag => ag.campaignId === selectedCampaignId);
+  }, [adGroups, selectedCampaignId]);
+
+  const filteredAds = useMemo(() => {
+    if (!selectedAdGroupId) return ads;
+    return ads.filter(ad => ad.adGroupId === selectedAdGroupId);
+  }, [ads, selectedAdGroupId]);
+
+  // 5. UI 렌더링
   return (
     <div>
-      {/* 날짜 선택 + 지표 선택 + 커스텀 저장 */}
+      {/* 날짜 선택 + 메트릭 선택 */}
       {/* 요약 카드 (4개) */}
       {/* 차트 (듀얼 Y축) */}
-      {/* CampaignTable (전체 기능) */}
+      {/* 탭 (캠페인 / 광고그룹 / 광고) */}
+      <Tabs selectedKey={selectedTab} onSelectionChange={setSelectedTab}>
+        <Tab key="campaigns" title="캠페인">
+          <CampaignTable
+            data={campaigns}
+            onCampaignClick={handleCampaignClick}
+          />
+        </Tab>
+        <Tab key="adgroups" title="광고그룹">
+          {/* 필터 해제 버튼 */}
+          <AdGroupTable
+            data={filteredAdGroups}
+            onAdGroupClick={handleAdGroupClick}
+            showCampaignColumn={!selectedCampaignId}
+          />
+        </Tab>
+        <Tab key="ads" title="광고">
+          <AdTable
+            data={filteredAds}
+            showCampaignColumn={!selectedCampaignId}
+            showAdGroupColumn={!selectedAdGroupId}
+          />
+        </Tab>
+      </Tabs>
     </div>
   );
 }
@@ -260,23 +313,28 @@ export default function GoogleAdsSearchPage() {
 **포함 요소**:
 1. DateRangePicker
 2. MetricsConfigModal 트리거
-3. 커스텀 저장 드롭다운
-4. 요약 카드 4개
-5. 차트 (최대 4개 메트릭, 듀얼 Y축)
-6. CampaignTable (드래그앤드롭, 인라인 편집, 컬럼 관리)
+3. 요약 카드 4개
+4. 차트 (최대 4개 메트릭, 듀얼 Y축)
+5. Tabs (캠페인 / 광고그룹 / 광고 & 키워드)
+6. 각 탭별 테이블 (CampaignTable, AdGroupTable, AdTable)
+7. 필터 해제 버튼 (캠페인/광고그룹명 표시)
+8. 계층 필터링 (클릭 → 자동 필터 + 탭 전환)
 
-### 2. CampaignTable 컴포넌트
+### 2. 테이블 컴포넌트 (TanStack Table)
 
-**위치**: `src/components/tables/CampaignTable.tsx`
+**위치**: `src/components/tables/`
 
+모든 테이블 컴포넌트는 TanStack Table v8 기반으로 통일되었습니다.
+
+#### CampaignTable.tsx
 **주요 기능**:
-- TanStack Table 기반
 - 드래그앤드롭 컬럼 순서 변경 (dnd-kit)
 - 컬럼 표시/숨김
 - 정렬 (오름차순/내림차순)
-- 인라인 편집 (캠페인명, 예산)
+- 인라인 이름 편집 (Edit 아이콘 클릭)
 - 활성화/비활성화 토글
 - 확인 모달 (변경사항 저장 전 확인)
+- 캠페인 클릭 → 광고그룹 필터링
 
 **Props**:
 ```typescript
@@ -284,13 +342,56 @@ interface CampaignTableProps {
   data: Campaign[];
   onCampaignChange?: (id: number, field: string, value: any) => void;
   onToggleStatus?: (id: number, currentStatus: string) => void;
-  editingCampaigns?: Set<number>;
-  onEditCampaign?: (id: number) => void;
-  onSaveCampaign?: (id: number) => void;
-  initialColumnOrder?: string[];              // 저장된 컬럼 순서
-  initialColumnVisibility?: Record<string, boolean>; // 저장된 표시/숨김
-  onColumnOrderChange?: (order: string[]) => void;   // 컬럼 순서 변경 콜백
-  onColumnVisibilityChange?: (visibility: Record<string, boolean>) => void; // 표시/숨김 변경 콜백
+  onCampaignClick?: (campaignId: number) => void;  // 필터링용
+  initialColumnOrder?: string[];
+  initialColumnVisibility?: Record<string, boolean>;
+  onColumnOrderChange?: (order: string[]) => void;
+  onColumnVisibilityChange?: (visibility: Record<string, boolean>) => void;
+}
+```
+
+#### AdGroupTable.tsx
+**주요 기능**:
+- CampaignTable과 동일한 기능
+- 광고그룹 이름 편집
+- 예산 Lock 아이콘 (Performance Max, Advantage+, GMV Max, DSP)
+- 광고그룹 클릭 → 광고 필터링
+- `showCampaignColumn` 옵션 (필터링 시 숨김)
+
+**Props**:
+```typescript
+interface AdGroupTableProps {
+  data: AdGroup[];
+  onAdGroupChange?: (id: number | string, field: string, value: any) => void;
+  onToggleStatus?: (id: number | string, currentStatus: string) => void;
+  onAdGroupClick?: (adGroupId: number | string) => void;
+  showCampaignColumn?: boolean;  // 캠페인 컬럼 표시 여부
+  initialColumnOrder?: string[];
+  initialColumnVisibility?: Record<string, boolean>;
+  onColumnOrderChange?: (order: string[]) => void;
+  onColumnVisibilityChange?: (visibility: Record<string, boolean>) => void;
+}
+```
+
+#### AdTable.tsx
+**주요 기능**:
+- CampaignTable과 동일한 기능
+- 광고 이름 편집
+- 광고 유형 Chip (텍스트/이미지/비디오/캐러셀)
+- `showCampaignColumn`, `showAdGroupColumn` 옵션
+
+**Props**:
+```typescript
+interface AdTableProps {
+  data: Ad[];
+  onAdChange?: (id: number | string, field: string, value: any) => void;
+  onToggleStatus?: (id: number | string, currentStatus: string) => void;
+  showCampaignColumn?: boolean;
+  showAdGroupColumn?: boolean;
+  initialColumnOrder?: string[];
+  initialColumnVisibility?: Record<string, boolean>;
+  onColumnOrderChange?: (order: string[]) => void;
+  onColumnVisibilityChange?: (visibility: Record<string, boolean>) => void;
 }
 ```
 
@@ -860,31 +961,51 @@ const yAxisId = largeValueMetrics.includes(metricKey) ? "left" : "right";
 
 ---
 
-## 최근 주요 변경사항 (2025-10-20)
+## 최근 주요 변경사항
 
-### 1. 템플릿 기반 리팩토링
+### 2025-10-21: 탭 기반 계층 구조 완성
+- **계층 구조 탭 구현**: 캠페인 → 광고그룹 → 광고 3단계 탭
+- **계층 필터링 시스템**:
+  - 캠페인명 클릭 → 광고그룹 탭 전환 + campaignId 필터
+  - 광고그룹명 클릭 → 광고 탭 전환 + adGroupId 필터
+  - 필터 해제 버튼 (부모 이름 표시)
+- **테이블 컴포넌트 통일**:
+  - CampaignTable, AdGroupTable, AdTable 모두 TanStack Table 적용
+  - 드래그앤드롭, 인라인 편집, 컬럼 관리 모두 동일
+- **이름 편집 개선**:
+  - Edit 아이콘을 이름 옆으로 이동 (Actions 컬럼 제거)
+  - 예산 편집 제거 (이름만 편집 가능)
+  - 확인 모달 간소화
+- **예산 편집 로직**:
+  - `campaignType` 기반 자동 판별 (`isBudgetEditable()` 헬퍼)
+  - Performance Max, Advantage+, GMV Max, DSP는 Lock 아이콘 표시
+- **텍스트 오버플로우 수정**:
+  - 모든 텍스트 컬럼에 `max-w-xs truncate` 적용
+  - 헤더에 `whitespace-nowrap` 적용
+  - Chip 컴포넌트 줄바꿈 방지
+- **코드 정리**:
+  - 불필요한 `editingCampaigns`, `editingAdGroups`, `editingAds` state 제거
+  - 미사용 핸들러 함수 제거 (`handleEditCampaign`, `handleSaveCampaign` 등)
+  - props 간소화
+
+### 2025-10-20: 템플릿 기반 리팩토링
 - **PlatformGoalDashboard 템플릿 도입**: 플랫폼 대시보드 코드 ~1,500줄 절감
 - **페이지 구조 이원화**:
   - 대시보드 (템플릿): 목표 기반, 빠른 개요
   - 세부 페이지 (커스텀): 전체 기능, 커스터마이징
-
-### 2. 전체 플랫폼 기능 통일
-- **4개 플랫폼 모두 목표 설정 지원**: Google/Meta/TikTok/Amazon
-- **14개 세부 페이지**: 각 플랫폼별 캠페인 타입 페이지 완성
-- **목표 달성률 시각화**: 모든 대시보드에서 동일한 UX
-
-### 3. 테이블 개선
-- **텍스트 truncation**: 긴 캠페인명 ellipsis 처리
-- **Hydration 에러 수정**: Table 컴포넌트 안정화
-
-### 4. AWS 통합 준비 완료
-- **백엔드 개발자 연동 준비 완료**:
+- **전체 플랫폼 기능 통일**:
+  - 4개 플랫폼 모두 목표 설정 지원 (Google/Meta/TikTok/Amazon)
+  - 14개 세부 페이지: 각 플랫폼별 캠페인 타입 페이지 완성
+  - 목표 달성률 시각화: 모든 대시보드에서 동일한 UX
+- **테이블 개선**:
+  - 텍스트 truncation: 긴 캠페인명 ellipsis 처리
+  - Hydration 에러 수정: Table 컴포넌트 안정화
+- **AWS 통합 준비 완료**:
   - RESTful API 엔드포인트 정의
   - DynamoDB 테이블 구조 문서화
   - Cognito 인증 인터페이스 완성
   - KMS 암호화 플로우 설계
-- **localStorage → AWS 마이그레이션 경로 명확**:
-  - 모든 스토리지 파일에 TODO 주석 및 API 마이그레이션 방법 명시
+  - localStorage → AWS 마이그레이션 경로 명확
 
 ---
 

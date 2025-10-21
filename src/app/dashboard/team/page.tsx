@@ -220,6 +220,7 @@ export default function TeamPage() {
             selectionMode="multiple"
             selectedKeys={selectedKeys}
             onSelectionChange={setSelectedKeys}
+            disallowEmptySelection={false}
           >
             <TableHeader>
               <TableColumn>팀원</TableColumn>
