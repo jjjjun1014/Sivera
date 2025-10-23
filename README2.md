@@ -27,12 +27,14 @@
 - 👥 **팀 협업**: 팀 생성, 초대, 역할 관리
 - 🔐 **보안**: AWS Cognito 인증, KMS 암호화 자격증명
 
-### 현재 개발 상태 (2025-10-21)
+### 현재 개발 상태 (2025-10-23)
 - ✅ UI/UX 기본 구조 완성
 - ✅ 플랫폼별 대시보드 페이지 구현 (Google/Meta/TikTok/Amazon)
   - ✅ 각 플랫폼별 세부 캠페인 타입 페이지 (14개 페이지)
   - ✅ 플랫폼 통합 대시보드 (PlatformGoalDashboard 템플릿)
   - ✅ 탭 기반 계층 구조 (캠페인 → 광고그룹 → 광고)
+  - ✅ 모든 탭 레이블 공식 영문 용어로 통일
+  - ✅ 플랫폼별 계층 구조 정확히 반영 (Performance Max, Advantage+, GMV Max, DSP 등)
 - ✅ 통합 분석 대시보드 (목표 추적, 플랫폼 비교, 차트)
 - ✅ 커스터마이징 시스템 (localStorage 기반)
 - ✅ 목표 설정 및 달성률 표시 (전체 플랫폼)
@@ -43,13 +45,21 @@
   - ✅ 인라인 이름 편집 (Edit 아이콘)
   - ✅ 컬럼 관리 모달
   - ✅ 정렬, 필터, 페이지네이션
-  - ✅ 계층 필터링 (캠페인 클릭 → 광고그룹 필터, 광고그룹 클릭 → 광고 필터)
+  - ✅ 계층 필터링 (캠페인 클릭 → 광고그룹 필터 + 탭 전환)
+  - ✅ 필터 해제 버튼 (부모 엔티티명 표시)
+  - ✅ 조건부 컬럼 표시 (필터링 시 부모 컬럼 숨김)
 - ✅ 테이블 텍스트 truncation (ellipsis)
-- ✅ 텍스트 줄바꿈 방지 (whitespace-nowrap)
+- ✅ 텍스트 줄바꿈 방지 (whitespace-nowrap - 모든 테이블 적용)
 - ✅ 예산 편집 로직 (campaignType 기반 자동 판별)
 - ✅ 알림/노티피케이션 페이지 (UI 완성)
 - ✅ 팀 관리 페이지 (초대, 역할, 변경 이력 UI)
+- ✅ 네비게이션 바 영문 레이블 (Hub, Analytics, Notifications 등)
 - ✅ AWS 인프라 연동 준비 완료 (타입, 인터페이스, API 클라이언트)
+- 🚀 AI 기능 구현 중 (프론트엔드 전용)
+  - ⏳ AI Chat Assistant (광고 관리 도우미 챗봇)
+  - ⏳ Smart Suggestions (입력 자동완성 및 추천)
+  - ⏳ Context-aware Help (상황 인식 도움말)
+  - ⏳ Anomaly Detection Alerts (이상 패턴 감지 알림)
 - ⏳ 실제 광고 플랫폼 API 연동 (구현 대기)
 - ⏳ AWS Lambda/DynamoDB/Cognito 백엔드 구현 (구현 대기)
 - ⏳ 일괄 작업 기능 백엔드 연동 (UI 완성, 연동 대기)
@@ -961,7 +971,152 @@ const yAxisId = largeValueMetrics.includes(metricKey) ? "left" : "right";
 
 ---
 
+## AI 기능 (프론트엔드 전용)
+
+### 개요
+백엔드 구축 없이 프론트엔드에서 직접 AI API를 호출하여 사용자 경험을 향상시키는 기능들입니다.
+
+### 도입 예정 AI 서비스
+
+#### 1. **AI Chat Assistant (광고 관리 도우미 챗봇)**
+- **서비스**: Claude API (Anthropic) 또는 OpenAI GPT-4
+- **기능**:
+  - 자연어로 캠페인 데이터 조회 ("이번 달 ROAS 낮은 캠페인 찾아줘")
+  - 캠페인 분석 및 인사이트 제공
+  - 최적화 제안 (입찰가 조정, 타겟 변경 등)
+  - 리포트 생성 도움
+- **구현 위치**: 우측 하단 플로팅 챗봇 버튼
+- **사용자 혜택**: 복잡한 필터링/분석 작업을 대화로 간편하게 처리
+
+#### 2. **Smart Suggestions (입력 자동완성 및 추천)**
+- **서비스**: Claude API + 로컬 데이터 분석
+- **기능**:
+  - 캠페인 이름 입력 시 AI가 유사 캠페인 감지 및 통합 제안
+  - 예산 입력 시 과거 유사 캠페인 기준 추천 예산 제시
+  - 키워드 입력 시 관련 키워드 제안
+  - 타겟팅 설정 시 효과적인 조합 추천
+- **구현 위치**: 모든 입력 필드 (인라인 툴팁)
+- **사용자 혜택**: 데이터 기반 최적 설정으로 실수 방지
+
+#### 3. **Context-aware Help (상황 인식 도움말)**
+- **서비스**: 로컬 로직 + Claude API
+- **기능**:
+  - 사용자 행동 패턴 분석 (10초 이상 머무르면 도움말 표시)
+  - 페이지별 맞춤 튜토리얼 제안
+  - 에러 발생 시 해결 방법 안내
+  - 신규 기능 자동 소개
+- **구현 위치**: 모든 페이지 (플로팅 카드)
+- **사용자 혜택**: 학습 곡선 감소, 빠른 온보딩
+
+#### 4. **Anomaly Detection Alerts (이상 패턴 감지 알림)**
+- **서비스**: AWS AI Services (Amazon Forecast + Amazon Lookout) 또는 로컬 통계 분석
+- **기능**:
+  - CPC/CPA 급증/급락 자동 감지
+  - 예산 소진 속도 이상 경고
+  - 전환율 급격한 변화 알림
+  - 경쟁사 활동 패턴 추정 (입찰 변동 분석)
+- **구현 위치**:
+  - `/dashboard/notifications` 페이지
+  - 각 플랫폼 페이지 상단 경고 배너
+- **사용자 혜택**: 문제 조기 발견 및 빠른 대응
+
+### 기술 스택
+
+#### AI API 호출
+```typescript
+// src/lib/ai/claude.ts
+import Anthropic from '@anthropic-ai/sdk';
+
+const client = new Anthropic({
+  apiKey: process.env.NEXT_PUBLIC_ANTHROPIC_API_KEY,
+});
+
+export async function getChatResponse(message: string, context: any) {
+  const response = await client.messages.create({
+    model: 'claude-3-5-sonnet-20241022',
+    max_tokens: 1024,
+    messages: [{
+      role: 'user',
+      content: `Context: ${JSON.stringify(context)}\n\nUser: ${message}`
+    }]
+  });
+  return response.content[0].text;
+}
+```
+
+#### 음성 인식 (브라우저 내장)
+```typescript
+// src/lib/ai/voice.ts
+const recognition = new webkitSpeechRecognition();
+recognition.lang = 'ko-KR';
+recognition.continuous = false;
+
+export function startVoiceCommand(onResult: (text: string) => void) {
+  recognition.onresult = (event) => {
+    const transcript = event.results[0][0].transcript;
+    onResult(transcript);
+  };
+  recognition.start();
+}
+```
+
+#### 이상 감지 (통계 분석)
+```typescript
+// src/lib/ai/anomaly.ts
+export function detectAnomalies(data: MetricData[]) {
+  const mean = calculateMean(data);
+  const stdDev = calculateStdDev(data);
+
+  return data.filter(d => {
+    const zScore = Math.abs((d.value - mean) / stdDev);
+    return zScore > 2; // 2 표준편차 이상 벗어난 경우
+  });
+}
+```
+
+### 예상 비용 (월 1,000명 사용자 기준)
+
+| 서비스 | 월 예상 비용 | 용도 |
+|--------|------------|------|
+| Claude API | $30-50 | 챗봇, 제안 시스템 |
+| Web Speech API | 무료 | 음성 인식 |
+| 로컬 통계 분석 | 무료 | 이상 감지 (기본) |
+| **총계** | **$30-50** | |
+
+### 개발 우선순위
+
+1. **Phase 1 (1-2주)**: AI Chat Assistant UI + Claude API 연동
+2. **Phase 2 (1주)**: Smart Suggestions (캠페인명, 예산)
+3. **Phase 3 (1주)**: Context-aware Help (페이지별 도움말)
+4. **Phase 4 (2주)**: Anomaly Detection (통계 기반)
+
+### 주의사항
+
+- ⚠️ **API 키 보안**: `NEXT_PUBLIC_*` 환경변수는 클라이언트에 노출되므로 요청 제한 설정 필수
+- ⚠️ **비용 모니터링**: Claude/OpenAI API 사용량 대시보드 모니터링
+- ⚠️ **Rate Limiting**: 사용자당 분당 요청 수 제한 (DoS 방지)
+- ⚠️ **데이터 프라이버시**: 캠페인 데이터를 외부 AI에 전송하므로 개인정보 제외
+
+---
+
 ## 최근 주요 변경사항
+
+### 2025-10-23: 플랫폼 계층 구조 영문화 및 텍스트 wrapping 수정
+- **모든 탭 레이블 영문화**:
+  - Google Ads: Campaign / Ad Group / Ad & Keyword
+  - Meta Ads: Campaign / Ad Set / Ad
+  - TikTok Ads: Campaign / Ad Group / Ad
+  - Amazon Ads: 타입별 상이 (Targeting, Keyword, Creative 등)
+- **네비게이션 바 영문화**: Hub, Analytics, Notifications, 플랫폼 하위 메뉴 모두 영문
+- **텍스트 줄바꿈 방지 전면 적용**:
+  - 모든 테이블 숫자/통화 셀에 `whitespace-nowrap`
+  - Team 페이지 테이블 헤더/셀 모두 적용
+  - Chip 컴포넌트 줄바꿈 방지
+- **필터링 UX 개선**:
+  - 캠페인 클릭 → 광고그룹 필터 + 탭 자동 전환
+  - 광고그룹 클릭 → 광고 필터 + 탭 자동 전환
+  - 필터 해제 버튼에 부모 엔티티명 표시
+  - 필터링 시 부모 컬럼 자동 숨김
 
 ### 2025-10-21: 탭 기반 계층 구조 완성
 - **계층 구조 탭 구현**: 캠페인 → 광고그룹 → 광고 3단계 탭
