@@ -5,8 +5,11 @@ import { Card, CardBody, CardHeader } from "@heroui/card";
 import { Button } from "@heroui/button";
 import { Checkbox } from "@heroui/checkbox";
 import { DateRangePicker } from "@heroui/date-picker";
+import { Tabs, Tab } from "@heroui/tabs";
 import { getLocalTimeZone, today } from "@internationalized/date";
 import { CampaignTable, Campaign } from "@/components/tables/CampaignTable";
+import { AdGroupTable } from "@/components/tables/AdGroupTable";
+import { AdTable } from "@/components/tables/AdTable";
 import {
   ComposedChart,
   Line,
@@ -18,6 +21,7 @@ import {
   Legend,
   ResponsiveContainer,
 } from "recharts";
+import type { AdGroup, Ad } from "@/types/campaign";
 
 const generateChartData = () => {
   const data = [];
@@ -43,7 +47,7 @@ const generateChartData = () => {
 const initialCampaigns: Campaign[] = [
   {
     id: 1,
-    name: "DSP 캠페인 - 프로그래매틱 A",
+    name: "DSP 주문 - 디스플레이 주문",
     status: "active",
     hasError: false,
     budget: 600000,
@@ -58,7 +62,7 @@ const initialCampaigns: Campaign[] = [
   },
   {
     id: 2,
-    name: "DSP 캠페인 - 프로그래매틱 B",
+    name: "DSP 주문 - 비디오 주문",
     status: "active",
     hasError: false,
     budget: 400000,
@@ -73,7 +77,7 @@ const initialCampaigns: Campaign[] = [
   },
   {
     id: 3,
-    name: "DSP 캠페인 - 리타겟팅",
+    name: "DSP 주문 - 리타겟팅",
     status: "paused",
     hasError: false,
     budget: 250000,
@@ -88,12 +92,126 @@ const initialCampaigns: Campaign[] = [
   },
 ];
 
-export default function AmazonAdsDSPPage() {
-  const [selectedKeys, setSelectedKeys] = useState(new Set([]));
+const initialLineItems: AdGroup[] = [
+  {
+    id: 1,
+    campaignId: 1,
+    campaignName: "DSP 주문 - 디스플레이 주문",
+    campaignType: "performance-max",
+    name: "라인 아이템 - 디스플레이 A",
+    status: "active",
+    budget: 300000,
+    spent: 245000,
+    impressions: 125000,
+    clicks: 2800,
+    ctr: 2.24,
+    conversions: 95,
+    cpc: 88,
+    cpa: 2579,
+    roas: 4.5,
+  },
+  {
+    id: 2,
+    campaignId: 1,
+    campaignName: "DSP 주문 - 디스플레이 주문",
+    campaignType: "performance-max",
+    name: "라인 아이템 - 디스플레이 B",
+    status: "active",
+    budget: 300000,
+    spent: 233000,
+    impressions: 110000,
+    clicks: 2400,
+    ctr: 2.18,
+    conversions: 83,
+    cpc: 97,
+    cpa: 2807,
+    roas: 3.9,
+  },
+  {
+    id: 3,
+    campaignId: 2,
+    campaignName: "DSP 주문 - 비디오 주문",
+    campaignType: "performance-max",
+    name: "라인 아이템 - 비디오 A",
+    status: "active",
+    budget: 200000,
+    spent: 168000,
+    impressions: 89000,
+    clicks: 1850,
+    ctr: 2.08,
+    conversions: 62,
+    cpc: 91,
+    cpa: 2710,
+    roas: 3.7,
+  },
+];
+
+const initialCreatives: Ad[] = [
+  {
+    id: 1,
+    campaignId: 1,
+    campaignName: "DSP 주문 - 디스플레이 주문",
+    adGroupId: 1,
+    adGroupName: "라인 아이템 - 디스플레이 A",
+    name: "배너 크리에이티브 A",
+    type: "text",
+    status: "active",
+    spent: 125000,
+    impressions: 65000,
+    clicks: 1480,
+    ctr: 2.28,
+    conversions: 52,
+    cpc: 84,
+    cpa: 2404,
+    roas: 4.8,
+  },
+  {
+    id: 2,
+    campaignId: 1,
+    campaignName: "DSP 주문 - 디스플레이 주문",
+    adGroupId: 1,
+    adGroupName: "라인 아이템 - 디스플레이 A",
+    name: "배너 크리에이티브 B",
+    type: "text",
+    status: "active",
+    spent: 120000,
+    impressions: 60000,
+    clicks: 1320,
+    ctr: 2.20,
+    conversions: 43,
+    cpc: 91,
+    cpa: 2791,
+    roas: 4.2,
+  },
+  {
+    id: 3,
+    campaignId: 1,
+    campaignName: "DSP 주문 - 디스플레이 주문",
+    adGroupId: 2,
+    adGroupName: "라인 아이템 - 디스플레이 B",
+    name: "비디오 크리에이티브 A",
+    type: "text",
+    status: "active",
+    spent: 115000,
+    impressions: 54000,
+    clicks: 1200,
+    ctr: 2.22,
+    conversions: 41,
+    cpc: 96,
+    cpa: 2805,
+    roas: 3.9,
+  },
+];
+
+export default function GoogleAdsPerformanceMaxPage() {
+  const [selectedTab, setSelectedTab] = useState("campaigns");
   const [campaigns, setCampaigns] = useState(initialCampaigns);
-  const [editingCampaigns, setEditingCampaigns] = useState<Set<number>>(
-    new Set()
-  );
+  const [assetGroups, setLineItems] = useState(initialLineItems);
+  const [listingGroups, setCreatives] = useState(initialCreatives);
+
+  // Filter state
+  const [selectedCampaignId, setSelectedCampaignId] = useState<number | null>(null);
+  const [selectedLineItemId, setSelectedLineItemId] = useState<number | string | null>(null);
 
   const todayDate = today(getLocalTimeZone());
   const fourteenDaysAgo = todayDate.subtract({ days: 13 });
@@ -112,26 +230,7 @@ export default function AmazonAdsDSPPage() {
 
   const chartData = useMemo(() => generateChartData(), []);
 
-  const handleEditCampaign = (id: number) => {
-    setEditingCampaigns((prev) => {
-      const newSet = new Set(prev);
-      if (newSet.has(id)) {
-        newSet.delete(id);
-      } else {
-        newSet.add(id);
-      }
-      return newSet;
-    });
-  };
-
-  const handleSaveCampaign = (id: number) => {
-    setEditingCampaigns((prev) => {
-      const newSet = new Set(prev);
-      newSet.delete(id);
-      return newSet;
-    });
-  };
-
+  // Campaign handlers
   const handleCampaignChange = (
     id: number,
     field: string,
@@ -144,18 +243,84 @@ export default function AmazonAdsDSPPage() {
     );
   };
 
-  const handleToggleStatus = (id: number, currentStatus: string) => {
+  const handleToggleCampaignStatus = (id: number, currentStatus: string) => {
     const newStatus = currentStatus === "active" ? "paused" : "active";
     handleCampaignChange(id, "status", newStatus);
-    // TODO: AWS 연동 후 실제 API 호출
   };
+
+  // Asset Group handlers
+  const handleLineItemChange = (
+    id: number | string,
+    field: string,
+    value: any
+  ) => {
+    setLineItems((prev) =>
+      prev.map((group) =>
+        group.id === id ? { ...group, [field]: value } : group
+      )
+    );
+  };
+
+  const handleToggleLineItemStatus = (id: number | string, currentStatus: string) => {
+    const newStatus = currentStatus === "active" ? "paused" : "active";
+    handleLineItemChange(id, "status", newStatus);
+  };
+
+  // Listing Group handlers
+  const handleCreativeChange = (id: number | string, field: string, value: any) => {
+    setCreatives((prev) =>
+      prev.map((group) => (group.id === id ? { ...group, [field]: value } : group))
+    );
+  };
+
+  const handleToggleCreativeStatus = (id: number | string, currentStatus: string) => {
+    const newStatus = currentStatus === "active" ? "paused" : "active";
+    handleCreativeChange(id, "status", newStatus);
+  };
+
+  // Filter handlers
+  const handleCampaignClick = (campaignId: number) => {
+    setSelectedCampaignId(campaignId);
+    setSelectedTab("lineitems");
+  };
+
+  const handleLineItemClick = (assetGroupId: number | string) => {
+    setSelectedLineItemId(assetGroupId);
+    setSelectedTab("creatives");
+  };
+
+  const handleClearFilter = () => {
+    setSelectedCampaignId(null);
+    setSelectedLineItemId(null);
+  };
+
+  // Filtered data
+  const filteredLineItems = useMemo(() => {
+    if (!selectedCampaignId) return assetGroups;
+    return assetGroups.filter((ag) => ag.campaignId === selectedCampaignId);
+  }, [assetGroups, selectedCampaignId]);
+
+  const filteredCreatives = useMemo(() => {
+    if (!selectedLineItemId) return listingGroups;
+    return listingGroups.filter((lg) => lg.adGroupId === selectedLineItemId);
+  }, [listingGroups, selectedLineItemId]);
+
+  const selectedCampaignName = useMemo(() => {
+    if (!selectedCampaignId) return null;
+    return campaigns.find((c) => c.id === selectedCampaignId)?.name || null;
+  }, [campaigns, selectedCampaignId]);
+
+  const selectedLineItemName = useMemo(() => {
+    if (!selectedLineItemId) return null;
+    return assetGroups.find((ag) => ag.id === selectedLineItemId)?.name || null;
+  }, [assetGroups, selectedLineItemId]);
 
   return (
     <div className="container mx-auto px-6 py-8">
       <div className="mb-6">
         <h1 className="text-3xl font-bold mb-2">Amazon Ads - DSP</h1>
         <p className="text-default-500">
-          Amazon DSP 광고 성과를 관리하세요
+          Amazon DSP 프로그래매틱 광고 성과를 관리하세요
         </p>
       </div>
 
@@ -314,21 +479,102 @@ export default function AmazonAdsDSPPage() {
       </Card>
 
       <Card>
-        <CardHeader className="flex justify-between items-center">
-          <h3 className="text-xl font-semibold">캠페인 목록</h3>
-          <Button color="primary" radius="sm" variant="flat" size="sm">
-            + 새 캠페인
-          </Button>
+        <CardHeader>
+          <Tabs
+            selectedKey={selectedTab}
+            onSelectionChange={(key) => setSelectedTab(key as string)}
+            radius="sm"
+            variant="underlined"
+            classNames={{
+              tabList: "gap-6",
+              cursor: "bg-primary",
+              tab: "px-0",
+            }}
+          >
+            <Tab key="campaigns" title="Order" />
+            <Tab key="lineitems" title="Line Item" />
+            <Tab key="creatives" title="Creative" />
+          </Tabs>
         </CardHeader>
         <CardBody>
-          <CampaignTable
-            data={campaigns}
-            onCampaignChange={handleCampaignChange}
-            onToggleStatus={handleToggleStatus}
-            editingCampaigns={editingCampaigns}
-            onEditCampaign={handleEditCampaign}
-            onSaveCampaign={handleSaveCampaign}
-          />
+          {selectedTab === "campaigns" && (
+            <>
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="text-xl font-semibold">주문 목록 ({campaigns.length})</h3>
+                <Button color="primary" radius="sm" variant="flat" size="sm">
+                  + 새 주문
+                </Button>
+              </div>
+              <CampaignTable
+                data={campaigns}
+                onCampaignChange={handleCampaignChange}
+                onToggleStatus={handleToggleCampaignStatus}
+                onCampaignClick={handleCampaignClick}
+              />
+            </>
+          )}
+
+          {selectedTab === "lineitems" && (
+            <>
+              <div className="flex justify-between items-center mb-4">
+                <div className="flex items-center gap-3">
+                  <h3 className="text-xl font-semibold">라인 아이템 목록 ({filteredLineItems.length})</h3>
+                  {selectedCampaignName && (
+                    <Button
+                      size="sm"
+                      variant="flat"
+                      color="default"
+                      onPress={handleClearFilter}
+                      startContent={<span>✕</span>}
+                    >
+                      {selectedCampaignName} 필터 해제
+                    </Button>
+                  )}
+                </div>
+                <Button color="primary" radius="sm" variant="flat" size="sm">
+                  + 새 라인 아이템
+                </Button>
+              </div>
+              <AdGroupTable
+                data={filteredLineItems}
+                onAdGroupChange={handleLineItemChange}
+                onToggleStatus={handleToggleLineItemStatus}
+                showCampaignColumn={!selectedCampaignId}
+                onAdGroupClick={handleLineItemClick}
+              />
+            </>
+          )}
+
+          {selectedTab === "creatives" && (
+            <>
+              <div className="flex justify-between items-center mb-4">
+                <div className="flex items-center gap-3">
+                  <h3 className="text-xl font-semibold">크리에이티브 목록 ({filteredCreatives.length})</h3>
+                  {selectedLineItemName && (
+                    <Button
+                      size="sm"
+                      variant="flat"
+                      color="default"
+                      onPress={handleClearFilter}
+                      startContent={<span>✕</span>}
+                    >
+                      {selectedLineItemName} 필터 해제
+                    </Button>
+                  )}
+                </div>
+                <Button color="primary" radius="sm" variant="flat" size="sm">
+                  + 새 크리에이티브
+                </Button>
+              </div>
+              <AdTable
+                data={filteredCreatives}
+                onAdChange={handleCreativeChange}
+                onToggleStatus={handleToggleCreativeStatus}
+                showCampaignColumn={!selectedCampaignId}
+                showAdGroupColumn={!selectedLineItemId}
+              />
+            </>
+          )}
         </CardBody>
       </Card>
     </div>

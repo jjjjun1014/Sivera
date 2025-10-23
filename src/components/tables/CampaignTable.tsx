@@ -384,7 +384,7 @@ export function CampaignTable({
         accessorKey: "budget",
         header: "예산",
         cell: ({ getValue }) => {
-          return <div className="text-right">₩{(getValue() as number).toLocaleString()}</div>;
+          return <div className="text-right whitespace-nowrap">₩{(getValue() as number).toLocaleString()}</div>;
         },
       },
       {
@@ -393,20 +393,20 @@ export function CampaignTable({
         header: "소진",
         cell: ({ getValue }) => {
           const spent = getValue() as number;
-          return <div>₩{spent.toLocaleString()}</div>;
+          return <div className="whitespace-nowrap">₩{spent.toLocaleString()}</div>;
         },
       },
       {
         id: "impressions",
         accessorKey: "impressions",
         header: "노출수",
-        cell: ({ getValue }) => (getValue() as number).toLocaleString(),
+        cell: ({ getValue }) => <span className="whitespace-nowrap">{(getValue() as number).toLocaleString()}</span>,
       },
       {
         id: "clicks",
         accessorKey: "clicks",
         header: "클릭수",
-        cell: ({ getValue }) => (getValue() as number).toLocaleString(),
+        cell: ({ getValue }) => <span className="whitespace-nowrap">{(getValue() as number).toLocaleString()}</span>,
       },
       {
         id: "ctr",
@@ -418,19 +418,19 @@ export function CampaignTable({
         id: "conversions",
         accessorKey: "conversions",
         header: "전환수",
-        cell: ({ getValue }) => (getValue() as number).toLocaleString(),
+        cell: ({ getValue }) => <span className="whitespace-nowrap">{(getValue() as number).toLocaleString()}</span>,
       },
       {
         id: "cpc",
         accessorKey: "cpc",
         header: "CPC",
-        cell: ({ getValue }) => `₩${(getValue() as number).toLocaleString()}`,
+        cell: ({ getValue }) => <span className="whitespace-nowrap">₩{(getValue() as number).toLocaleString()}</span>,
       },
       {
         id: "cpa",
         accessorKey: "cpa",
         header: "CPA",
-        cell: ({ getValue }) => `₩${(getValue() as number).toLocaleString()}`,
+        cell: ({ getValue }) => <span className="whitespace-nowrap">₩{(getValue() as number).toLocaleString()}</span>,
       },
       {
         id: "roas",

@@ -506,9 +506,9 @@ export default function GoogleAdsSearchPage() {
               tab: "px-0",
             }}
           >
-            <Tab key="campaigns" title="캠페인" />
-            <Tab key="adgroups" title="광고그룹" />
-            <Tab key="ads" title="광고 & 키워드" />
+            <Tab key="campaigns" title="Campaign" />
+            <Tab key="adgroups" title="Ad Group" />
+            <Tab key="ads" title="Ad & Keyword" />
           </Tabs>
         </CardHeader>
         <CardBody>

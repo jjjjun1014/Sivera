@@ -396,44 +396,44 @@ export function AdTable({
         header: "소진",
         cell: ({ getValue }) => {
           const spent = getValue() as number;
-          return <div>₩{spent.toLocaleString()}</div>;
+          return <div className="whitespace-nowrap">₩{spent.toLocaleString()}</div>;
         },
       },
       {
         id: "impressions",
         accessorKey: "impressions",
         header: "노출수",
-        cell: ({ getValue }) => (getValue() as number).toLocaleString(),
+        cell: ({ getValue }) => <span className="whitespace-nowrap">{(getValue() as number).toLocaleString()}</span>,
       },
       {
         id: "clicks",
         accessorKey: "clicks",
         header: "클릭수",
-        cell: ({ getValue }) => (getValue() as number).toLocaleString(),
+        cell: ({ getValue }) => <span className="whitespace-nowrap">{(getValue() as number).toLocaleString()}</span>,
       },
       {
         id: "ctr",
         accessorKey: "ctr",
         header: "CTR",
-        cell: ({ getValue }) => `${(getValue() as number).toFixed(2)}%`,
+        cell: ({ getValue }) => <span className="whitespace-nowrap">{(getValue() as number).toFixed(2)}%</span>,
       },
       {
         id: "conversions",
         accessorKey: "conversions",
         header: "전환수",
-        cell: ({ getValue }) => (getValue() as number).toLocaleString(),
+        cell: ({ getValue }) => <span className="whitespace-nowrap">{(getValue() as number).toLocaleString()}</span>,
       },
       {
         id: "cpc",
         accessorKey: "cpc",
         header: "CPC",
-        cell: ({ getValue }) => `₩${(getValue() as number).toLocaleString()}`,
+        cell: ({ getValue }) => <span className="whitespace-nowrap">₩{(getValue() as number).toLocaleString()}</span>,
       },
       {
         id: "cpa",
         accessorKey: "cpa",
         header: "CPA",
-        cell: ({ getValue }) => `₩${(getValue() as number).toLocaleString()}`,
+        cell: ({ getValue }) => <span className="whitespace-nowrap">₩{(getValue() as number).toLocaleString()}</span>,
       },
       {
         id: "roas",

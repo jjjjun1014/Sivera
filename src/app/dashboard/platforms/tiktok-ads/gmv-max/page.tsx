@@ -5,8 +5,10 @@ import { Card, CardBody, CardHeader } from "@heroui/card";
 import { Button } from "@heroui/button";
 import { Checkbox } from "@heroui/checkbox";
 import { DateRangePicker } from "@heroui/date-picker";
+import { Tabs, Tab } from "@heroui/tabs";
 import { getLocalTimeZone, today } from "@internationalized/date";
 import { CampaignTable, Campaign } from "@/components/tables/CampaignTable";
+import { AdTable } from "@/components/tables/AdTable";
 import {
   ComposedChart,
   Line,
@@ -18,6 +20,7 @@ import {
   Legend,
   ResponsiveContainer,
 } from "recharts";
+import type { Ad } from "@/types/campaign";
 
 const generateChartData = () => {
   const data = [];
@@ -31,10 +34,10 @@ const generateChartData = () => {
     const day = date.getDate();
     data.push({
       date: `${month}/${day}`,
-      impressions: Math.floor(28000 + Math.random() * 10000),
-      clicks: Math.floor(900 + Math.random() * 500),
-      conversions: Math.floor(30 + Math.random() * 18),
-      cost: Math.floor(110000 + Math.random() * 45000),
+      impressions: Math.floor(32000 + Math.random() * 12000),
+      clicks: Math.floor(1100 + Math.random() * 600),
+      conversions: Math.floor(40 + Math.random() * 25),
+      cost: Math.floor(130000 + Math.random() * 50000),
     });
   }
   return data;
@@ -46,54 +49,97 @@ const initialCampaigns: Campaign[] = [
     name: "GMV Max - 전체 상품",
     status: "active",
     hasError: false,
-    budget: 600000,
-    spent: 478000,
-    impressions: 235000,
-    clicks: 5200,
-    ctr: 2.21,
-    conversions: 178,
-    cpc: 92,
-    cpa: 2685,
-    roas: 4.2,
+    budget: 800000,
+    spent: 658000,
+    impressions: 312000,
+    clicks: 6800,
+    ctr: 2.18,
+    conversions: 245,
+    cpc: 97,
+    cpa: 2686,
+    roas: 4.8,
   },
   {
     id: 2,
-    name: "GMV Max - 신상품",
+    name: "GMV Max - 베스트셀러",
     status: "active",
     hasError: false,
-    budget: 400000,
-    spent: 342000,
-    impressions: 189000,
-    clicks: 3800,
-    ctr: 2.01,
-    conversions: 124,
-    cpc: 90,
-    cpa: 2758,
-    roas: 3.8,
-  },
-  {
-    id: 3,
-    name: "GMV Max - 베스트셀러",
-    status: "paused",
-    hasError: false,
-    budget: 250000,
-    spent: 198000,
-    impressions: 156000,
-    clicks: 2900,
-    ctr: 1.86,
-    conversions: 89,
-    cpc: 68,
-    cpa: 2225,
-    roas: 3.5,
+    budget: 500000,
+    spent: 423000,
+    impressions: 198000,
+    clicks: 4200,
+    ctr: 2.12,
+    conversions: 156,
+    cpc: 101,
+    cpa: 2712,
+    roas: 4.2,
   },
 ];
 
-export default function TikTokAdsGMVMaxPage() {
-  const [selectedKeys, setSelectedKeys] = useState(new Set([]));
+const initialAds: Ad[] = [
+  {
+    id: 1,
+    campaignId: 1,
+    campaignName: "GMV Max - 전체 상품",
+    adGroupId: 0,
+    adGroupName: "자동 최적화",
+    name: "GMV 최적화 광고 A",
+    type: "image",
+    status: "active",
+    spent: 328000,
+    impressions: 156000,
+    clicks: 3400,
+    ctr: 2.18,
+    conversions: 122,
+    cpc: 96,
+    cpa: 2689,
+    roas: 4.9,
+  },
+  {
+    id: 2,
+    campaignId: 1,
+    campaignName: "GMV Max - 전체 상품",
+    adGroupId: 0,
+    adGroupName: "자동 최적화",
+    name: "GMV 최적화 광고 B",
+    type: "video",
+    status: "active",
+    spent: 330000,
+    impressions: 156000,
+    clicks: 3400,
+    ctr: 2.18,
+    conversions: 123,
+    cpc: 97,
+    cpa: 2683,
+    roas: 4.7,
+  },
+  {
+    id: 3,
+    campaignId: 2,
+    campaignName: "GMV Max - 베스트셀러",
+    adGroupId: 0,
+    adGroupName: "자동 최적화",
+    name: "GMV 최적화 광고 C",
+    type: "carousel",
+    status: "active",
+    spent: 423000,
+    impressions: 198000,
+    clicks: 4200,
+    ctr: 2.12,
+    conversions: 156,
+    cpc: 101,
+    cpa: 2712,
+    roas: 4.2,
+  },
+];
+
+export default function MetaAdsAdvantagePlusPage() {
+  const [selectedTab, setSelectedTab] = useState("campaigns");
   const [campaigns, setCampaigns] = useState(initialCampaigns);
-  const [editingCampaigns, setEditingCampaigns] = useState<Set<number>>(
-    new Set()
-  );
+  const [ads, setAds] = useState(initialAds);
+
+  // Filter state (Advantage+는 광고 세트 없음)
+  const [selectedCampaignId, setSelectedCampaignId] = useState<number | null>(null);
 
   const todayDate = today(getLocalTimeZone());
   const fourteenDaysAgo = todayDate.subtract({ days: 13 });
@@ -112,26 +158,7 @@ export default function TikTokAdsGMVMaxPage() {
 
   const chartData = useMemo(() => generateChartData(), []);
 
-  const handleEditCampaign = (id: number) => {
-    setEditingCampaigns((prev) => {
-      const newSet = new Set(prev);
-      if (newSet.has(id)) {
-        newSet.delete(id);
-      } else {
-        newSet.add(id);
-      }
-      return newSet;
-    });
-  };
-
-  const handleSaveCampaign = (id: number) => {
-    setEditingCampaigns((prev) => {
-      const newSet = new Set(prev);
-      newSet.delete(id);
-      return newSet;
-    });
-  };
-
+  // Campaign handlers
   const handleCampaignChange = (
     id: number,
     field: string,
@@ -144,18 +171,50 @@ export default function TikTokAdsGMVMaxPage() {
     );
   };
 
-  const handleToggleStatus = (id: number, currentStatus: string) => {
+  const handleToggleCampaignStatus = (id: number, currentStatus: string) => {
     const newStatus = currentStatus === "active" ? "paused" : "active";
     handleCampaignChange(id, "status", newStatus);
-    // TODO: AWS 연동 후 실제 API 호출
   };
+
+  // Ad handlers
+  const handleAdChange = (id: number | string, field: string, value: any) => {
+    setAds((prev) =>
+      prev.map((ad) => (ad.id === id ? { ...ad, [field]: value } : ad))
+    );
+  };
+
+  const handleToggleAdStatus = (id: number | string, currentStatus: string) => {
+    const newStatus = currentStatus === "active" ? "paused" : "active";
+    handleAdChange(id, "status", newStatus);
+  };
+
+  // Filter handlers
+  const handleCampaignClick = (campaignId: number) => {
+    setSelectedCampaignId(campaignId);
+    setSelectedTab("ads");
+  };
+
+  const handleClearFilter = () => {
+    setSelectedCampaignId(null);
+  };
+
+  // Filtered data
+  const filteredAds = useMemo(() => {
+    if (!selectedCampaignId) return ads;
+    return ads.filter((ad) => ad.campaignId === selectedCampaignId);
+  }, [ads, selectedCampaignId]);
+
+  const selectedCampaignName = useMemo(() => {
+    if (!selectedCampaignId) return null;
+    return campaigns.find((c) => c.id === selectedCampaignId)?.name || null;
+  }, [campaigns, selectedCampaignId]);
 
   return (
     <div className="container mx-auto px-6 py-8">
       <div className="mb-6">
         <h1 className="text-3xl font-bold mb-2">TikTok Ads - GMV Max</h1>
         <p className="text-default-500">
-          GMV Max 캠페인 성과를 관리하세요
+          GMV 극대화 캠페인으로 매출을 최대화하세요
         </p>
       </div>
 
@@ -181,29 +240,29 @@ export default function TikTokAdsGMVMaxPage() {
         <Card>
           <CardBody className="text-center py-6">
             <p className="text-sm text-default-500 mb-1">총 지출</p>
-            <p className="text-3xl font-bold">₩1.02M</p>
-            <p className="text-xs text-success mt-1">+7.2%</p>
+            <p className="text-3xl font-bold">₩1.08M</p>
+            <p className="text-xs text-success mt-1">+12.4%</p>
           </CardBody>
         </Card>
         <Card>
           <CardBody className="text-center py-6">
             <p className="text-sm text-default-500 mb-1">총 전환수</p>
-            <p className="text-3xl font-bold">391</p>
-            <p className="text-xs text-success mt-1">+10.8%</p>
+            <p className="text-3xl font-bold">401</p>
+            <p className="text-xs text-success mt-1">+15.2%</p>
           </CardBody>
         </Card>
         <Card>
           <CardBody className="text-center py-6">
             <p className="text-sm text-default-500 mb-1">평균 CPA</p>
-            <p className="text-3xl font-bold">₩2,608</p>
-            <p className="text-xs text-danger mt-1">+4.1%</p>
+            <p className="text-3xl font-bold">₩2,694</p>
+            <p className="text-xs text-danger mt-1">+2.8%</p>
           </CardBody>
         </Card>
         <Card>
           <CardBody className="text-center py-6">
             <p className="text-sm text-default-500 mb-1">평균 ROAS</p>
-            <p className="text-3xl font-bold">3.8x</p>
-            <p className="text-xs text-success mt-1">+4.5%</p>
+            <p className="text-3xl font-bold">4.5x</p>
+            <p className="text-xs text-success mt-1">+8.2%</p>
           </CardBody>
         </Card>
       </div>
@@ -314,21 +373,70 @@ export default function TikTokAdsGMVMaxPage() {
       </Card>
 
       <Card>
-        <CardHeader className="flex justify-between items-center">
-          <h3 className="text-xl font-semibold">캠페인 목록</h3>
-          <Button color="primary" radius="sm" variant="flat" size="sm">
-            + 새 캠페인
-          </Button>
+        <CardHeader>
+          <Tabs
+            selectedKey={selectedTab}
+            onSelectionChange={(key) => setSelectedTab(key as string)}
+            radius="sm"
+            variant="underlined"
+            classNames={{
+              tabList: "gap-6",
+              cursor: "bg-primary",
+              tab: "px-0",
+            }}
+          >
+            <Tab key="campaigns" title="Campaign" />
+            <Tab key="ads" title="Ad" />
+          </Tabs>
         </CardHeader>
         <CardBody>
-          <CampaignTable
-            data={campaigns}
-            onCampaignChange={handleCampaignChange}
-            onToggleStatus={handleToggleStatus}
-            editingCampaigns={editingCampaigns}
-            onEditCampaign={handleEditCampaign}
-            onSaveCampaign={handleSaveCampaign}
-          />
+          {selectedTab === "campaigns" && (
+            <>
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="text-xl font-semibold">캠페인 목록 ({campaigns.length})</h3>
+                <Button color="primary" radius="sm" variant="flat" size="sm">
+                  + 새 캠페인
+                </Button>
+              </div>
+              <CampaignTable
+                data={campaigns}
+                onCampaignChange={handleCampaignChange}
+                onToggleStatus={handleToggleCampaignStatus}
+                onCampaignClick={handleCampaignClick}
+              />
+            </>
+          )}
+
+          {selectedTab === "ads" && (
+            <>
+              <div className="flex justify-between items-center mb-4">
+                <div className="flex items-center gap-3">
+                  <h3 className="text-xl font-semibold">GMV 최적화 광고 목록 ({filteredAds.length})</h3>
+                  {selectedCampaignName && (
+                    <Button
+                      size="sm"
+                      variant="flat"
+                      color="default"
+                      onPress={handleClearFilter}
+                      startContent={<span>✕</span>}
+                    >
+                      {selectedCampaignName} 필터 해제
+                    </Button>
+                  )}
+                </div>
+                <div className="text-sm text-default-500">
+                  * AI가 자동으로 광고를 생성하고 최적화합니다
+                </div>
+              </div>
+              <AdTable
+                data={filteredAds}
+                onAdChange={handleAdChange}
+                onToggleStatus={handleToggleAdStatus}
+                showCampaignColumn={!selectedCampaignId}
+                showAdGroupColumn={false}
+              />
+            </>
+          )}
         </CardBody>
       </Card>
     </div>

@@ -5,8 +5,10 @@ import { Card, CardBody, CardHeader } from "@heroui/card";
 import { Button } from "@heroui/button";
 import { Checkbox } from "@heroui/checkbox";
 import { DateRangePicker } from "@heroui/date-picker";
+import { Tabs, Tab } from "@heroui/tabs";
 import { getLocalTimeZone, today } from "@internationalized/date";
 import { CampaignTable, Campaign } from "@/components/tables/CampaignTable";
+import { AdTable } from "@/components/tables/AdTable";
 import {
   ComposedChart,
   Line,
@@ -18,6 +20,7 @@ import {
   Legend,
   ResponsiveContainer,
 } from "recharts";
+import type { Ad } from "@/types/campaign";
 
 const generateChartData = () => {
   const data = [];
@@ -73,12 +76,70 @@ const initialCampaigns: Campaign[] = [
   },
 ];
 
+const initialAds: Ad[] = [
+  {
+    id: 1,
+    campaignId: 1,
+    campaignName: "Advantage+ Shopping - 봄 신상품",
+    adGroupId: 0,
+    adGroupName: "자동 최적화",
+    name: "자동 생성 광고 A",
+    type: "image",
+    status: "active",
+    spent: 328000,
+    impressions: 156000,
+    clicks: 3400,
+    ctr: 2.18,
+    conversions: 122,
+    cpc: 96,
+    cpa: 2689,
+    roas: 4.9,
+  },
+  {
+    id: 2,
+    campaignId: 1,
+    campaignName: "Advantage+ Shopping - 봄 신상품",
+    adGroupId: 0,
+    adGroupName: "자동 최적화",
+    name: "자동 생성 광고 B",
+    type: "video",
+    status: "active",
+    spent: 330000,
+    impressions: 156000,
+    clicks: 3400,
+    ctr: 2.18,
+    conversions: 123,
+    cpc: 97,
+    cpa: 2683,
+    roas: 4.7,
+  },
+  {
+    id: 3,
+    campaignId: 2,
+    campaignName: "Advantage+ App - 리타겟팅",
+    adGroupId: 0,
+    adGroupName: "자동 최적화",
+    name: "자동 생성 광고 C",
+    type: "carousel",
+    status: "active",
+    spent: 423000,
+    impressions: 198000,
+    clicks: 4200,
+    ctr: 2.12,
+    conversions: 156,
+    cpc: 101,
+    cpa: 2712,
+    roas: 4.2,
+  },
+];
+
 export default function MetaAdsAdvantagePlusPage() {
-  const [selectedKeys, setSelectedKeys] = useState(new Set([]));
+  const [selectedTab, setSelectedTab] = useState("campaigns");
   const [campaigns, setCampaigns] = useState(initialCampaigns);
-  const [editingCampaigns, setEditingCampaigns] = useState<Set<number>>(
-    new Set()
-  );
+  const [ads, setAds] = useState(initialAds);
+
+  // Filter state (Advantage+는 광고 세트 없음)
+  const [selectedCampaignId, setSelectedCampaignId] = useState<number | null>(null);
 
   const todayDate = today(getLocalTimeZone());
   const fourteenDaysAgo = todayDate.subtract({ days: 13 });
@@ -97,26 +158,7 @@ export default function MetaAdsAdvantagePlusPage() {
 
   const chartData = useMemo(() => generateChartData(), []);
 
-  const handleEditCampaign = (id: number) => {
-    setEditingCampaigns((prev) => {
-      const newSet = new Set(prev);
-      if (newSet.has(id)) {
-        newSet.delete(id);
-      } else {
-        newSet.add(id);
-      }
-      return newSet;
-    });
-  };
-
-  const handleSaveCampaign = (id: number) => {
-    setEditingCampaigns((prev) => {
-      const newSet = new Set(prev);
-      newSet.delete(id);
-      return newSet;
-    });
-  };
-
+  // Campaign handlers
   const handleCampaignChange = (
     id: number,
     field: string,
@@ -129,17 +171,50 @@ export default function MetaAdsAdvantagePlusPage() {
     );
   };
 
-  const handleToggleStatus = (id: number, currentStatus: string) => {
+  const handleToggleCampaignStatus = (id: number, currentStatus: string) => {
     const newStatus = currentStatus === "active" ? "paused" : "active";
     handleCampaignChange(id, "status", newStatus);
   };
+
+  // Ad handlers
+  const handleAdChange = (id: number | string, field: string, value: any) => {
+    setAds((prev) =>
+      prev.map((ad) => (ad.id === id ? { ...ad, [field]: value } : ad))
+    );
+  };
+
+  const handleToggleAdStatus = (id: number | string, currentStatus: string) => {
+    const newStatus = currentStatus === "active" ? "paused" : "active";
+    handleAdChange(id, "status", newStatus);
+  };
+
+  // Filter handlers
+  const handleCampaignClick = (campaignId: number) => {
+    setSelectedCampaignId(campaignId);
+    setSelectedTab("ads");
+  };
+
+  const handleClearFilter = () => {
+    setSelectedCampaignId(null);
+  };
+
+  // Filtered data
+  const filteredAds = useMemo(() => {
+    if (!selectedCampaignId) return ads;
+    return ads.filter((ad) => ad.campaignId === selectedCampaignId);
+  }, [ads, selectedCampaignId]);
+
+  const selectedCampaignName = useMemo(() => {
+    if (!selectedCampaignId) return null;
+    return campaigns.find((c) => c.id === selectedCampaignId)?.name || null;
+  }, [campaigns, selectedCampaignId]);
 
   return (
     <div className="container mx-auto px-6 py-8">
       <div className="mb-6">
         <h1 className="text-3xl font-bold mb-2">Meta Ads - Advantage+</h1>
         <p className="text-default-500">
-          AI 기반 자동 최적화 광고 성과를 관리하세요
+          AI 기반 자동 최적화 캠페인으로 최고의 성과를 달성하세요
         </p>
       </div>
 
@@ -166,7 +241,7 @@ export default function MetaAdsAdvantagePlusPage() {
           <CardBody className="text-center py-6">
             <p className="text-sm text-default-500 mb-1">총 지출</p>
             <p className="text-3xl font-bold">₩1.08M</p>
-            <p className="text-xs text-success mt-1">+12.5%</p>
+            <p className="text-xs text-success mt-1">+12.4%</p>
           </CardBody>
         </Card>
         <Card>
@@ -187,7 +262,7 @@ export default function MetaAdsAdvantagePlusPage() {
           <CardBody className="text-center py-6">
             <p className="text-sm text-default-500 mb-1">평균 ROAS</p>
             <p className="text-3xl font-bold">4.5x</p>
-            <p className="text-xs text-success mt-1">+8.3%</p>
+            <p className="text-xs text-success mt-1">+8.2%</p>
           </CardBody>
         </Card>
       </div>
@@ -298,21 +373,70 @@ export default function MetaAdsAdvantagePlusPage() {
       </Card>
 
       <Card>
-        <CardHeader className="flex justify-between items-center">
-          <h3 className="text-xl font-semibold">캠페인 목록</h3>
-          <Button color="primary" radius="sm" variant="flat" size="sm">
-            + 새 캠페인
-          </Button>
+        <CardHeader>
+          <Tabs
+            selectedKey={selectedTab}
+            onSelectionChange={(key) => setSelectedTab(key as string)}
+            radius="sm"
+            variant="underlined"
+            classNames={{
+              tabList: "gap-6",
+              cursor: "bg-primary",
+              tab: "px-0",
+            }}
+          >
+            <Tab key="campaigns" title="Campaign" />
+            <Tab key="ads" title="Ad" />
+          </Tabs>
         </CardHeader>
         <CardBody>
-          <CampaignTable
-            data={campaigns}
-            onCampaignChange={handleCampaignChange}
-            onToggleStatus={handleToggleStatus}
-            editingCampaigns={editingCampaigns}
-            onEditCampaign={handleEditCampaign}
-            onSaveCampaign={handleSaveCampaign}
-          />
+          {selectedTab === "campaigns" && (
+            <>
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="text-xl font-semibold">캠페인 목록 ({campaigns.length})</h3>
+                <Button color="primary" radius="sm" variant="flat" size="sm">
+                  + 새 캠페인
+                </Button>
+              </div>
+              <CampaignTable
+                data={campaigns}
+                onCampaignChange={handleCampaignChange}
+                onToggleStatus={handleToggleCampaignStatus}
+                onCampaignClick={handleCampaignClick}
+              />
+            </>
+          )}
+
+          {selectedTab === "ads" && (
+            <>
+              <div className="flex justify-between items-center mb-4">
+                <div className="flex items-center gap-3">
+                  <h3 className="text-xl font-semibold">자동 생성 광고 목록 ({filteredAds.length})</h3>
+                  {selectedCampaignName && (
+                    <Button
+                      size="sm"
+                      variant="flat"
+                      color="default"
+                      onPress={handleClearFilter}
+                      startContent={<span>✕</span>}
+                    >
+                      {selectedCampaignName} 필터 해제
+                    </Button>
+                  )}
+                </div>
+                <div className="text-sm text-default-500">
+                  * AI가 자동으로 광고를 생성하고 최적화합니다
+                </div>
+              </div>
+              <AdTable
+                data={filteredAds}
+                onAdChange={handleAdChange}
+                onToggleStatus={handleToggleAdStatus}
+                showCampaignColumn={!selectedCampaignId}
+                showAdGroupColumn={false}
+              />
+            </>
+          )}
         </CardBody>
       </Card>
     </div>

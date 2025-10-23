@@ -223,13 +223,13 @@ export default function TeamPage() {
             disallowEmptySelection={false}
           >
             <TableHeader>
-              <TableColumn>팀원</TableColumn>
-              <TableColumn>이메일</TableColumn>
-              <TableColumn>역할</TableColumn>
-              <TableColumn>가입일</TableColumn>
-              <TableColumn>마지막 활동</TableColumn>
-              <TableColumn align="center">캠페인 수</TableColumn>
-              <TableColumn align="center">작업</TableColumn>
+              <TableColumn className="whitespace-nowrap">팀원</TableColumn>
+              <TableColumn className="whitespace-nowrap">이메일</TableColumn>
+              <TableColumn className="whitespace-nowrap">역할</TableColumn>
+              <TableColumn className="whitespace-nowrap">가입일</TableColumn>
+              <TableColumn className="whitespace-nowrap">마지막 활동</TableColumn>
+              <TableColumn align="center" className="whitespace-nowrap">캠페인 수</TableColumn>
+              <TableColumn align="center" className="whitespace-nowrap">작업</TableColumn>
             </TableHeader>
             <TableBody>
               {teamMembers.map((member) => (
@@ -243,7 +243,7 @@ export default function TeamPage() {
                     />
                   </TableCell>
                   <TableCell>
-                    <span className="text-sm text-default-500">
+                    <span className="text-sm text-default-500 whitespace-nowrap">
                       {member.email}
                     </span>
                   </TableCell>
@@ -252,20 +252,21 @@ export default function TeamPage() {
                       color={roleColorMap[member.role]}
                       size="sm"
                       variant="flat"
+                      className="whitespace-nowrap"
                     >
                       {roleTextMap[member.role]}
                     </Chip>
                   </TableCell>
                   <TableCell>
-                    <span className="text-sm">{member.joinedAt}</span>
+                    <span className="text-sm whitespace-nowrap">{member.joinedAt}</span>
                   </TableCell>
                   <TableCell>
-                    <span className="text-sm text-default-500">
+                    <span className="text-sm text-default-500 whitespace-nowrap">
                       {member.lastActive}
                     </span>
                   </TableCell>
                   <TableCell className="text-center">
-                    <span className="font-semibold">{member.campaigns}</span>
+                    <span className="font-semibold whitespace-nowrap">{member.campaigns}</span>
                   </TableCell>
                   <TableCell>
                     <div className="flex gap-2 justify-center">
@@ -310,29 +311,34 @@ export default function TeamPage() {
         <CardBody>
           <Table aria-label="대기 중인 초대 테이블">
             <TableHeader>
-              <TableColumn>이메일</TableColumn>
-              <TableColumn>역할</TableColumn>
-              <TableColumn>초대한 사람</TableColumn>
-              <TableColumn>초대일</TableColumn>
-              <TableColumn align="center">작업</TableColumn>
+              <TableColumn className="whitespace-nowrap">이메일</TableColumn>
+              <TableColumn className="whitespace-nowrap">역할</TableColumn>
+              <TableColumn className="whitespace-nowrap">초대한 사람</TableColumn>
+              <TableColumn className="whitespace-nowrap">초대일</TableColumn>
+              <TableColumn align="center" className="whitespace-nowrap">작업</TableColumn>
             </TableHeader>
             <TableBody>
               {pendingInvites.map((invite) => (
                 <TableRow key={invite.id}>
                   <TableCell>
-                    <span className="font-medium">{invite.email}</span>
+                    <span className="font-medium whitespace-nowrap">{invite.email}</span>
                   </TableCell>
                   <TableCell>
                     <Chip
                       color={roleColorMap[invite.role]}
                       size="sm"
                       variant="flat"
+                      className="whitespace-nowrap"
                     >
                       {roleTextMap[invite.role]}
                     </Chip>
                   </TableCell>
-                  <TableCell>{invite.invitedBy}</TableCell>
-                  <TableCell>{invite.invitedAt}</TableCell>
+                  <TableCell>
+                    <span className="whitespace-nowrap">{invite.invitedBy}</span>
+                  </TableCell>
+                  <TableCell>
+                    <span className="whitespace-nowrap">{invite.invitedAt}</span>
+                  </TableCell>
                   <TableCell>
                     <div className="flex gap-2 justify-center">
                       <Button

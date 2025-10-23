@@ -15,7 +15,7 @@ import {
 const menuItems = [
   {
     key: "hub",
-    label: "허브",
+    label: "Hub",
     href: "/hub",
     icon: (
       <svg
@@ -35,7 +35,7 @@ const menuItems = [
   },
   {
     key: "analytics",
-    label: "통합 분석",
+    label: "Analytics",
     href: "/dashboard/analytics",
     icon: (
       <svg
@@ -55,7 +55,7 @@ const menuItems = [
   },
   {
     key: "notifications",
-    label: "알림",
+    label: "Notifications",
     href: "/dashboard/notifications",
     icon: (
       <svg
@@ -92,10 +92,10 @@ const menuItems = [
       </svg>
     ),
     subItems: [
-      { key: "google-ads-dashboard", label: "대시보드", href: "/dashboard/platforms/google-ads/dashboard" },
-      { key: "google-ads-search", label: "검색 광고", href: "/dashboard/platforms/google-ads/search" },
-      { key: "google-ads-display", label: "디스플레이 광고", href: "/dashboard/platforms/google-ads/display" },
-      { key: "google-ads-shopping", label: "쇼핑 광고", href: "/dashboard/platforms/google-ads/shopping" },
+      { key: "google-ads-dashboard", label: "Dashboard", href: "/dashboard/platforms/google-ads/dashboard" },
+      { key: "google-ads-search", label: "Search", href: "/dashboard/platforms/google-ads/search" },
+      { key: "google-ads-display", label: "Display", href: "/dashboard/platforms/google-ads/display" },
+      { key: "google-ads-shopping", label: "Shopping", href: "/dashboard/platforms/google-ads/shopping" },
       { key: "google-ads-pmax", label: "Performance Max", href: "/dashboard/platforms/google-ads/performance-max" },
     ],
   },
@@ -118,9 +118,9 @@ const menuItems = [
       </svg>
     ),
     subItems: [
-      { key: "meta-ads-dashboard", label: "대시보드", href: "/dashboard/platforms/meta-ads/dashboard" },
-      { key: "meta-ads-standard", label: "일반 광고", href: "/dashboard/platforms/meta-ads/standard" },
-      { key: "meta-ads-advantage", label: "Advantage+ 쇼핑", href: "/dashboard/platforms/meta-ads/advantage-plus" },
+      { key: "meta-ads-dashboard", label: "Dashboard", href: "/dashboard/platforms/meta-ads/dashboard" },
+      { key: "meta-ads-standard", label: "Standard", href: "/dashboard/platforms/meta-ads/standard" },
+      { key: "meta-ads-advantage", label: "Advantage+", href: "/dashboard/platforms/meta-ads/advantage-plus" },
     ],
   },
   {
@@ -148,8 +148,8 @@ const menuItems = [
       </svg>
     ),
     subItems: [
-      { key: "tiktok-ads-dashboard", label: "대시보드", href: "/dashboard/platforms/tiktok-ads/dashboard" },
-      { key: "tiktok-ads-standard", label: "일반 광고", href: "/dashboard/platforms/tiktok-ads/standard" },
+      { key: "tiktok-ads-dashboard", label: "Dashboard", href: "/dashboard/platforms/tiktok-ads/dashboard" },
+      { key: "tiktok-ads-standard", label: "Standard", href: "/dashboard/platforms/tiktok-ads/standard" },
       { key: "tiktok-ads-gmv", label: "GMV Max", href: "/dashboard/platforms/tiktok-ads/gmv-max" },
     ],
   },
@@ -172,16 +172,16 @@ const menuItems = [
       </svg>
     ),
     subItems: [
-      { key: "amazon-ads-dashboard", label: "대시보드", href: "/dashboard/platforms/amazon-ads/dashboard" },
-      { key: "amazon-ads-products", label: "스폰서 제품", href: "/dashboard/platforms/amazon-ads/sponsored-products" },
-      { key: "amazon-ads-brands", label: "스폰서 브랜드", href: "/dashboard/platforms/amazon-ads/sponsored-brands" },
-      { key: "amazon-ads-display", label: "스폰서 디스플레이", href: "/dashboard/platforms/amazon-ads/sponsored-display" },
+      { key: "amazon-ads-dashboard", label: "Dashboard", href: "/dashboard/platforms/amazon-ads/dashboard" },
+      { key: "amazon-ads-products", label: "Sponsored Products", href: "/dashboard/platforms/amazon-ads/sponsored-products" },
+      { key: "amazon-ads-brands", label: "Sponsored Brands", href: "/dashboard/platforms/amazon-ads/sponsored-brands" },
+      { key: "amazon-ads-display", label: "Sponsored Display", href: "/dashboard/platforms/amazon-ads/sponsored-display" },
       { key: "amazon-ads-dsp", label: "DSP", href: "/dashboard/platforms/amazon-ads/dsp" },
     ],
   },
   {
     key: "integrated",
-    label: "플랫폼 연동",
+    label: "Integrations",
     href: "/dashboard/integrated",
     icon: (
       <svg
@@ -201,7 +201,7 @@ const menuItems = [
   },
   {
     key: "team",
-    label: "팀 관리",
+    label: "Team",
     href: "/dashboard/team",
     icon: (
       <svg
@@ -221,7 +221,7 @@ const menuItems = [
   },
   {
     key: "settings",
-    label: "설정",
+    label: "Settings",
     href: "/dashboard/settings",
     icon: (
       <svg

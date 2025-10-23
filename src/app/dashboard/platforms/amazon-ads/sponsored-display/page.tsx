@@ -5,8 +5,11 @@ import { Card, CardBody, CardHeader } from "@heroui/card";
 import { Button } from "@heroui/button";
 import { Checkbox } from "@heroui/checkbox";
 import { DateRangePicker } from "@heroui/date-picker";
+import { Tabs, Tab } from "@heroui/tabs";
 import { getLocalTimeZone, today } from "@internationalized/date";
 import { CampaignTable, Campaign } from "@/components/tables/CampaignTable";
+import { AdGroupTable } from "@/components/tables/AdGroupTable";
+import { AdTable } from "@/components/tables/AdTable";
 import {
   ComposedChart,
   Line,
@@ -18,6 +21,7 @@ import {
   Legend,
   ResponsiveContainer,
 } from "recharts";
+import type { AdGroup, Ad } from "@/types/campaign";
 
 const generateChartData = () => {
   const data = [];
@@ -43,7 +47,7 @@ const generateChartData = () => {
 const initialCampaigns: Campaign[] = [
   {
     id: 1,
-    name: "SD 캠페인 - 리타겟팅",
+    name: "SD 캠페인 - 베스트셀러",
     status: "active",
     hasError: false,
     budget: 600000,
@@ -58,7 +62,7 @@ const initialCampaigns: Campaign[] = [
   },
   {
     id: 2,
-    name: "SD 캠페인 - 유사 고객",
+    name: "SD 캠페인 - 신제품",
     status: "active",
     hasError: false,
     budget: 400000,
@@ -73,7 +77,7 @@ const initialCampaigns: Campaign[] = [
   },
   {
     id: 3,
-    name: "SD 캠페인 - 제품 타겟팅",
+    name: "SD 캠페인 - 시즌 상품",
     status: "paused",
     hasError: false,
     budget: 250000,
@@ -88,12 +92,143 @@ const initialCampaigns: Campaign[] = [
   },
 ];
 
-export default function AmazonAdsSponsoredDisplayPage() {
-  const [selectedKeys, setSelectedKeys] = useState(new Set([]));
+const initialAdGroups: AdGroup[] = [
+  {
+    id: 1,
+    campaignId: 1,
+    campaignName: "SD 캠페인 - 베스트셀러",
+    campaignType: "search",
+    name: "자동 타겟팅",
+    status: "active",
+    budget: 300000,
+    spent: 245000,
+    impressions: 125000,
+    clicks: 2800,
+    ctr: 2.24,
+    conversions: 95,
+    cpc: 88,
+    cpa: 2579,
+    roas: 4.5,
+  },
+  {
+    id: 2,
+    campaignId: 1,
+    campaignName: "SD 캠페인 - 베스트셀러",
+    campaignType: "search",
+    name: "수동 타겟팅 - 키워드",
+    status: "active",
+    budget: 300000,
+    spent: 233000,
+    impressions: 110000,
+    clicks: 2400,
+    ctr: 2.18,
+    conversions: 83,
+    cpc: 97,
+    cpa: 2807,
+    roas: 3.9,
+  },
+  {
+    id: 3,
+    campaignId: 2,
+    campaignName: "SD 캠페인 - 신제품",
+    campaignType: "search",
+    name: "수동 타겟팅 - 상품",
+    status: "active",
+    budget: 200000,
+    spent: 168000,
+    impressions: 89000,
+    clicks: 1850,
+    ctr: 2.08,
+    conversions: 62,
+    cpc: 91,
+    cpa: 2710,
+    roas: 3.7,
+  },
+  {
+    id: 4,
+    campaignId: 3,
+    campaignName: "SD 캠페인 - 시즌 상품",
+    campaignType: "performance-max",
+    name: "광고그룹 A",
+    status: "active",
+    budget: 500000,
+    spent: 198000,
+    impressions: 156000,
+    clicks: 2900,
+    ctr: 1.86,
+    conversions: 89,
+    cpc: 68,
+    cpa: 2225,
+    roas: 3.5,
+  },
+];
+
+const initialAds: Ad[] = [
+  {
+    id: 1,
+    campaignId: 1,
+    campaignName: "SD 캠페인 - 베스트셀러",
+    adGroupId: 1,
+    adGroupName: "자동 타겟팅",
+    name: "브랜드 A - 공식 사이트",
+    type: "text",
+    status: "active",
+    spent: 125000,
+    impressions: 65000,
+    clicks: 1480,
+    ctr: 2.28,
+    conversions: 52,
+    cpc: 84,
+    cpa: 2404,
+    roas: 4.8,
+  },
+  {
+    id: 2,
+    campaignId: 1,
+    campaignName: "SD 캠페인 - 베스트셀러",
+    adGroupId: 1,
+    adGroupName: "자동 타겟팅",
+    name: "브랜드 A - 특별 할인",
+    type: "text",
+    status: "active",
+    spent: 120000,
+    impressions: 60000,
+    clicks: 1320,
+    ctr: 2.20,
+    conversions: 43,
+    cpc: 91,
+    cpa: 2791,
+    roas: 4.2,
+  },
+  {
+    id: 3,
+    campaignId: 1,
+    campaignName: "SD 캠페인 - 베스트셀러",
+    adGroupId: 2,
+    adGroupName: "수동 타겟팅 - 키워드",
+    name: "브랜드 A + 제품",
+    type: "text",
+    status: "active",
+    spent: 115000,
+    impressions: 54000,
+    clicks: 1200,
+    ctr: 2.22,
+    conversions: 41,
+    cpc: 96,
+    cpa: 2805,
+    roas: 3.9,
+  },
+];
+
+export default function GoogleAdsSearchPage() {
+  const [selectedTab, setSelectedTab] = useState("campaigns");
   const [campaigns, setCampaigns] = useState(initialCampaigns);
-  const [editingCampaigns, setEditingCampaigns] = useState<Set<number>>(
-    new Set()
-  );
+  const [adGroups, setAdGroups] = useState(initialAdGroups);
+  const [ads, setAds] = useState(initialAds);
+
+  // Filter state
+  const [selectedCampaignId, setSelectedCampaignId] = useState<number | null>(null);
+  const [selectedAdGroupId, setSelectedAdGroupId] = useState<number | string | null>(null);
 
   const todayDate = today(getLocalTimeZone());
   const fourteenDaysAgo = todayDate.subtract({ days: 13 });
@@ -112,26 +247,7 @@ export default function AmazonAdsSponsoredDisplayPage() {
 
   const chartData = useMemo(() => generateChartData(), []);
 
-  const handleEditCampaign = (id: number) => {
-    setEditingCampaigns((prev) => {
-      const newSet = new Set(prev);
-      if (newSet.has(id)) {
-        newSet.delete(id);
-      } else {
-        newSet.add(id);
-      }
-      return newSet;
-    });
-  };
-
-  const handleSaveCampaign = (id: number) => {
-    setEditingCampaigns((prev) => {
-      const newSet = new Set(prev);
-      newSet.delete(id);
-      return newSet;
-    });
-  };
-
+  // Campaign handlers
   const handleCampaignChange = (
     id: number,
     field: string,
@@ -144,19 +260,83 @@ export default function AmazonAdsSponsoredDisplayPage() {
     );
   };
 
-  const handleToggleStatus = (id: number, currentStatus: string) => {
+  const handleToggleCampaignStatus = (id: number, currentStatus: string) => {
     const newStatus = currentStatus === "active" ? "paused" : "active";
     handleCampaignChange(id, "status", newStatus);
-    // TODO: AWS 연동 후 실제 API 호출
   };
+
+  // AdGroup handlers
+  const handleAdGroupChange = (
+    id: number | string,
+    field: string,
+    value: any
+  ) => {
+    setAdGroups((prev) =>
+      prev.map((adGroup) =>
+        adGroup.id === id ? { ...adGroup, [field]: value } : adGroup
+      )
+    );
+  };
+
+  const handleToggleAdGroupStatus = (id: number | string, currentStatus: string) => {
+    const newStatus = currentStatus === "active" ? "paused" : "active";
+    handleAdGroupChange(id, "status", newStatus);
+  };
+
+  // Ad handlers
+  const handleAdChange = (id: number | string, field: string, value: any) => {
+    setAds((prev) =>
+      prev.map((ad) => (ad.id === id ? { ...ad, [field]: value } : ad))
+    );
+  };
+
+  const handleToggleAdStatus = (id: number | string, currentStatus: string) => {
+    const newStatus = currentStatus === "active" ? "paused" : "active";
+    handleAdChange(id, "status", newStatus);
+  };
+
+  // Filter handlers
+  const handleCampaignClick = (campaignId: number) => {
+    setSelectedCampaignId(campaignId);
+    setSelectedTab("adgroups");
+  };
+
+  const handleAdGroupClick = (adGroupId: number | string) => {
+    setSelectedAdGroupId(adGroupId);
+    setSelectedTab("ads");
+  };
+
+  const handleClearFilter = () => {
+    setSelectedCampaignId(null);
+    setSelectedAdGroupId(null);
+  };
+
+  // Filtered data
+  const filteredAdGroups = useMemo(() => {
+    if (!selectedCampaignId) return adGroups;
+    return adGroups.filter((ag) => ag.campaignId === selectedCampaignId);
+  }, [adGroups, selectedCampaignId]);
+
+  const filteredAds = useMemo(() => {
+    if (!selectedAdGroupId) return ads;
+    return ads.filter((ad) => ad.adGroupId === selectedAdGroupId);
+  }, [ads, selectedAdGroupId]);
+
+  const selectedCampaignName = useMemo(() => {
+    if (!selectedCampaignId) return null;
+    return campaigns.find((c) => c.id === selectedCampaignId)?.name || null;
+  }, [campaigns, selectedCampaignId]);
+
+  const selectedAdGroupName = useMemo(() => {
+    if (!selectedAdGroupId) return null;
+    return adGroups.find((ag) => ag.id === selectedAdGroupId)?.name || null;
+  }, [adGroups, selectedAdGroupId]);
 
   return (
     <div className="container mx-auto px-6 py-8">
       <div className="mb-6">
         <h1 className="text-3xl font-bold mb-2">Amazon Ads - Sponsored Display</h1>
-        <p className="text-default-500">
-          스폰서 디스플레이 광고 성과를 관리하세요
-        </p>
+        <p className="text-default-500">스폰서 디스플레이 광고 성과를 관리하세요</p>
       </div>
 
       <Card className="mb-6">
@@ -314,21 +494,102 @@ export default function AmazonAdsSponsoredDisplayPage() {
       </Card>
 
       <Card>
-        <CardHeader className="flex justify-between items-center">
-          <h3 className="text-xl font-semibold">캠페인 목록</h3>
-          <Button color="primary" radius="sm" variant="flat" size="sm">
-            + 새 캠페인
-          </Button>
+        <CardHeader>
+          <Tabs
+            selectedKey={selectedTab}
+            onSelectionChange={(key) => setSelectedTab(key as string)}
+            radius="sm"
+            variant="underlined"
+            classNames={{
+              tabList: "gap-6",
+              cursor: "bg-primary",
+              tab: "px-0",
+            }}
+          >
+            <Tab key="campaigns" title="Campaign" />
+            <Tab key="adgroups" title="Ad Group" />
+            <Tab key="ads" title="Targeting" />
+          </Tabs>
         </CardHeader>
         <CardBody>
-          <CampaignTable
-            data={campaigns}
-            onCampaignChange={handleCampaignChange}
-            onToggleStatus={handleToggleStatus}
-            editingCampaigns={editingCampaigns}
-            onEditCampaign={handleEditCampaign}
-            onSaveCampaign={handleSaveCampaign}
-          />
+          {selectedTab === "campaigns" && (
+            <>
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="text-xl font-semibold">캠페인 목록 ({campaigns.length})</h3>
+                <Button color="primary" radius="sm" variant="flat" size="sm">
+                  + 새 캠페인
+                </Button>
+              </div>
+              <CampaignTable
+                data={campaigns}
+                onCampaignChange={handleCampaignChange}
+                onToggleStatus={handleToggleCampaignStatus}
+                onCampaignClick={handleCampaignClick}
+              />
+            </>
+          )}
+
+          {selectedTab === "adgroups" && (
+            <>
+              <div className="flex justify-between items-center mb-4">
+                <div className="flex items-center gap-3">
+                  <h3 className="text-xl font-semibold">광고그룹 목록 ({filteredAdGroups.length})</h3>
+                  {selectedCampaignName && (
+                    <Button
+                      size="sm"
+                      variant="flat"
+                      color="default"
+                      onPress={handleClearFilter}
+                      startContent={<span>✕</span>}
+                    >
+                      {selectedCampaignName} 필터 해제
+                    </Button>
+                  )}
+                </div>
+                <Button color="primary" radius="sm" variant="flat" size="sm">
+                  + 새 광고그룹
+                </Button>
+              </div>
+              <AdGroupTable
+                data={filteredAdGroups}
+                onAdGroupChange={handleAdGroupChange}
+                onToggleStatus={handleToggleAdGroupStatus}
+                showCampaignColumn={!selectedCampaignId}
+                onAdGroupClick={handleAdGroupClick}
+              />
+            </>
+          )}
+
+          {selectedTab === "ads" && (
+            <>
+              <div className="flex justify-between items-center mb-4">
+                <div className="flex items-center gap-3">
+                  <h3 className="text-xl font-semibold">광고 & 키워드 목록 ({filteredAds.length})</h3>
+                  {selectedAdGroupName && (
+                    <Button
+                      size="sm"
+                      variant="flat"
+                      color="default"
+                      onPress={handleClearFilter}
+                      startContent={<span>✕</span>}
+                    >
+                      {selectedAdGroupName} 필터 해제
+                    </Button>
+                  )}
+                </div>
+                <Button color="primary" radius="sm" variant="flat" size="sm">
+                  + 새 광고
+                </Button>
+              </div>
+              <AdTable
+                data={filteredAds}
+                onAdChange={handleAdChange}
+                onToggleStatus={handleToggleAdStatus}
+                showCampaignColumn={!selectedCampaignId}
+                showAdGroupColumn={!selectedAdGroupId}
+              />
+            </>
+          )}
         </CardBody>
       </Card>
     </div>
