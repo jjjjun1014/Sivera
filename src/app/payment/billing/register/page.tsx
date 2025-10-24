@@ -6,6 +6,7 @@ import { Card, CardBody, CardHeader } from "@heroui/card";
 import { Button } from "@heroui/button";
 import { Spinner } from "@heroui/spinner";
 import { Chip } from "@heroui/chip";
+import { Tabs, Tab } from "@heroui/tabs";
 import { ArrowLeft, Check, CreditCard, Calendar } from "lucide-react";
 import { PortOneBillingWidget } from "@/components/payments/PortOneBillingWidget";
 import { PLANS, getMonthlyPrice, getTeamSizeTier } from "@/lib/config/plans";
@@ -17,11 +18,16 @@ function BillingRegisterContent() {
 
   const planParam = searchParams.get("plan") as PlanType | null;
   const seatsParam = searchParams.get("seats");
+  const [paymentMethod, setPaymentMethod] = useState<"card" | "paypal">("card");
 
   const [customerKey] = useState(() => {
     // TODO: 실제 사용자 ID로 변경
     return `customer_${Date.now()}`;
   });
+
+  // 환경 변수에서 채널 키 가져오기
+  const inicisChannel = process.env.NEXT_PUBLIC_PORTONE_INICIS_CHANNEL;
+  const paypalChannel = process.env.NEXT_PUBLIC_PORTONE_PAYPAL_CHANNEL;
 
   // 유효하지 않은 접근
   if (!planParam || planParam === "free") {
@@ -159,17 +165,75 @@ function BillingRegisterContent() {
               </div>
             </CardHeader>
             <CardBody>
-              <PortOneBillingWidget
-                customerId={customerKey}
-                channelKey="paypal_v2"
-                onSuccess={(billingKey) => {
-                  console.log("Billing key issued:", billingKey);
-                  // TODO: 빌링키 저장 후 리다이렉트
-                }}
-                onError={(error) => {
-                  console.error("Billing error:", error);
-                }}
-              />
+              <Tabs
+                selectedKey={paymentMethod}
+                onSelectionChange={(key) => setPaymentMethod(key as "card" | "paypal")}
+                size="lg"
+                className="mb-6"
+              >
+                <Tab key="card" title="신용/체크카드" />
+                <Tab key="paypal" title="PayPal" />
+              </Tabs>
+
+              {paymentMethod === "card" ? (
+                <div>
+                  <div className="mb-4 p-4 bg-primary/10 rounded-lg">
+                    <h4 className="font-semibold mb-2">💳 국내/해외 카드</h4>
+                    <ul className="text-sm text-default-600 space-y-1">
+                      <li>• 국내 모든 카드사 이용 가능</li>
+                      <li>• Visa, Mastercard, JCB 해외카드 지원</li>
+                      <li>• 안전한 KG이니시스 결제 시스템</li>
+                    </ul>
+                  </div>
+                  {inicisChannel ? (
+                    <PortOneBillingWidget
+                      customerId={customerKey}
+                      channelKey={inicisChannel}
+                      onSuccess={(billingKey) => {
+                        console.log("Card billing key issued:", billingKey);
+                        router.push(`/payment/billing/success?billingKey=${billingKey}&plan=${plan}&seats=${seats}`);
+                      }}
+                      onError={(error) => {
+                        console.error("Card billing error:", error);
+                        router.push(`/payment/billing/failure?error=card_error&message=${error.message}`);
+                      }}
+                    />
+                  ) : (
+                    <div className="p-6 text-center bg-danger/10 rounded-lg">
+                      <p className="text-danger">카드 결제 채널이 설정되지 않았습니다.</p>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div>
+                  <div className="mb-4 p-4 bg-primary/10 rounded-lg">
+                    <h4 className="font-semibold mb-2">💰 PayPal</h4>
+                    <ul className="text-sm text-default-600 space-y-1">
+                      <li>• PayPal 계정으로 간편하게 결제</li>
+                      <li>• 전 세계 200개국 이상 지원</li>
+                      <li>• 구매자 보호 프로그램 적용</li>
+                    </ul>
+                  </div>
+                  {paypalChannel ? (
+                    <PortOneBillingWidget
+                      customerId={customerKey}
+                      channelKey={paypalChannel}
+                      onSuccess={(billingKey) => {
+                        console.log("PayPal billing key issued:", billingKey);
+                        router.push(`/payment/billing/success?billingKey=${billingKey}&plan=${plan}&seats=${seats}`);
+                      }}
+                      onError={(error) => {
+                        console.error("PayPal billing error:", error);
+                        router.push(`/payment/billing/failure?error=paypal_error&message=${error.message}`);
+                      }}
+                    />
+                  ) : (
+                    <div className="p-6 text-center bg-danger/10 rounded-lg">
+                      <p className="text-danger">PayPal 결제 채널이 설정되지 않았습니다.</p>
+                    </div>
+                  )}
+                </div>
+              )}
             </CardBody>
           </Card>
         </div>
