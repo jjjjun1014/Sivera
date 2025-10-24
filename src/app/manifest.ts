@@ -42,7 +42,7 @@ export default function manifest(): MetadataRoute.Manifest {
         name: "대시보드",
         short_name: "Dashboard",
         description: "통합 대시보드로 이동",
-        url: "/hub",
+        url: "/dashboard/analytics",
         icons: [
           {
             src: "/icon-192x192.png",
@@ -51,10 +51,10 @@ export default function manifest(): MetadataRoute.Manifest {
         ],
       },
       {
-        name: "캠페인",
-        short_name: "Campaigns",
-        description: "캠페인 관리",
-        url: "/marketing/campaigns",
+        name: "통합 분석",
+        short_name: "Analytics",
+        description: "통합 분석 보기",
+        url: "/dashboard/integrated",
         icons: [
           {
             src: "/icon-192x192.png",
