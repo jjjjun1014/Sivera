@@ -1,6 +1,17 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  // 리다이렉트 설정
+  async redirects() {
+    return [
+      {
+        source: "/dashboard",
+        destination: "/dashboard/analytics",
+        permanent: false,
+      },
+    ];
+  },
+
   // 보안 헤더 설정
   async headers() {
     return [
