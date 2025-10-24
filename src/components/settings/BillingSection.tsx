@@ -1,12 +1,14 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { Card, CardBody, CardHeader, CardFooter } from '@heroui/card';
 import { Button } from '@heroui/button';
 import { Chip } from '@heroui/chip';
 import { Progress } from '@heroui/progress';
 import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter } from '@heroui/modal';
-import { CreditCard, Calendar, Users, Zap, TrendingUp, Shield, ArrowRight, Check, X } from 'lucide-react';
+import { Input } from '@heroui/input';
+import { CreditCard, Calendar, Users, Zap, TrendingUp, Shield, ArrowRight, Check, X, AlertTriangle, ChevronDown } from 'lucide-react';
 import { PLANS, getMonthlyPrice, getTeamSizeTier, TEAM_SIZE_TIERS } from '@/lib/config/plans';
 import type { PlanType } from '@/types/subscription';
 
@@ -14,6 +16,7 @@ interface BillingSectionProps {
   currentPlan?: PlanType;
   currentSeats?: number;
   nextBillingDate?: Date;
+  trialEndDate?: Date; // 무료체험 종료일
   onUpgrade?: (plan: PlanType) => void;
 }
 
@@ -21,23 +24,58 @@ export function BillingSection({
   currentPlan = 'free',
   currentSeats = 1,
   nextBillingDate,
+  trialEndDate,
   onUpgrade,
 }: BillingSectionProps) {
+  const router = useRouter();
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+  const [showDowngradeModal, setShowDowngradeModal] = useState(false);
+  const [showCancelModal, setShowCancelModal] = useState(false);
   const [selectedPlan, setSelectedPlan] = useState<PlanType>('standard');
+  const [cancelConfirmText, setCancelConfirmText] = useState('');
 
   const plan = PLANS[currentPlan];
   const teamTier = getTeamSizeTier(currentSeats);
   const monthlyTotal = getMonthlyPrice(currentPlan, currentSeats, 'KRW');
+
+  // 무료체험 여부 및 남은 일수 계산
+  const isOnTrial = trialEndDate && new Date(trialEndDate) > new Date();
+  const trialDaysLeft = isOnTrial
+    ? Math.ceil((new Date(trialEndDate!).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24))
+    : 0;
 
   const handleUpgradeClick = (planType: PlanType) => {
     setSelectedPlan(planType);
     setShowUpgradeModal(true);
   };
 
+  const handleDowngradeClick = (planType: PlanType) => {
+    setSelectedPlan(planType);
+    setShowDowngradeModal(true);
+  };
+
   const confirmUpgrade = () => {
-    onUpgrade?.(selectedPlan);
+    // 결제 수단 등록 페이지로 이동
+    router.push(`/payment/billing/register?plan=${selectedPlan}&seats=${currentSeats}`);
     setShowUpgradeModal(false);
+  };
+
+  const handlePaymentMethodChange = () => {
+    // 현재 플랜으로 결제 수단 변경/등록
+    router.push(`/payment/billing/register?plan=${currentPlan}&seats=${currentSeats}`);
+  };
+
+  const confirmDowngrade = () => {
+    onUpgrade?.(selectedPlan);
+    setShowDowngradeModal(false);
+  };
+
+  const confirmCancel = () => {
+    if (cancelConfirmText === '구독 취소') {
+      onUpgrade?.('free');
+      setShowCancelModal(false);
+      setCancelConfirmText('');
+    }
   };
 
   const getPlanIcon = (planType: PlanType) => {
@@ -71,11 +109,21 @@ export function BillingSection({
               return <Icon className="w-8 h-8 text-primary" />;
             })()}
             <div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 flex-wrap">
                 <h3 className="text-2xl font-bold">{plan.name} 플랜</h3>
                 {plan.highlighted && (
                   <Chip color="primary" size="sm" variant="flat">
                     ⭐ 추천
+                  </Chip>
+                )}
+                {isOnTrial && (
+                  <Chip
+                    color={trialDaysLeft <= 3 ? 'warning' : 'success'}
+                    size="sm"
+                    variant="flat"
+                    startContent={<Calendar className="w-3 h-3" />}
+                  >
+                    무료체험 {trialDaysLeft}일 남음
                   </Chip>
                 )}
               </div>
@@ -95,6 +143,35 @@ export function BillingSection({
         </CardHeader>
 
         <CardBody className="pt-4">
+          {/* 무료체험 안내 (유료 플랜이면서 체험 중일 때) */}
+          {isOnTrial && currentPlan !== 'free' && (
+            <div className="mb-6 p-5 bg-gradient-to-r from-success/20 to-primary/20 rounded-2xl border-2 border-success/30">
+              <div className="flex items-start gap-3">
+                <div className="p-2 bg-success rounded-lg">
+                  <Calendar className="w-5 h-5 text-white" />
+                </div>
+                <div className="flex-1">
+                  <h4 className="font-bold text-lg mb-2">🎉 14일 무료 체험 중</h4>
+                  <p className="text-sm text-default-700 mb-3">
+                    {trialEndDate!.toLocaleDateString('ko-KR', {
+                      year: 'numeric',
+                      month: 'long',
+                      day: 'numeric'
+                    })}
+                    에 체험이 종료됩니다
+                  </p>
+                  <div className="space-y-1 text-xs text-default-600">
+                    <p>• 체험 종료 후 자동으로 월 ₩{monthlyTotal.toLocaleString()}이 청구됩니다</p>
+                    <p>• 체험 기간 중 취소하면 비용이 청구되지 않습니다</p>
+                    {trialDaysLeft <= 3 && (
+                      <p className="text-warning font-semibold">⚠️ 체험 종료가 얼마 남지 않았습니다</p>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Pricing Display - 크고 명확하게 */}
           {currentPlan !== 'free' ? (
             <div className="mb-6">
@@ -225,7 +302,7 @@ export function BillingSection({
                 결제 수단
               </h4>
               {currentPlan !== 'free' && (
-                <Button size="sm" variant="flat" color="primary">
+                <Button size="sm" variant="flat" color="primary" onPress={handlePaymentMethodChange}>
                   등록/변경
                 </Button>
               )}
@@ -247,6 +324,34 @@ export function BillingSection({
               </div>
             )}
           </div>
+
+          {/* 플랜 관리 버튼들 */}
+          {currentPlan !== 'free' && (
+            <div className="w-full flex gap-2">
+              {currentPlan === 'pro' && (
+                <Button
+                  size="sm"
+                  variant="flat"
+                  color="default"
+                  startContent={<ChevronDown className="w-4 h-4" />}
+                  onPress={() => handleDowngradeClick('standard')}
+                  className="flex-1"
+                >
+                  Standard로 다운그레이드
+                </Button>
+              )}
+              <Button
+                size="sm"
+                variant="flat"
+                color="danger"
+                startContent={<X className="w-4 h-4" />}
+                onPress={() => setShowCancelModal(true)}
+                className={currentPlan === 'pro' ? 'flex-1' : 'w-full'}
+              >
+                구독 취소
+              </Button>
+            </div>
+          )}
         </CardFooter>
       </Card>
 
@@ -383,8 +488,10 @@ export function BillingSection({
         </div>
       )}
 
+      {/* Modals */}
+
       {/* Upgrade Modal */}
-      <Modal isOpen={showUpgradeModal} onClose={() => setShowUpgradeModal(false)} size="2xl">
+      <Modal isOpen={showUpgradeModal} onClose={() => setShowUpgradeModal(false)} size="3xl">
         <ModalContent>
           <ModalHeader>
             <div className="flex items-center gap-3">
@@ -395,53 +502,365 @@ export function BillingSection({
               <span>{PLANS[selectedPlan].name} 플랜으로 업그레이드</span>
             </div>
           </ModalHeader>
-          <ModalBody>
-            <p className="text-default-600 mb-4">
+          <ModalBody className="overflow-y-auto max-h-[70vh]">
+            <p className="text-default-600 mb-6">
               {PLANS[selectedPlan].description}
             </p>
 
+            {/* 플랜 비교 표 */}
+            <div className="mb-6 p-5 bg-default-50 rounded-2xl">
+              <h4 className="font-semibold mb-4 flex items-center gap-2">
+                <ArrowRight className="w-4 h-4 text-primary" />
+                플랜 변경 사항
+              </h4>
+              <div className="grid grid-cols-3 gap-4">
+                <div className="text-center">
+                  <p className="text-xs text-default-500 mb-2">현재 플랜</p>
+                  <div className="p-3 bg-white dark:bg-default-100 rounded-lg">
+                    <p className="font-bold text-lg">{PLANS[currentPlan].name}</p>
+                    <p className="text-sm text-default-600">
+                      ₩{getMonthlyPrice(currentPlan, currentSeats, 'KRW').toLocaleString()}/월
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-center justify-center">
+                  <ArrowRight className="w-8 h-8 text-primary" />
+                </div>
+                <div className="text-center">
+                  <p className="text-xs text-default-500 mb-2">새로운 플랜</p>
+                  <div className="p-3 bg-gradient-to-br from-primary/20 to-secondary/20 rounded-lg border-2 border-primary">
+                    <p className="font-bold text-lg">{PLANS[selectedPlan].name}</p>
+                    <p className="text-sm font-semibold text-primary">
+                      ₩{getMonthlyPrice(selectedPlan, currentSeats, 'KRW').toLocaleString()}/월
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* 가격 상세 */}
             <div className="bg-gradient-to-br from-primary/10 to-secondary/10 rounded-2xl p-6 mb-6">
-              <div className="flex items-baseline gap-2 mb-2">
-                <span className="text-4xl font-bold">
+              <h4 className="font-semibold mb-3">월 결제 금액</h4>
+              <div className="flex items-baseline gap-2 mb-4">
+                <span className="text-4xl font-bold text-primary">
                   ₩{getMonthlyPrice(selectedPlan, currentSeats, 'KRW').toLocaleString()}
                 </span>
                 <span className="text-lg text-default-500">/월</span>
               </div>
-              <div className="text-sm text-default-600 space-y-1">
-                <div>기본 요금: ₩{PLANS[selectedPlan].basePriceKRW.toLocaleString()}</div>
+              <div className="space-y-2 text-sm">
+                <div className="flex justify-between p-2 bg-white/50 dark:bg-black/20 rounded-lg">
+                  <span className="text-default-600">기본 플랜 요금</span>
+                  <span className="font-semibold">₩{PLANS[selectedPlan].basePriceKRW.toLocaleString()}</span>
+                </div>
                 {teamTier.priceKRW > 0 && (
-                  <div>팀 규모 ({teamTier.name}): +₩{teamTier.priceKRW.toLocaleString()}</div>
+                  <div className="flex justify-between p-2 bg-white/50 dark:bg-black/20 rounded-lg">
+                    <span className="text-default-600">팀 규모 추가 ({teamTier.name}, {currentSeats}명)</span>
+                    <span className="font-semibold text-primary">+₩{teamTier.priceKRW.toLocaleString()}</span>
+                  </div>
+                )}
+                {currentPlan !== 'free' && (
+                  <div className="flex justify-between p-2 bg-primary/10 rounded-lg border border-primary/20">
+                    <span className="font-semibold">현재 대비 차액</span>
+                    <span className="font-bold text-primary">
+                      +₩{(getMonthlyPrice(selectedPlan, currentSeats, 'KRW') - getMonthlyPrice(currentPlan, currentSeats, 'KRW')).toLocaleString()}/월
+                    </span>
+                  </div>
                 )}
               </div>
             </div>
 
-            <div className="space-y-3 mb-6">
-              <div className="flex items-center gap-3 p-3 bg-success/10 rounded-lg">
-                <Check className="w-5 h-5 text-success flex-shrink-0" />
-                <span className="text-sm">14일 무료 체험 기간 제공</span>
-              </div>
-              <div className="flex items-center gap-3 p-3 bg-success/10 rounded-lg">
-                <Check className="w-5 h-5 text-success flex-shrink-0" />
-                <span className="text-sm">언제든지 플랜 변경 및 취소 가능</span>
-              </div>
-              <div className="flex items-center gap-3 p-3 bg-success/10 rounded-lg">
-                <Check className="w-5 h-5 text-success flex-shrink-0" />
-                <span className="text-sm">즉시 모든 {PLANS[selectedPlan].name} 기능 사용 가능</span>
+            {/* 14일 무료 체험 안내 */}
+            <div className="mb-6 p-5 bg-gradient-to-r from-success/20 to-primary/20 rounded-2xl border-2 border-success/30">
+              <div className="flex items-start gap-3">
+                <div className="p-2 bg-success rounded-lg">
+                  <Calendar className="w-5 h-5 text-white" />
+                </div>
+                <div className="flex-1">
+                  <h4 className="font-bold text-lg mb-2">🎉 14일 무료 체험</h4>
+                  <p className="text-sm text-default-700 mb-3">
+                    {new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toLocaleDateString('ko-KR', {
+                      year: 'numeric',
+                      month: 'long',
+                      day: 'numeric'
+                    })}
+                    까지 무료로 이용하실 수 있습니다
+                  </p>
+                  <div className="space-y-1 text-xs text-default-600">
+                    <p>• 체험 기간 동안 모든 {PLANS[selectedPlan].name} 플랜 기능을 제한 없이 사용 가능합니다</p>
+                    <p>• 체험 종료 3일 전 이메일로 알림을 보내드립니다</p>
+                    <p>• 체험 기간 중 언제든 취소하면 비용이 청구되지 않습니다</p>
+                  </div>
+                </div>
               </div>
             </div>
 
-            <div className="p-4 bg-warning/10 border border-warning/20 rounded-lg">
-              <p className="text-sm text-warning-700 dark:text-warning">
-                💳 업그레이드 후 결제 수단을 등록해주세요
+            {/* 새로운 기능들 */}
+            <div className="mb-6">
+              <h4 className="font-semibold mb-3">✨ 사용 가능한 새로운 기능</h4>
+              <div className="space-y-2">
+                {!PLANS[currentPlan].features.aiChatbot && PLANS[selectedPlan].features.aiChatbot && (
+                  <div className="flex items-start gap-3 p-3 bg-success/10 rounded-lg">
+                    <Check className="w-5 h-5 text-success flex-shrink-0 mt-0.5" />
+                    <div>
+                      <p className="font-semibold text-sm">AI 챗봇 어시스턴트</p>
+                      <p className="text-xs text-default-600">광고 캠페인 최적화를 위한 AI 도우미</p>
+                    </div>
+                  </div>
+                )}
+                {PLANS[currentPlan].features.apiAccess !== PLANS[selectedPlan].features.apiAccess && (
+                  <div className="flex items-start gap-3 p-3 bg-success/10 rounded-lg">
+                    <Check className="w-5 h-5 text-success flex-shrink-0 mt-0.5" />
+                    <div>
+                      <p className="font-semibold text-sm">
+                        API 접근 권한 ({PLANS[currentPlan].features.apiAccess === 'none' ? '없음' : '읽기'} → {PLANS[selectedPlan].features.apiAccess === 'full' ? '읽기/쓰기' : '읽기'})
+                      </p>
+                      <p className="text-xs text-default-600">외부 도구와 연동하여 자동화 구축</p>
+                    </div>
+                  </div>
+                )}
+                {PLANS[currentPlan].features.dataRetention !== 'unlimited' && PLANS[selectedPlan].features.dataRetention === 'unlimited' && (
+                  <div className="flex items-start gap-3 p-3 bg-success/10 rounded-lg">
+                    <Check className="w-5 h-5 text-success flex-shrink-0 mt-0.5" />
+                    <div>
+                      <p className="font-semibold text-sm">
+                        데이터 보관 기간 ({PLANS[currentPlan].features.dataRetention}일 → 무제한)
+                      </p>
+                      <p className="text-xs text-default-600">과거 데이터 분석 및 트렌드 파악</p>
+                    </div>
+                  </div>
+                )}
+                <div className="flex items-start gap-3 p-3 bg-success/10 rounded-lg">
+                  <Check className="w-5 h-5 text-success flex-shrink-0 mt-0.5" />
+                  <div>
+                    <p className="font-semibold text-sm">우선 고객 지원</p>
+                    <p className="text-xs text-default-600">더 빠른 응답과 전담 지원</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* 결제 안내 */}
+            <div className="p-4 bg-primary/10 border border-primary/20 rounded-lg">
+              <h4 className="font-semibold mb-2 flex items-center gap-2">
+                <CreditCard className="w-4 h-4" />
+                다음 단계
+              </h4>
+              <p className="text-sm text-default-700">
+                업그레이드 후 결제 수단 등록 페이지로 이동합니다.
+                결제 수단을 등록해야 14일 무료 체험이 시작됩니다.
               </p>
             </div>
           </ModalBody>
-          <ModalFooter>
-            <Button variant="flat" onPress={() => setShowUpgradeModal(false)}>
+          <ModalFooter className="border-t">
+            <Button variant="flat" size="lg" onPress={() => setShowUpgradeModal(false)}>
               취소
             </Button>
-            <Button color="primary" size="lg" onPress={confirmUpgrade} endContent={<ArrowRight className="w-4 h-4" />}>
+            <Button
+              color="primary"
+              size="lg"
+              onPress={confirmUpgrade}
+              endContent={<ArrowRight className="w-4 h-4" />}
+              className="font-semibold"
+            >
               {PLANS[selectedPlan].name} 플랜 시작하기
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
+
+      {/* Downgrade Modal */}
+      <Modal isOpen={showDowngradeModal} onClose={() => setShowDowngradeModal(false)} size="2xl">
+        <ModalContent>
+          <ModalHeader>
+            <div className="flex items-center gap-3">
+              <AlertTriangle className="w-6 h-6 text-warning" />
+              <span>플랜 다운그레이드</span>
+            </div>
+          </ModalHeader>
+          <ModalBody>
+            <div className="space-y-4">
+              {/* 경고 메시지 */}
+              <div className="p-4 bg-warning/10 border-2 border-warning/30 rounded-lg">
+                <p className="font-semibold text-warning-700 dark:text-warning mb-2">
+                  ⚠️ 다음 기능들이 제한됩니다
+                </p>
+                <div className="space-y-2 text-sm">
+                  {currentPlan === 'pro' && selectedPlan === 'standard' && (
+                    <>
+                      <div className="flex items-start gap-2">
+                        <X className="w-4 h-4 text-danger mt-0.5 flex-shrink-0" />
+                        <span>API 쓰기 권한이 제거됩니다 (읽기 전용으로 변경)</span>
+                      </div>
+                      <div className="flex items-start gap-2">
+                        <X className="w-4 h-4 text-danger mt-0.5 flex-shrink-0" />
+                        <span>우선 고객 지원이 일반 지원으로 변경됩니다</span>
+                      </div>
+                      <div className="flex items-start gap-2">
+                        <X className="w-4 h-4 text-danger mt-0.5 flex-shrink-0" />
+                        <span>커스텀 연동 지원이 종료됩니다</span>
+                      </div>
+                    </>
+                  )}
+                </div>
+              </div>
+
+              {/* 플랜 변경 정보 */}
+              <div className="p-4 bg-default-50 rounded-lg">
+                <div className="grid grid-cols-2 gap-4 mb-3">
+                  <div>
+                    <p className="text-xs text-default-500 mb-1">현재 플랜</p>
+                    <p className="font-bold text-lg">{PLANS[currentPlan].name}</p>
+                    <p className="text-sm text-default-600">
+                      ₩{getMonthlyPrice(currentPlan, currentSeats, 'KRW').toLocaleString()}/월
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-default-500 mb-1">변경 후</p>
+                    <p className="font-bold text-lg">{PLANS[selectedPlan].name}</p>
+                    <p className="text-sm font-semibold text-success">
+                      ₩{getMonthlyPrice(selectedPlan, currentSeats, 'KRW').toLocaleString()}/월
+                    </p>
+                  </div>
+                </div>
+                <div className="pt-3 border-t border-divider">
+                  <p className="text-sm font-semibold text-success">
+                    💰 월 ₩{(getMonthlyPrice(currentPlan, currentSeats, 'KRW') - getMonthlyPrice(selectedPlan, currentSeats, 'KRW')).toLocaleString()} 절약
+                  </p>
+                </div>
+              </div>
+
+              {/* 데이터 보관 안내 */}
+              <div className="p-4 bg-primary/10 border border-primary/20 rounded-lg">
+                <h4 className="font-semibold mb-2">📦 데이터 보관</h4>
+                <p className="text-sm text-default-700">
+                  기존 데이터는 모두 안전하게 보관됩니다.
+                  {selectedPlan === 'standard' && currentPlan === 'pro' && (
+                    <span className="block mt-1">
+                      다만 90일이 지난 과거 데이터는 조회할 수 없습니다.
+                    </span>
+                  )}
+                </p>
+              </div>
+
+              {/* 적용 시기 */}
+              <div className="p-4 bg-default-50 rounded-lg">
+                <h4 className="font-semibold mb-2">📅 적용 시기</h4>
+                <p className="text-sm text-default-700">
+                  다운그레이드는 <span className="font-semibold text-primary">다음 결제일 ({nextBillingDate?.toLocaleDateString('ko-KR')})</span>부터 적용됩니다.
+                  그 전까지는 현재 플랜의 모든 기능을 계속 사용하실 수 있습니다.
+                </p>
+              </div>
+            </div>
+          </ModalBody>
+          <ModalFooter>
+            <Button variant="flat" onPress={() => setShowDowngradeModal(false)}>
+              취소
+            </Button>
+            <Button
+              color="warning"
+              onPress={confirmDowngrade}
+              startContent={<ChevronDown className="w-4 h-4" />}
+            >
+              {PLANS[selectedPlan].name}로 다운그레이드
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
+
+      {/* Cancel Subscription Modal */}
+      <Modal isOpen={showCancelModal} onClose={() => { setShowCancelModal(false); setCancelConfirmText(''); }} size="2xl">
+        <ModalContent>
+          <ModalHeader>
+            <div className="flex items-center gap-3">
+              <AlertTriangle className="w-6 h-6 text-danger" />
+              <span>구독 취소</span>
+            </div>
+          </ModalHeader>
+          <ModalBody>
+            <div className="space-y-4">
+              {/* 경고 메시지 */}
+              <div className="p-4 bg-danger/10 border-2 border-danger/30 rounded-lg">
+                <p className="font-bold text-danger mb-3">
+                  ⚠️ 정말 구독을 취소하시겠습니까?
+                </p>
+                <div className="space-y-2 text-sm text-default-700">
+                  <div className="flex items-start gap-2">
+                    <X className="w-4 h-4 text-danger mt-0.5 flex-shrink-0" />
+                    <span>모든 유료 기능이 즉시 비활성화됩니다</span>
+                  </div>
+                  <div className="flex items-start gap-2">
+                    <X className="w-4 h-4 text-danger mt-0.5 flex-shrink-0" />
+                    <span>AI 챗봇 어시스턴트를 사용할 수 없습니다</span>
+                  </div>
+                  <div className="flex items-start gap-2">
+                    <X className="w-4 h-4 text-danger mt-0.5 flex-shrink-0" />
+                    <span>API 접근 권한이 제거됩니다</span>
+                  </div>
+                  <div className="flex items-start gap-2">
+                    <X className="w-4 h-4 text-danger mt-0.5 flex-shrink-0" />
+                    <span>90일이 지난 데이터는 삭제됩니다</span>
+                  </div>
+                  <div className="flex items-start gap-2">
+                    <X className="w-4 h-4 text-danger mt-0.5 flex-shrink-0" />
+                    <span>광고 계정은 3개까지만 연결 가능합니다</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* 환불 정책 */}
+              <div className="p-4 bg-default-50 rounded-lg">
+                <h4 className="font-semibold mb-2">💰 환불 정책</h4>
+                <p className="text-sm text-default-700 mb-2">
+                  구독 취소 시점에 따라 환불 정책이 다릅니다:
+                </p>
+                <div className="space-y-1 text-sm text-default-600">
+                  <p>• 무료 체험 기간 중: 비용이 청구되지 않습니다</p>
+                  <p>• 결제 후 7일 이내: 전액 환불</p>
+                  <p>• 결제 후 7일 이후: 일할 계산하여 부분 환불</p>
+                </div>
+              </div>
+
+              {/* 적용 시기 */}
+              <div className="p-4 bg-warning/10 border border-warning/20 rounded-lg">
+                <h4 className="font-semibold mb-2">📅 적용 시기</h4>
+                <p className="text-sm text-default-700">
+                  취소 확인 시 <span className="font-semibold text-danger">즉시 Free 플랜으로 전환</span>됩니다.
+                  {nextBillingDate && (
+                    <span className="block mt-1">
+                      남은 기간({nextBillingDate.toLocaleDateString('ko-KR')}까지)에 대한 환불은 영업일 기준 3-5일 내 처리됩니다.
+                    </span>
+                  )}
+                </p>
+              </div>
+
+              {/* 확인 입력 */}
+              <div>
+                <p className="text-sm font-semibold mb-2">
+                  계속하시려면 아래에 "구독 취소"를 입력해주세요:
+                </p>
+                <Input
+                  value={cancelConfirmText}
+                  onValueChange={setCancelConfirmText}
+                  placeholder="구독 취소"
+                  variant="bordered"
+                  classNames={{
+                    input: 'text-center font-semibold',
+                  }}
+                />
+              </div>
+            </div>
+          </ModalBody>
+          <ModalFooter>
+            <Button variant="flat" onPress={() => { setShowCancelModal(false); setCancelConfirmText(''); }}>
+              돌아가기
+            </Button>
+            <Button
+              color="danger"
+              onPress={confirmCancel}
+              isDisabled={cancelConfirmText !== '구독 취소'}
+              startContent={<X className="w-4 h-4" />}
+            >
+              구독 취소하기
             </Button>
           </ModalFooter>
         </ModalContent>

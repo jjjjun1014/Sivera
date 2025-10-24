@@ -794,8 +794,10 @@ export default function SettingsPage() {
         >
           <div className="py-6">
             <BillingSection
-              currentPlan="free"
+              currentPlan="standard"
               currentSeats={teamMembers.length}
+              nextBillingDate={new Date(Date.now() + 20 * 24 * 60 * 60 * 1000)}
+              trialEndDate={new Date(Date.now() + 10 * 24 * 60 * 60 * 1000)}
               onUpgrade={(plan) => {
                 toast.success({
                   title: "업그레이드 요청",
