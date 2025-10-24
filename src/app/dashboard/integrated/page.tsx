@@ -94,14 +94,14 @@ export default function IntegratedPage() {
             onSelectionChange={setSelectedKeys}
           >
             <TableHeader>
-              <TableColumn>플랫폼</TableColumn>
-              <TableColumn>계정명</TableColumn>
-              <TableColumn>계정 ID</TableColumn>
-              <TableColumn>상태</TableColumn>
-              <TableColumn>마지막 동기화</TableColumn>
-              <TableColumn align="center">캠페인 수</TableColumn>
-              <TableColumn align="center">활성화</TableColumn>
-              <TableColumn align="center">작업</TableColumn>
+              <TableColumn key="platform">플랫폼</TableColumn>
+              <TableColumn key="account">계정명</TableColumn>
+              <TableColumn key="accountId">계정 ID</TableColumn>
+              <TableColumn key="status">상태</TableColumn>
+              <TableColumn key="lastSync">마지막 동기화</TableColumn>
+              <TableColumn key="campaigns" align="center">캠페인 수</TableColumn>
+              <TableColumn key="enabled" align="center">활성화</TableColumn>
+              <TableColumn key="actions" align="center">작업</TableColumn>
             </TableHeader>
             <TableBody>
               {paginatedData.map((item) => (

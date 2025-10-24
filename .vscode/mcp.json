@@ -1,0 +1,14 @@
+{
+  "mcpServers": {
+    "toss-payments": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@tosspayments/mcp-server"
+      ],
+      "env": {
+        "TOSS_PAYMENTS_SECRET_KEY": "${TOSS_PAYMENTS_SECRET_KEY}"
+      }
+    }
+  }
+}

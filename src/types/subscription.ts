@@ -12,9 +12,8 @@ export type SubscriptionStatus =
   | 'paused';     // 일시정지
 
 export interface PlanFeatures {
-  teamMembers: number | 'unlimited';
   adAccounts: number | 'unlimited';
-  dataRetention: number | 'unlimited';  // days
+  dataRetention: number | 'unlimited';  // days (3 = 3일, 'unlimited' = 무제한)
   apiAccess: 'none' | 'read-only' | 'full';
   aiChatbot: boolean;
   apiWrite: boolean;
@@ -22,12 +21,28 @@ export interface PlanFeatures {
   customIntegrations?: boolean;
 }
 
+/**
+ * 팀 규모 티어 - 언제든지 추가/수정 가능
+ */
+export interface TeamSizeTier {
+  id: string;
+  name: string;
+  minSeats: number;
+  maxSeats: number;
+  priceUSD: number;  // 이 구간의 추가 비용 (USD/월)
+  priceKRW: number;  // 이 구간의 추가 비용 (KRW/월)
+}
+
+/**
+ * 구독 플랜 - 기본 기능만 정의
+ */
 export interface SubscriptionPlan {
   type: PlanType;
   name: string;
   description: string;
-  priceUSD: number;  // USD per user per month
-  priceKRW: number;  // KRW per user per month
+  basePriceUSD: number;  // 기본 요금 (USD/월)
+  basePriceKRW: number;  // 기본 요금 (KRW/월)
+  baseTeamSize: number;  // 기본 포함 인원 수
   features: PlanFeatures;
   highlighted?: boolean;  // 추천 플랜 표시
 }
@@ -39,8 +54,9 @@ export interface TeamSubscription {
 
   // 요금 계산
   currentSeats: number;  // 현재 활성 팀원 수
-  monthlyTotalUSD: number;  // currentSeats * priceUSD
-  monthlyTotalKRW: number;  // currentSeats * priceKRW
+  teamSizeTierId: string;  // 현재 적용된 팀 규모 티어 ID
+  monthlyTotalUSD: number;  // basePriceUSD + teamSizeTier price
+  monthlyTotalKRW: number;  // basePriceKRW + teamSizeTier price
 
   // 결제 정보
   billing: {

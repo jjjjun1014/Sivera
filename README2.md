@@ -27,7 +27,7 @@
 - 👥 **팀 협업**: 팀 생성, 초대, 역할 관리
 - 🔐 **보안**: AWS Cognito 인증, KMS 암호화 자격증명
 
-### 현재 개발 상태 (2025-10-24)
+### 현재 개발 상태 (2025-10-24 업데이트)
 - ✅ UI/UX 기본 구조 완성
 - ✅ 플랫폼별 대시보드 페이지 구현 (Google/Meta/TikTok/Amazon)
   - ✅ 각 플랫폼별 세부 캠페인 타입 페이지 (14개 페이지)
@@ -55,11 +55,19 @@
 - ✅ 팀 관리 페이지 (초대, 역할, 변경 이력 UI)
 - ✅ 네비게이션 간소화 (Analytics 중심, Hub/Dashboard 메인 제거)
 - ✅ AWS 인프라 연동 준비 완료 (타입, 인터페이스, API 클라이언트)
-- ✅ AI 기능 구현 완료 (프론트엔드 전용)
-  - ✅ AI Chat Assistant (광고 관리 도우미 챗봇)
-  - ✅ Smart Suggestions (입력 자동완성 및 추천)
-  - ✅ Context-aware Help (상황 인식 도움말)
-  - ✅ Anomaly Detection Alerts (이상 패턴 감지 알림)
+- ✅ AI 기능 구현 (AI Chat Assistant만 유지)
+  - ✅ AI Chat Assistant (광고 관리 도우미 챗봇) - 모든 플랫폼 페이지 우측 하단 플로팅 버튼
+  - ❌ ~~Smart Suggestions~~ (제거)
+  - ❌ ~~Context-aware Help~~ (제거)
+  - ❌ ~~Anomaly Detection Alerts~~ (제거 - 브랜드 신뢰 문제)
+- ✅ 구독 & 결제 시스템 (UI 완성)
+  - ✅ 유연한 플랜 구조 (Free/Standard/Pro)
+  - ✅ 팀 규모 티어 시스템 (1-5명, 6-15명, 16-30명, 31-50명)
+  - ✅ 가격 자동 계산 (기본 요금 + 팀 규모 추가 요금)
+  - ✅ Settings 페이지 탭 기반 리뉴얼 (프로필/알림/환경설정/팀관리/구독&결제)
+  - ✅ BillingSection UI 개선 (직관적 카드 디자인, 업그레이드 옵션, 팀 규모 진행률)
+  - ✅ Toss Payments MCP 설정 준비 (.vscode/mcp.json)
+- ⏳ Toss Payments API 연동 (API 키 대기)
 - ⏳ 실제 광고 플랫폼 API 연동 (구현 대기)
 - ⏳ AWS Lambda/DynamoDB/Cognito 백엔드 구현 (구현 대기)
 - ⏳ 일괄 작업 기능 백엔드 연동 (UI 완성, 연동 대기)
