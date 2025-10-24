@@ -7,6 +7,7 @@ import { Select, SelectItem } from "@heroui/select";
 import { Input } from "@heroui/input";
 import { Button } from "@heroui/button";
 import { toast } from "@/utils/toast";
+import { BillingSection } from "@/components/settings/BillingSection";
 
 const CURRENCIES = [
   { key: "KRW", label: "KRW (₩)" },
@@ -355,6 +356,18 @@ export default function SettingsPage() {
             </div>
           </CardBody>
         </Card>
+
+        {/* 구독 & 결제 */}
+        <BillingSection
+          currentPlan="free"
+          currentSeats={1}
+          onUpgrade={(plan) => {
+            toast.success({
+              title: "업그레이드 요청",
+              description: `${plan} 플랜으로 업그레이드가 요청되었습니다. 결제 연동 후 사용 가능합니다.`,
+            });
+          }}
+        />
 
         {/* 저장 버튼 */}
         <div className="flex justify-end">
