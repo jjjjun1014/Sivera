@@ -70,14 +70,14 @@ export function AuthForm({
     }
 
     // TODO: AWS 연동 후 실제 로그인/회원가입 로직 구현
-    // 임시로 로그인 시 /hub로 리다이렉트
+    // 임시로 로그인 시 대시보드로 리다이렉트
     if (!isSignUp) {
       // 로그인
       toast.success({
         title: "로그인 성공 (임시)",
-        description: "허브 페이지로 이동합니다.",
+        description: "대시보드로 이동합니다.",
       });
-      router.push("/hub");
+      router.push("/dashboard/analytics");
     } else {
       // 회원가입
       toast.info({
