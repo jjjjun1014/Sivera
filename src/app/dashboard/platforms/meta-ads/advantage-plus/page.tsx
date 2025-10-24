@@ -209,30 +209,6 @@ export default function MetaAdsAdvantagePlusPage() {
     return campaigns.find((c) => c.id === selectedCampaignId)?.name || null;
   }, [campaigns, selectedCampaignId]);
 
-  // AI: Anomaly detection
-  const anomalies = useMemo(() => {
-    const allAnomalies = campaigns.flatMap((campaign) => {
-      return checkCampaignHealth(
-        {
-          id: campaign.id,
-          name: campaign.name,
-          spent: campaign.spent,
-          budget: campaign.budget,
-          cpc: campaign.cpc,
-          cpa: campaign.cpa || 0,
-          conversionRate: (campaign.conversions / campaign.clicks) * 100,
-          daysElapsed: 15,
-          totalDays: 30,
-        },
-        {
-          cpcHistory: [campaign.cpc * 0.9, campaign.cpc * 0.95, campaign.cpc * 1.1],
-          cpaHistory: [(campaign.cpa || 0) * 0.85, (campaign.cpa || 0) * 0.92],
-          conversionRateHistory: [2.1, 2.3, 2.5],
-        }
-      );
-    });
-    return allAnomalies;
-  }, [campaigns]);
 
   return (
     <div className="container mx-auto px-6 py-8">
@@ -242,8 +218,6 @@ export default function MetaAdsAdvantagePlusPage() {
           AI 기반 자동 최적화 캠페인으로 최고의 성과를 달성하세요
         </p>
       </div>
-
-      {anomalies.length > 0 && <AnomalyAlertBanner anomalies={anomalies} />}
 
       <Card className="mb-6">
         <CardBody>
@@ -474,8 +448,6 @@ export default function MetaAdsAdvantagePlusPage() {
           selectedMetrics: chartMetrics,
         }}
       />
-
-      <ContextHelpCard page="/dashboard/platforms/meta-ads/advantage-plus" />
     </div>
   );
 }
