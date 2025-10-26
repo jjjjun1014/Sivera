@@ -8,27 +8,32 @@ export const FAQSection = () => {
     {
       question: "Sivera는 어떤 광고 플랫폼을 지원하나요?",
       answer:
-        "Google Ads, Facebook Ads, Instagram Ads, YouTube Ads, Naver Ads, Kakao Ads, TikTok Ads, Amazon Ads 등 국내외 주요 광고 플랫폼을 모두 지원합니다. 지속적으로 새로운 플랫폼을 추가하고 있습니다.",
+        "현재 Google Ads, Meta Ads (Facebook, Instagram), TikTok Ads, Amazon Ads, Naver Ads 5개 주요 플랫폼을 지원합니다. 각 플랫폼의 캠페인을 하나의 통합 대시보드에서 관리하고 성과를 실시간으로 확인할 수 있습니다.",
     },
     {
-      question: "기존 광고 캠페인을 그대로 이전할 수 있나요?",
+      question: "플랫폼별로 어떤 광고 유형을 관리할 수 있나요?",
       answer:
-        "네, 가능합니다. Sivera는 기존 광고 플랫폼과 API 연동을 통해 현재 운영 중인 캠페인을 그대로 가져올 수 있습니다. 데이터 손실 없이 안전하게 이전됩니다.",
+        "Google Ads는 검색광고와 쇼핑광고(Performance Max)를, Meta Ads는 일반 광고와 Advantage+ 캠페인을, TikTok Ads는 일반 광고와 GMV Max를, Amazon Ads는 Sponsored Products/Brands/Display 및 DSP를 지원합니다. Naver Ads는 검색광고와 쇼핑광고를 통합 관리할 수 있습니다.",
     },
     {
-      question: "최소 계약 기간이 있나요?",
+      question: "팀원들과 함께 광고를 관리할 수 있나요?",
       answer:
-        "아니요, 최소 계약 기간은 없습니다. 월 단위로 결제하며 언제든지 해지할 수 있습니다. 14일 무료 체험 기간 동안 모든 기능을 사용해보고 결정하실 수 있습니다.",
+        "네, 팀 관리 기능을 제공합니다. 팀원을 초대하고 Owner, Admin, Member, Viewer 4가지 역할을 부여할 수 있습니다. 각 역할마다 다른 권한을 가지며, 광고 계정을 안전하게 협업 관리할 수 있습니다.",
     },
     {
-      question: "데이터 보안은 어떻게 관리되나요?",
+      question: "요금제는 어떻게 되나요?",
       answer:
-        "모든 데이터는 암호화되어 전송되고 저장됩니다. ISO 27001 인증을 받은 데이터센터를 사용하며, 정기적인 보안 감사를 실시합니다. 또한 2단계 인증과 역할 기반 접근 제어를 제공합니다.",
+        "Basic(월 $29/₩39,000) 1개 플랫폼, Standard(월 $79/₩99,000) 3개 플랫폼, Pro(월 $149/₩189,000) 5개 플랫폼을 제공합니다. 필요한 플랫폼 수에 따라 선택하실 수 있으며, PortOne을 통한 안전한 결제를 지원합니다.",
     },
     {
-      question: "API 연동 외에 다른 연동 방식도 지원하나요?",
+      question: "광고 플랫폼 계정을 어떻게 연동하나요?",
       answer:
-        "네, SDK, Open API, DB to DB, CSV 업로드 등 다양한 연동 방식을 지원합니다. 각 광고사와 대행사의 상황에 맞는 최적의 연동 방식을 선택할 수 있습니다.",
+        "각 플랫폼의 OAuth 인증을 통해 안전하게 계정을 연동합니다. 연동 후 캠페인 데이터가 자동으로 동기화되며, 대시보드에서 실시간 성과를 확인할 수 있습니다. 여러 광고 계정을 등록하여 한 번에 관리할 수도 있습니다.",
+    },
+    {
+      question: "데이터는 얼마나 자주 업데이트되나요?",
+      answer:
+        "캠페인 성과 데이터는 실시간으로 동기화됩니다. 각 플랫폼의 API를 통해 최신 데이터를 가져오며, 대시보드에서 즉시 확인할 수 있습니다. 수동 동기화 버튼을 통해 언제든지 최신 데이터를 갱신할 수도 있습니다.",
     },
   ];
 
