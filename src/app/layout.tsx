@@ -10,7 +10,7 @@ import { Navbar } from "@/components/layouts/navbar";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000"),
+  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"),
   title: {
     default: "Sivera - 통합 광고 관리 플랫폼",
     template: "%s | Sivera",

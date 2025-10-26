@@ -1,51 +1,62 @@
-import { MetadataRoute } from "next";
+import { MetadataRoute } from 'next'
 
 export default function sitemap(): MetadataRoute.Sitemap {
-  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
-  const currentDate = new Date();
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
 
   return [
     {
       url: baseUrl,
-      lastModified: currentDate,
-      changeFrequency: "daily",
-      priority: 1.0,
+      lastModified: new Date(),
+      changeFrequency: 'daily',
+      priority: 1,
     },
     {
       url: `${baseUrl}/login`,
-      lastModified: currentDate,
-      changeFrequency: "monthly",
+      lastModified: new Date(),
+      changeFrequency: 'monthly',
       priority: 0.8,
     },
     {
       url: `${baseUrl}/signup`,
-      lastModified: currentDate,
-      changeFrequency: "monthly",
+      lastModified: new Date(),
+      changeFrequency: 'monthly',
       priority: 0.8,
     },
     {
-      url: `${baseUrl}/blog`,
-      lastModified: currentDate,
-      changeFrequency: "weekly",
-      priority: 0.7,
+      url: `${baseUrl}/contact`,
+      lastModified: new Date(),
+      changeFrequency: 'monthly',
+      priority: 0.5,
     },
     {
-      url: `${baseUrl}/legal/terms`,
-      lastModified: currentDate,
-      changeFrequency: "yearly",
+      url: `${baseUrl}/terms`,
+      lastModified: new Date(),
+      changeFrequency: 'yearly',
       priority: 0.3,
     },
     {
-      url: `${baseUrl}/legal/privacy`,
-      lastModified: currentDate,
-      changeFrequency: "yearly",
+      url: `${baseUrl}/privacy`,
+      lastModified: new Date(),
+      changeFrequency: 'yearly',
       priority: 0.3,
     },
     {
-      url: `${baseUrl}/legal/marketing`,
-      lastModified: currentDate,
-      changeFrequency: "yearly",
+      url: `${baseUrl}/refund-policy`,
+      lastModified: new Date(),
+      changeFrequency: 'yearly',
       priority: 0.3,
     },
-  ];
+    {
+      url: `${baseUrl}/cookies`,
+      lastModified: new Date(),
+      changeFrequency: 'yearly',
+      priority: 0.3,
+    },
+    {
+      url: `${baseUrl}/faq`,
+      lastModified: new Date(),
+      changeFrequency: 'monthly',
+      priority: 0.5,
+    },
+  ]
 }
