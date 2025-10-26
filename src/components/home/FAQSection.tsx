@@ -8,12 +8,12 @@ export const FAQSection = () => {
     {
       question: "Sivera는 어떤 광고 플랫폼을 지원하나요?",
       answer:
-        "현재 Google Ads, Meta Ads (Facebook, Instagram), TikTok Ads, Amazon Ads, Naver Ads 5개 주요 플랫폼을 지원합니다. 각 플랫폼의 캠페인을 하나의 통합 대시보드에서 관리하고 성과를 실시간으로 확인할 수 있습니다.",
+        "현재 Google Ads, Meta Ads (Facebook, Instagram), TikTok Ads, Amazon Ads 4개 주요 플랫폼을 지원합니다. 각 플랫폼의 캠페인을 하나의 통합 대시보드에서 관리하고 성과를 실시간으로 확인할 수 있습니다.",
     },
     {
       question: "플랫폼별로 어떤 광고 유형을 관리할 수 있나요?",
       answer:
-        "Google Ads는 검색광고와 쇼핑광고(Performance Max)를, Meta Ads는 일반 광고와 Advantage+ 캠페인을, TikTok Ads는 일반 광고와 GMV Max를, Amazon Ads는 Sponsored Products/Brands/Display 및 DSP를 지원합니다. Naver Ads는 검색광고와 쇼핑광고를 통합 관리할 수 있습니다.",
+        "Google Ads는 검색광고와 쇼핑광고(Performance Max)를, Meta Ads는 일반 광고와 Advantage+ 캠페인을, TikTok Ads는 일반 광고와 GMV Max를, Amazon Ads는 Sponsored Products/Brands/Display 및 DSP를 지원합니다.",
     },
     {
       question: "팀원들과 함께 광고를 관리할 수 있나요?",
