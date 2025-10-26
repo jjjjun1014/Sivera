@@ -9,8 +9,6 @@ export const PAGE_PATH = {
   team: "/team",
   analytics: "/analytics",
   pricing: "/pricing",
-  demo: "/demo",
-  support: "/support",
   contact: "/contact",
 } as const;
 
@@ -24,16 +22,8 @@ export const siteConfig: SiteConfig = {
       href: "/",
     },
     {
-      label: "데모",
-      href: "/demo",
-    },
-    {
       label: "요금제",
       href: "/pricing",
-    },
-    {
-      label: "고객 지원",
-      href: "/support",
     },
   ],
   navMenuItems: [

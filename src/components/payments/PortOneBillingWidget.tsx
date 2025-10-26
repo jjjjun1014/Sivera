@@ -8,6 +8,9 @@ import type { BillingKeyRequest } from "@/types/payment";
 interface PortOneBillingWidgetProps {
   customerId: string;
   channelKey: string; // "paypal_v2" or "card_channel_key"
+  customerEmail?: string; // 이니시스 필수
+  customerName?: string; // 선택사항
+  customerPhoneNumber?: string; // 이니시스 필수
   onSuccess?: (billingKey: string) => void;
   onError?: (error: Error) => void;
 }
@@ -15,6 +18,9 @@ interface PortOneBillingWidgetProps {
 export function PortOneBillingWidget({
   customerId,
   channelKey,
+  customerEmail,
+  customerName,
+  customerPhoneNumber,
   onSuccess,
   onError,
 }: PortOneBillingWidgetProps) {
@@ -32,14 +38,31 @@ export function PortOneBillingWidget({
     try {
       const baseUrl = process.env.NEXT_PUBLIC_APP_URL || window.location.origin;
 
+      const customerInfo = {
+        customerId,
+        ...(customerEmail && { email: customerEmail }),
+        ...(customerName && { name: { full: customerName } }),
+        ...(customerPhoneNumber && { phoneNumber: customerPhoneNumber }),
+      };
+
+      console.log("🔵 PortOne 빌링키 발급 요청:", {
+        storeId,
+        channelKey,
+        customerInfo,
+      });
+
+      console.log("🔵 Props 확인:", {
+        customerName,
+        customerEmail,
+        customerPhoneNumber,
+      });
+
       // PortOne V2 빌링키 발급 UI
       const response = await PortOne.requestIssueBillingKey({
         storeId,
         channelKey,
-        billingKeyMethod: channelKey.includes("paypal") ? "PAYPAL" : "CARD",
-        customer: {
-          customerId,
-        },
+        billingKeyMethod: "CARD",
+        customer: customerInfo,
         redirectUrl: `${baseUrl}/payment/billing/success`,
         noticeUrls: [`${baseUrl}/api/portone/billing-webhook`],
       });

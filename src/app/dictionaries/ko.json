@@ -616,19 +616,19 @@
       },
       "dashboard": {
         "title": "통합 대시보드",
-        "description": "모든 광고 플랫폼의 성과를 한눈에 모니터링하세요. 실시간 데이터 분석 및 보고."
+        "description": "Google Ads, Meta Ads, TikTok Ads, Amazon Ads 등 모든 광고 플랫폼을 한 곳에서 관리하세요."
       },
       "automation": {
-        "title": "자동 광고 최적화",
-        "description": "AI 기반 최적화로 ROI를 극대화하고 광고 예산을 효율적으로 관리하세요."
+        "title": "실시간 성과 분석",
+        "description": "캠페인별 성과를 실시간으로 추적하고, 데이터 기반 의사결정을 내리세요."
       },
       "security": {
-        "title": "안전한 데이터 관리",
-        "description": "엔터프라이즈급 보안으로 광고 데이터를 보호하세요."
+        "title": "예산 및 광고 관리",
+        "description": "캠페인 예산을 한 곳에서 관리하고, 광고 on/off 제어로 효율적인 운영을 실현하세요."
       },
       "integration": {
-        "title": "유연한 통합",
-        "description": "SDK, Open API, DB to DB 등 다양한 통합 방법을 지원합니다."
+        "title": "팀 협업 기능",
+        "description": "워크스페이스 기반으로 여러 브랜드를 관리하고, 역할별 권한으로 팀과 함께 일하세요."
       }
     },
     "platforms": {

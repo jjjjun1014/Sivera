@@ -188,6 +188,10 @@ export function CampaignTable({
   } | null>(null);
   const { isOpen, onOpen, onClose } = useDisclosure();
 
+  // Switch 토글 확인 모달
+  const { isOpen: isSwitchModalOpen, onOpen: onSwitchModalOpen, onClose: onSwitchModalClose } = useDisclosure();
+  const [pendingSwitch, setPendingSwitch] = useState<{ id: number; currentStatus: string } | null>(null);
+
   // 컬럼 관리 모달
   const { isOpen: isColumnModalOpen, onOpen: onColumnModalOpen, onClose: onColumnModalClose } = useDisclosure();
 
@@ -213,9 +217,14 @@ export function CampaignTable({
     if (pendingChange) {
       onCampaignChange?.(pendingChange.id, pendingChange.field, pendingChange.value);
 
+      const fieldLabels: Record<string, string> = {
+        name: "캠페인명",
+        budget: "예산",
+      };
+
       toast.success({
         title: "수정 완료",
-        description: "캠페인명이 성공적으로 변경되었습니다.",
+        description: `${fieldLabels[pendingChange.field] || pendingChange.field}이(가) 성공적으로 변경되었습니다.`,
       });
 
       setPendingChange(null);
@@ -383,8 +392,63 @@ export function CampaignTable({
         id: "budget",
         accessorKey: "budget",
         header: "예산",
-        cell: ({ getValue }) => {
-          return <div className="text-right whitespace-nowrap">₩{(getValue() as number).toLocaleString()}</div>;
+        cell: ({ row, getValue }) => {
+          const campaignId = row.original.id;
+          const field = "budget";
+          const key = `${campaignId}-${field}`;
+          const currentValue = getValue() as number;
+          const isEditing = editingCell?.id === campaignId && editingCell?.field === field;
+          const displayValue = tempValues[key] !== undefined ? tempValues[key] : currentValue;
+
+          if (isEditing) {
+            return (
+              <Input
+                type="number"
+                value={displayValue}
+                onChange={(e) => {
+                  const newValue = Number(e.target.value);
+                  setTempValues((prev) => ({ ...prev, [key]: newValue }));
+                }}
+                onBlur={() => {
+                  const newValue = tempValues[key] !== undefined ? tempValues[key] : currentValue;
+                  if (newValue !== currentValue) {
+                    setPendingChange({
+                      id: campaignId,
+                      field,
+                      value: newValue,
+                      oldValue: currentValue,
+                    });
+                    onOpen();
+                  }
+                  setEditingCell(null);
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.currentTarget.blur();
+                  } else if (e.key === "Escape") {
+                    setTempValues((prev) => {
+                      const newValues = { ...prev };
+                      delete newValues[key];
+                      return newValues;
+                    });
+                    setEditingCell(null);
+                  }
+                }}
+                size="sm"
+                className="w-32"
+                autoFocus
+              />
+            );
+          }
+
+          return (
+            <div
+              className="text-right whitespace-nowrap cursor-pointer hover:bg-default-100 px-2 py-1 rounded transition-colors"
+              onClick={() => setEditingCell({ id: campaignId, field })}
+            >
+              ₩{currentValue.toLocaleString()}
+            </div>
+          );
         },
       },
       {
@@ -452,16 +516,20 @@ export function CampaignTable({
               <Switch
                 size="sm"
                 isSelected={row.original.status === "active"}
-                onValueChange={() =>
-                  onToggleStatus?.(row.original.id, row.original.status)
-                }
+                onValueChange={() => {
+                  setPendingSwitch({
+                    id: row.original.id,
+                    currentStatus: row.original.status,
+                  });
+                  onSwitchModalOpen();
+                }}
               />
             </div>
           );
         },
       },
     ],
-    [onCampaignChange, onToggleStatus, editingCell, tempValues, onOpen]
+    [onCampaignChange, onToggleStatus, editingCell, tempValues, onOpen, onSwitchModalOpen]
   );
 
   const table = useReactTable({
@@ -665,19 +733,25 @@ export function CampaignTable({
                     </p>
                     <div className="bg-default-100 rounded-lg p-4 space-y-2">
                       <div className="flex justify-between items-center">
-                        <span className="text-sm font-medium text-default-700">캠페인명</span>
+                        <span className="text-sm font-medium text-default-700">
+                          {pendingChange.field === "name" ? "캠페인명" : "예산"}
+                        </span>
                       </div>
                       <div className="grid grid-cols-2 gap-4">
                         <div>
                           <p className="text-xs text-default-500 mb-1">변경 전</p>
                           <p className="text-sm font-medium text-danger">
-                            {pendingChange.oldValue}
+                            {pendingChange.field === "budget"
+                              ? `₩${Number(pendingChange.oldValue).toLocaleString()}`
+                              : pendingChange.oldValue}
                           </p>
                         </div>
                         <div>
                           <p className="text-xs text-default-500 mb-1">변경 후</p>
                           <p className="text-sm font-medium text-success">
-                            {pendingChange.value}
+                            {pendingChange.field === "budget"
+                              ? `₩${Number(pendingChange.value).toLocaleString()}`
+                              : pendingChange.value}
                           </p>
                         </div>
                       </div>
@@ -709,6 +783,57 @@ export function CampaignTable({
           onColumnVisibilityChange?.(visible);
         }}
       />
+
+      {/* Switch 토글 확인 모달 */}
+      <Modal isOpen={isSwitchModalOpen} onClose={onSwitchModalClose}>
+        <ModalContent>
+          {() => (
+            <>
+              <ModalHeader>캠페인 상태 변경</ModalHeader>
+              <ModalBody>
+                <div className="space-y-4">
+                  <p className="text-default-600">
+                    {pendingSwitch?.currentStatus === "active"
+                      ? "이 캠페인을 일시정지하시겠습니까?"
+                      : "이 캠페인을 활성화하시겠습니까?"}
+                  </p>
+                  <div className="p-4 bg-warning/10 rounded-lg">
+                    <p className="text-sm text-warning-600">
+                      {pendingSwitch?.currentStatus === "active"
+                        ? "⚠️ 캠페인이 일시정지되면 광고 게재가 중단됩니다."
+                        : "✓ 캠페인이 활성화되면 즉시 광고가 게재됩니다."}
+                    </p>
+                  </div>
+                </div>
+              </ModalBody>
+              <ModalFooter>
+                <Button variant="light" onPress={onSwitchModalClose}>
+                  취소
+                </Button>
+                <Button
+                  color={pendingSwitch?.currentStatus === "active" ? "warning" : "success"}
+                  onPress={() => {
+                    if (pendingSwitch) {
+                      onToggleStatus?.(pendingSwitch.id, pendingSwitch.currentStatus);
+                      toast.success({
+                        title: "상태 변경 완료",
+                        description:
+                          pendingSwitch.currentStatus === "active"
+                            ? "캠페인이 일시정지되었습니다."
+                            : "캠페인이 활성화되었습니다.",
+                      });
+                    }
+                    setPendingSwitch(null);
+                    onSwitchModalClose();
+                  }}
+                >
+                  {pendingSwitch?.currentStatus === "active" ? "일시정지" : "활성화"}
+                </Button>
+              </ModalFooter>
+            </>
+          )}
+        </ModalContent>
+      </Modal>
     </div>
   );
 }

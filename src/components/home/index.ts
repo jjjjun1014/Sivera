@@ -1,5 +1,4 @@
 export { StatsSection } from "./StatsSection";
-export { TestimonialsSection } from "./TestimonialsSection";
 export { IntegrationProcessSection } from "./IntegrationProcessSection";
 export { FAQSection } from "./FAQSection";
 export { FAQAccordion } from "./FAQAccordion";

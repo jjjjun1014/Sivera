@@ -7,15 +7,11 @@ import { Chip } from "@heroui/chip";
 import { Button } from "@heroui/button";
 import { Switch } from "@heroui/switch";
 import { Pagination } from "@heroui/pagination";
-import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, useDisclosure } from "@heroui/modal";
-import { Input } from "@heroui/input";
-import { Select, SelectItem } from "@heroui/select";
 import { platformAccounts } from "@/lib/mock-data";
 import { usePagination } from "@/hooks";
 
 export default function IntegratedPage() {
   const [selectedKeys, setSelectedKeys] = useState<Selection>(new Set([]));
-  const { isOpen, onOpen, onClose } = useDisclosure();
 
   // 페이지네이션
   const { currentPage, totalPages, paginatedData, setCurrentPage } = usePagination(platformAccounts, {
@@ -37,20 +33,11 @@ export default function IntegratedPage() {
   return (
     <div className="container mx-auto px-6 py-8">
       {/* Header */}
-      <div className="mb-8 flex justify-between items-center">
-        <div>
-          <h1 className="text-3xl font-bold mb-2">플랫폼 연동</h1>
-          <p className="text-default-500">
-            광고 플랫폼 계정을 연동하고 관리하세요
-          </p>
-        </div>
-        <Button
-          color="primary"
-          radius="sm"
-          onPress={onOpen}
-        >
-          + 새 플랫폼 연동
-        </Button>
+      <div className="mb-8">
+        <h1 className="text-3xl font-bold mb-2">플랫폼 연동</h1>
+        <p className="text-default-500">
+          광고 플랫폼 계정을 연동하고 관리하세요
+        </p>
       </div>
 
       {/* Quick Stats */}
@@ -255,63 +242,6 @@ export default function IntegratedPage() {
         </div>
       </div>
 
-      {/* Add Platform Modal */}
-      <Modal isOpen={isOpen} onClose={onClose} size="2xl">
-        <ModalContent>
-          <ModalHeader>
-            <h2 className="text-2xl font-bold">새 플랫폼 연동</h2>
-          </ModalHeader>
-          <ModalBody>
-            <div className="space-y-4">
-              <Select
-                label="플랫폼 선택"
-                placeholder="플랫폼을 선택하세요"
-                radius="sm"
-                variant="bordered"
-                isRequired
-              >
-                <SelectItem key="google">Google Ads</SelectItem>
-                <SelectItem key="meta">Meta Ads</SelectItem>
-                <SelectItem key="tiktok">TikTok Ads</SelectItem>
-                <SelectItem key="amazon">Amazon Ads</SelectItem>
-              </Select>
-
-              <Input
-                label="계정명"
-                placeholder="계정 이름을 입력하세요"
-                radius="sm"
-                variant="bordered"
-                isRequired
-              />
-
-              <Input
-                label="API 키"
-                placeholder="API 키를 입력하세요"
-                radius="sm"
-                variant="bordered"
-                type="password"
-                isRequired
-              />
-
-              <Input
-                label="계정 ID"
-                placeholder="계정 ID를 입력하세요"
-                radius="sm"
-                variant="bordered"
-                isRequired
-              />
-            </div>
-          </ModalBody>
-          <ModalFooter>
-            <Button variant="light" onPress={onClose}>
-              취소
-            </Button>
-            <Button color="primary" onPress={onClose}>
-              연동하기
-            </Button>
-          </ModalFooter>
-        </ModalContent>
-      </Modal>
     </div>
   );
 }

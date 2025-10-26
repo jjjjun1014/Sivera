@@ -215,13 +215,17 @@ export default function TeamPage() {
           <h3 className="text-xl font-semibold">팀원 목록</h3>
         </CardHeader>
         <CardBody>
-          <Table
-            aria-label="팀원 목록 테이블"
-            selectionMode="multiple"
-            selectedKeys={selectedKeys}
-            onSelectionChange={setSelectedKeys}
-            disallowEmptySelection={false}
-          >
+          <div className="overflow-x-auto">
+            <Table
+              aria-label="팀원 목록 테이블"
+              selectionMode="multiple"
+              selectedKeys={selectedKeys}
+              onSelectionChange={setSelectedKeys}
+              disallowEmptySelection={false}
+              classNames={{
+                wrapper: "min-w-[900px]",
+              }}
+            >
             <TableHeader>
               <TableColumn className="whitespace-nowrap">팀원</TableColumn>
               <TableColumn className="whitespace-nowrap">이메일</TableColumn>
@@ -296,6 +300,7 @@ export default function TeamPage() {
               ))}
             </TableBody>
           </Table>
+          </div>
 
           <div className="mt-4 text-sm text-default-500">
             선택됨: {selectedKeys === "all" ? teamMembers.length : selectedKeys.size}개

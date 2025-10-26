@@ -6,7 +6,7 @@ import { Button } from "@heroui/button";
 import { DateRangePicker } from "@heroui/date-picker";
 import { Pagination } from "@heroui/pagination";
 import { useDisclosure } from "@heroui/modal";
-import { Target, TrendingUp, TrendingDown } from "lucide-react";
+import { Target, TrendingUp, TrendingDown, AlertCircle, Link as LinkIcon } from "lucide-react";
 import { getLocalTimeZone, today } from "@internationalized/date";
 import { GoalSettingModal, PlatformGoals } from "@/components/modals/GoalSettingModal";
 import { platformGoalsStorage } from "@/lib/storage/platformGoals";
@@ -131,6 +131,50 @@ export function PlatformGoalDashboard({ config }: { config: PlatformGoalDashboar
   const roasRate = calculateAchievement(config.sampleTotalData.avgROAS, goals.targetROAS);
   const ctrRate = calculateAchievement(config.sampleTotalData.avgCTR, goals.targetCTR);
   const impressionShareRate = calculateAchievement(config.sampleTotalData.impressionShare, goals.targetImpressionShare);
+
+  // Empty state when no campaigns
+  if (!config.campaigns || config.campaigns.length === 0) {
+    return (
+      <div className="container mx-auto px-6 py-8">
+        <div className="mb-6">
+          <h1 className="text-3xl font-bold mb-2">{config.platformDisplayName}</h1>
+          <p className="text-default-500">{config.description}</p>
+        </div>
+
+        <Card className="mt-8">
+          <CardBody className="text-center py-16">
+            <div className="flex flex-col items-center gap-4">
+              <div className="p-4 rounded-full bg-warning/10">
+                <AlertCircle className="w-12 h-12 text-warning" />
+              </div>
+              <div>
+                <h3 className="text-xl font-semibold mb-2">캠페인이 없습니다</h3>
+                <p className="text-default-500 mb-6">
+                  아직 연동된 캠페인이 없거나 연동에 오류가 발생했습니다.
+                </p>
+              </div>
+              <div className="flex gap-3">
+                <Button
+                  color="primary"
+                  startContent={<LinkIcon className="w-4 h-4" />}
+                  as="a"
+                  href="/dashboard/integrated"
+                >
+                  플랫폼 연동하기
+                </Button>
+                <Button
+                  variant="flat"
+                  startContent={<AlertCircle className="w-4 h-4" />}
+                >
+                  연동 상태 확인
+                </Button>
+              </div>
+            </div>
+          </CardBody>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="container mx-auto px-6 py-8">

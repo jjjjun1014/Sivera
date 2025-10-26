@@ -401,8 +401,8 @@ export function PlatformDashboardTemplate({
 
           {campaigns.length === 0 ? (
             <EmptyState
-              title="캠페인이 없습니다"
-              description="새로운 캠페인을 생성하여 시작하세요"
+              message="광고 캠페인이 없습니다"
+              description="플랫폼 연동을 확인하시거나 새로운 캠페인을 생성하세요. 연동에 문제가 있다면 설정 페이지에서 다시 연결해주세요."
             />
           ) : (
             <>

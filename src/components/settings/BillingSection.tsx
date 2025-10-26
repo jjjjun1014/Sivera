@@ -31,6 +31,7 @@ export function BillingSection({
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const [showDowngradeModal, setShowDowngradeModal] = useState(false);
   const [showCancelModal, setShowCancelModal] = useState(false);
+  const [showPaymentMethodModal, setShowPaymentMethodModal] = useState(false);
   const [selectedPlan, setSelectedPlan] = useState<PlanType>('standard');
   const [cancelConfirmText, setCancelConfirmText] = useState('');
 
@@ -55,14 +56,16 @@ export function BillingSection({
   };
 
   const confirmUpgrade = () => {
-    // 결제 수단 등록 페이지로 이동
-    router.push(`/payment/billing/register?plan=${selectedPlan}&seats=${currentSeats}`);
+    // TODO: PortOne 정식 가입 후 활성화
+    alert('결제 시스템 준비 중입니다.');
     setShowUpgradeModal(false);
+    // router.push(`/payment/billing/register?plan=${selectedPlan}&seats=${currentSeats}`);
   };
 
   const handlePaymentMethodChange = () => {
-    // 현재 플랜으로 결제 수단 변경/등록
-    router.push(`/payment/billing/register?plan=${currentPlan}&seats=${currentSeats}`);
+    // TODO: PortOne 정식 가입 후 활성화
+    alert('결제 시스템 준비 중입니다.');
+    // router.push(`/payment/billing/register?plan=${currentPlan}&seats=${currentSeats}`);
   };
 
   const confirmDowngrade = () => {
@@ -130,16 +133,28 @@ export function BillingSection({
               <p className="text-default-500">{plan.description}</p>
             </div>
           </div>
-          {currentPlan !== 'pro' && (
-            <Button
-              color="primary"
-              size="lg"
-              endContent={<ArrowRight className="w-4 h-4" />}
-              onPress={() => handleUpgradeClick(currentPlan === 'free' ? 'standard' : 'pro')}
-            >
-              업그레이드
-            </Button>
-          )}
+          <div className="flex gap-2">
+            {currentPlan !== 'free' && (
+              <Button
+                variant="bordered"
+                size="lg"
+                startContent={<CreditCard className="w-4 h-4" />}
+                onPress={() => setShowPaymentMethodModal(true)}
+              >
+                결제수단
+              </Button>
+            )}
+            {currentPlan !== 'pro' && (
+              <Button
+                color="primary"
+                size="lg"
+                endContent={<ArrowRight className="w-4 h-4" />}
+                onPress={() => handleUpgradeClick(currentPlan === 'free' ? 'standard' : 'pro')}
+              >
+                업그레이드
+              </Button>
+            )}
+          </div>
         </CardHeader>
 
         <CardBody className="pt-4">
@@ -293,38 +308,7 @@ export function BillingSection({
           </div>
         </CardBody>
 
-        {/* Payment Method Section */}
         <CardFooter className="flex-col gap-4 border-t border-divider">
-          <div className="w-full">
-            <div className="flex justify-between items-center mb-3">
-              <h4 className="font-semibold flex items-center gap-2">
-                <CreditCard className="w-4 h-4" />
-                결제 수단
-              </h4>
-              {currentPlan !== 'free' && (
-                <Button size="sm" variant="flat" color="primary" onPress={handlePaymentMethodChange}>
-                  등록/변경
-                </Button>
-              )}
-            </div>
-            {currentPlan === 'free' ? (
-              <div className="p-4 bg-default-100 rounded-lg text-center">
-                <p className="text-sm text-default-600">
-                  유료 플랜 업그레이드 시 결제 수단을 등록할 수 있습니다
-                </p>
-              </div>
-            ) : (
-              <div className="p-4 bg-warning/10 border-2 border-warning/20 rounded-lg">
-                <p className="text-sm font-medium text-warning-700 dark:text-warning">
-                  ⚠️ 등록된 결제 수단이 없습니다
-                </p>
-                <p className="text-xs text-default-600 mt-1">
-                  원활한 서비스 이용을 위해 결제 수단을 등록해주세요
-                </p>
-              </div>
-            )}
-          </div>
-
           {/* 플랜 관리 버튼들 */}
           {currentPlan !== 'free' && (
             <div className="w-full flex gap-2">
@@ -362,7 +346,7 @@ export function BillingSection({
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {currentPlan === 'free' ? (
               <>
-                <Card className="hover:shadow-lg transition-shadow cursor-pointer" isPressable onPress={() => handleUpgradeClick('standard')}>
+                <Card className="hover:shadow-lg transition-shadow">
                   <CardBody className="p-6">
                     <div className="flex items-start justify-between mb-4">
                       <div className="flex items-center gap-3">
@@ -396,13 +380,13 @@ export function BillingSection({
                         <span>무제한 데이터</span>
                       </div>
                     </div>
-                    <Button color="primary" fullWidth endContent={<ArrowRight className="w-4 h-4" />}>
+                    <Button color="primary" fullWidth endContent={<ArrowRight className="w-4 h-4" />} onPress={() => handleUpgradeClick('standard')}>
                       Standard 시작하기
                     </Button>
                   </CardBody>
                 </Card>
 
-                <Card className="hover:shadow-lg transition-shadow cursor-pointer border-2 border-secondary/20" isPressable onPress={() => handleUpgradeClick('pro')}>
+                <Card className="hover:shadow-lg transition-shadow border-2 border-secondary/20">
                   <CardBody className="p-6">
                     <div className="flex items-start justify-between mb-4">
                       <div className="flex items-center gap-3">
@@ -435,14 +419,14 @@ export function BillingSection({
                         <span>커스텀 연동</span>
                       </div>
                     </div>
-                    <Button color="secondary" fullWidth endContent={<ArrowRight className="w-4 h-4" />}>
+                    <Button color="secondary" fullWidth endContent={<ArrowRight className="w-4 h-4" />} onPress={() => handleUpgradeClick('pro')}>
                       Pro 시작하기
                     </Button>
                   </CardBody>
                 </Card>
               </>
             ) : (
-              <Card className="hover:shadow-lg transition-shadow cursor-pointer border-2 border-secondary/20" isPressable onPress={() => handleUpgradeClick('pro')}>
+              <Card className="hover:shadow-lg transition-shadow border-2 border-secondary/20">
                 <CardBody className="p-6">
                   <div className="flex items-start justify-between mb-4">
                     <div className="flex items-center gap-3">
@@ -478,7 +462,7 @@ export function BillingSection({
                       <span>커스텀 연동 지원</span>
                     </div>
                   </div>
-                  <Button color="secondary" fullWidth endContent={<ArrowRight className="w-4 h-4" />}>
+                  <Button color="secondary" fullWidth endContent={<ArrowRight className="w-4 h-4" />} onPress={() => handleUpgradeClick('pro')}>
                     Pro로 업그레이드
                   </Button>
                 </CardBody>
@@ -762,6 +746,62 @@ export function BillingSection({
               startContent={<ChevronDown className="w-4 h-4" />}
             >
               {PLANS[selectedPlan].name}로 다운그레이드
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
+
+      {/* Payment Method Modal */}
+      <Modal isOpen={showPaymentMethodModal} onClose={() => setShowPaymentMethodModal(false)} size="lg">
+        <ModalContent>
+          <ModalHeader>
+            <div className="flex items-center gap-3">
+              <CreditCard className="w-6 h-6 text-primary" />
+              <span>결제 수단 관리</span>
+            </div>
+          </ModalHeader>
+          <ModalBody>
+            <div className="space-y-4">
+              <div className="p-4 bg-warning/10 border-2 border-warning/20 rounded-lg">
+                <p className="text-sm font-medium text-warning-700 dark:text-warning">
+                  ⚠️ 등록된 결제 수단이 없습니다
+                </p>
+                <p className="text-xs text-default-600 mt-1">
+                  원활한 서비스 이용을 위해 결제 수단을 등록해주세요
+                </p>
+              </div>
+
+              <div className="p-4 bg-default-50 rounded-lg">
+                <h4 className="font-semibold mb-3">지원 결제 수단</h4>
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2 text-sm">
+                    <Check className="w-4 h-4 text-success" />
+                    <span>국내/해외 신용카드 (이니시스)</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-sm">
+                    <Check className="w-4 h-4 text-success" />
+                    <span>PayPal 계정</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="p-4 bg-primary/10 rounded-lg">
+                <p className="text-sm text-default-700">
+                  💡 결제 시스템은 현재 준비 중입니다. 정식 오픈 시 이용 가능합니다.
+                </p>
+              </div>
+            </div>
+          </ModalBody>
+          <ModalFooter>
+            <Button variant="light" onPress={() => setShowPaymentMethodModal(false)}>
+              닫기
+            </Button>
+            <Button
+              color="primary"
+              onPress={handlePaymentMethodChange}
+              isDisabled
+            >
+              결제 수단 등록 (준비 중)
             </Button>
           </ModalFooter>
         </ModalContent>

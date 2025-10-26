@@ -15,6 +15,9 @@ import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, useDisclosure
 import { User as UserIcon, Bell, Settings as SettingsIcon, Users, CreditCard, Shield, Lock } from "lucide-react";
 import { toast } from "@/utils/toast";
 import { BillingSection } from "@/components/settings/BillingSection";
+import { PermissionGate } from "@/components/auth/PermissionGate";
+import { useAuth } from "@/hooks/use-permission";
+import { ROLE_LABELS } from "@/types/permissions";
 
 const CURRENCIES = [
   { key: "KRW", label: "KRW (₩)" },
@@ -85,6 +88,7 @@ export default function SettingsPage() {
   const [selectedTab, setSelectedTab] = useState("profile");
   const { isOpen: isInviteOpen, onOpen: onInviteOpen, onClose: onInviteClose } = useDisclosure();
   const { isOpen: isPasswordOpen, onOpen: onPasswordOpen, onClose: onPasswordClose } = useDisclosure();
+  const { role, hasPermission } = useAuth();
 
   // 프로필 설정
   const [profile, setProfile] = useState({
@@ -686,9 +690,11 @@ export default function SettingsPage() {
             <Card>
               <CardHeader className="flex justify-between items-center">
                 <h2 className="text-xl font-semibold">팀원</h2>
-                <Button color="primary" size="sm" onPress={onInviteOpen}>
-                  + 팀원 초대
-                </Button>
+                <PermissionGate permission="team:invite">
+                  <Button color="primary" size="sm" onPress={onInviteOpen}>
+                    + 팀원 초대
+                  </Button>
+                </PermissionGate>
               </CardHeader>
               <CardBody>
                 <Table aria-label="팀원 목록">
@@ -734,14 +740,16 @@ export default function SettingsPage() {
                         <TableCell>
                           <div className="flex gap-2 justify-center">
                             {member.role !== "owner" && (
-                              <Button
-                                size="sm"
-                                variant="flat"
-                                color="danger"
-                                onPress={() => handleRemoveMember(member.id, member.name)}
-                              >
-                                제거
-                              </Button>
+                              <PermissionGate permission="team:remove-member">
+                                <Button
+                                  size="sm"
+                                  variant="flat"
+                                  color="danger"
+                                  onPress={() => handleRemoveMember(member.id, member.name)}
+                                >
+                                  제거
+                                </Button>
+                              </PermissionGate>
                             )}
                           </div>
                         </TableCell>
@@ -793,18 +801,45 @@ export default function SettingsPage() {
           }
         >
           <div className="py-6">
-            <BillingSection
-              currentPlan="standard"
-              currentSeats={teamMembers.length}
-              nextBillingDate={new Date(Date.now() + 20 * 24 * 60 * 60 * 1000)}
-              trialEndDate={new Date(Date.now() + 10 * 24 * 60 * 60 * 1000)}
-              onUpgrade={(plan) => {
-                toast.success({
-                  title: "업그레이드 요청",
-                  description: `${plan} 플랜으로 업그레이드가 요청되었습니다. 결제 연동 후 사용 가능합니다.`,
-                });
-              }}
-            />
+            <PermissionGate
+              permission="subscription:view"
+              fallback={
+                <Card>
+                  <CardBody className="text-center py-12">
+                    <Shield className="w-16 h-16 mx-auto mb-4 text-default-300" />
+                    <h3 className="text-xl font-semibold mb-2">접근 권한 없음</h3>
+                    <p className="text-default-500">
+                      구독 정보를 확인하려면 소유자 또는 관리자 권한이 필요합니다.
+                    </p>
+                    {role && (
+                      <p className="text-sm text-default-400 mt-4">
+                        현재 역할: <span className="font-semibold">{ROLE_LABELS[role]}</span>
+                      </p>
+                    )}
+                  </CardBody>
+                </Card>
+              }
+            >
+              <BillingSection
+                currentPlan="standard"
+                currentSeats={teamMembers.length}
+                nextBillingDate={new Date(Date.now() + 20 * 24 * 60 * 60 * 1000)}
+                trialEndDate={new Date(Date.now() + 10 * 24 * 60 * 60 * 1000)}
+                onUpgrade={(plan) => {
+                  if (!hasPermission("subscription:change-plan")) {
+                    toast.error({
+                      title: "권한 없음",
+                      description: "플랜 변경은 소유자만 가능합니다.",
+                    });
+                    return;
+                  }
+                  toast.success({
+                    title: "업그레이드 요청",
+                    description: `${plan} 플랜으로 업그레이드가 요청되었습니다. 결제 연동 후 사용 가능합니다.`,
+                  });
+                }}
+              />
+            </PermissionGate>
           </div>
         </Tab>
       </Tabs>

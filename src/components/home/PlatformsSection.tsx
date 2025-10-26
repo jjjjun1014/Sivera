@@ -7,7 +7,6 @@ import {
   FaTiktok,
   FaAmazon,
 } from "react-icons/fa";
-import { SiNaver } from "react-icons/si";
 
 import { PageHeader } from "@/components/common/PageHeader";
 import { Container } from "@/components/layouts/Container";
@@ -17,7 +16,6 @@ import { useDictionary } from "@/hooks/use-dictionary";
 const PLATFORMS = [
   { icon: "FaGoogle", name: "Google Ads", color: "text-blue-500" },
   { icon: "FaFacebook", name: "Meta Ads", color: "text-blue-600" },
-  { icon: "SiNaver", name: "Naver Ads", color: "text-green-500" },
   {
     icon: "FaTiktok",
     name: "TikTok Ads",
@@ -29,7 +27,6 @@ const PLATFORMS = [
 const iconMap = {
   FaGoogle,
   FaFacebook,
-  SiNaver,
   FaTiktok,
   FaAmazon,
 } as const;

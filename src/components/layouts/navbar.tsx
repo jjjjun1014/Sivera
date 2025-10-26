@@ -13,7 +13,8 @@ import { Link } from "@heroui/link";
 import { link as linkStyles } from "@heroui/theme";
 import NextLink from "next/link";
 import clsx from "clsx";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { usePathname } from "next/navigation";
 import {
   motion,
   useScroll,
@@ -29,25 +30,31 @@ import { useDictionary } from "@/hooks/use-dictionary";
 
 export const Navbar = () => {
   const { dictionary: dict } = useDictionary();
+  const pathname = usePathname();
 
-  const getNavLabel = (label: string) => {
-    const navMap: Record<string, string> = {
-      홈: dict.nav.home,
-      데모: dict.nav.demo,
-      요금제: dict.nav.pricing,
-      "고객 지원": dict.nav.support,
-    };
-
-    return navMap[label] || label;
-  };
-
+  // ALL HOOKS MUST BE CALLED BEFORE ANY CONDITIONAL RETURNS
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [hidden, setHidden] = useState(false);
-  const { scrollY } = useScroll();
   const [lastScrollY, setLastScrollY] = useState(0);
+  const { scrollY } = useScroll();
   const prefersReducedMotion = useReducedMotion();
 
+  // 대시보드 페이지에서는 네비게이션바 숨기기
+  const isDashboard = pathname?.startsWith('/dashboard');
+
+  useEffect(() => {
+    const checkAuth = () => {
+      const authStatus = localStorage.getItem('isAuthenticated') === 'true';
+      setIsAuthenticated(authStatus);
+    };
+
+    checkAuth();
+    window.addEventListener('storage', checkAuth);
+    return () => window.removeEventListener('storage', checkAuth);
+  }, []);
+
   useMotionValueEvent(scrollY, "change", (latest) => {
-    if (prefersReducedMotion) return; // Avoid scroll-driven motion
+    if (prefersReducedMotion) return;
     const difference = latest - lastScrollY;
 
     if (latest > 100 && difference > 0) {
@@ -58,29 +65,61 @@ export const Navbar = () => {
     setLastScrollY(latest);
   });
 
-  const LoginButtons = () => (
-    <>
-      <Button
-        as={NextLink}
-        href="/login"
-        variant="light"
-        data-testid="navbar-login-button"
-        aria-label={dict.nav.login}
-      >
-        {dict.nav.login}
-      </Button>
-      <Button
-        as={NextLink}
-        color="primary"
-        href="/signup"
-        variant="flat"
-        data-testid="navbar-signup-button"
-        aria-label={dict.nav.freeTrial}
-      >
-        {dict.nav.freeTrial}
-      </Button>
-    </>
-  );
+  const getNavLabel = (label: string) => {
+    const navMap: Record<string, string> = {
+      홈: dict.nav.home,
+      요금제: dict.nav.pricing,
+      "고객 지원": dict.nav.support,
+    };
+
+    return navMap[label] || label;
+  };
+
+  // 대시보드에서는 네비게이션바 렌더링하지 않음
+  if (isDashboard) {
+    return null;
+  }
+
+  const LoginButtons = () => {
+    if (isAuthenticated) {
+      return (
+        <Button
+          as={NextLink}
+          color="primary"
+          href="/dashboard"
+          variant="flat"
+          data-testid="navbar-dashboard-button"
+          aria-label="대시보드"
+        >
+          대시보드
+        </Button>
+      );
+    }
+
+    return (
+      <>
+        <Button
+          as={NextLink}
+          href="/login"
+          variant="light"
+          data-testid="navbar-login-button"
+          aria-label={dict.nav.login}
+        >
+          {dict.nav.login}
+        </Button>
+        <Button
+          as={NextLink}
+          color="primary"
+          href="/signup"
+          variant="flat"
+          data-testid="navbar-signup-button"
+          aria-label={dict.nav.freeTrial}
+        >
+          {dict.nav.freeTrial}
+        </Button>
+      </>
+    );
+  };
 
   const effectiveHidden = prefersReducedMotion ? false : hidden;
 

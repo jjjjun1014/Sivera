@@ -21,6 +21,7 @@ import {
   ResponsiveContainer,
 } from "recharts";
 import type { Ad } from "@/types/campaign";
+import { AIChatAssistant } from "@/components/features/AIChatAssistant";
 
 const generateChartData = () => {
   const data = [];
