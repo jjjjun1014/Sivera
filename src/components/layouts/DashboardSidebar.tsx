@@ -300,7 +300,7 @@ export default function DashboardSidebar({
 
               {/* Logo - only show when expanded */}
               {!isCollapsed && (
-                <NextLink href="/" className="lg:block hidden">
+                <NextLink href="/dashboard/analytics" className="lg:block hidden">
                   <span className="text-lg font-bold">Sivera</span>
                 </NextLink>
               )}

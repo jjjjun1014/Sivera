@@ -795,6 +795,8 @@ export function PlatformPerformanceChart({
                 style={{
                   height: `${height}px`,
                   width: width ? `${width}px` : "100%",
+                  outline: 'none',
+                  userSelect: 'none'
                 }}
               />
             )}

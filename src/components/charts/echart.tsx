@@ -92,7 +92,12 @@ export function EChart({
     <div
       ref={chartRef}
       className={className}
-      style={{ ...(style || {}), ...(aspectRatio ? { aspectRatio } : {}) }}
+      style={{
+        ...(style || {}),
+        ...(aspectRatio ? { aspectRatio } : {}),
+        outline: 'none',
+        userSelect: 'none'
+      }}
       data-testid="echart"
       role="img"
       aria-label={dict.nav.analytics}
