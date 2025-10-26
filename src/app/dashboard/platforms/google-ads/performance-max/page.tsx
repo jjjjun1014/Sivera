@@ -23,6 +23,8 @@ import {
 } from "recharts";
 import type { AdGroup, Ad } from "@/types/campaign";
 import { AIChatAssistant } from "@/components/features/AIChatAssistant";
+import { CreateCampaignModal } from "@/components/modals/CreateCampaignModal";
+import { useDisclosure } from "@heroui/modal";
 
 const generateChartData = () => {
   const data = [];
@@ -204,11 +206,10 @@ const initialListingGroups: Ad[] = [
   },
 ];
 
-export default function GoogleAdsPerformanceMaxPage() {
+export default function GoogleAdsSearchPage() {
+  const { isOpen: isCreateModalOpen, onOpen: onCreateModalOpen, onClose: onCreateModalClose } = useDisclosure();
   const [selectedTab, setSelectedTab] = useState("campaigns");
   const [campaigns, setCampaigns] = useState(initialCampaigns);
-  const [assetGroups, setAssetGroups] = useState(initialAssetGroups);
-  const [listingGroups, setListingGroups] = useState(initialListingGroups);
 
   // Filter state
   const [selectedCampaignId, setSelectedCampaignId] = useState<number | null>(null);
@@ -503,7 +504,7 @@ export default function GoogleAdsPerformanceMaxPage() {
             <>
               <div className="flex justify-between items-center mb-4">
                 <h3 className="text-xl font-semibold">캠페인 목록 ({campaigns.length})</h3>
-                <Button color="primary" radius="sm" variant="flat" size="sm">
+                <Button color="primary" radius="sm" variant="flat" size="sm" onPress={onCreateModalOpen}>
                   + 새 캠페인
                 </Button>
               </div>
@@ -586,6 +587,13 @@ export default function GoogleAdsPerformanceMaxPage() {
           campaigns: campaigns,
           selectedMetrics: chartMetrics,
         }}
+      />
+
+      <CreateCampaignModal
+        isOpen={isCreateModalOpen}
+        onClose={onCreateModalClose}
+        platformName="Google Ads"
+        campaignType="Performance Max"
       />
     </div>
   );

@@ -8,7 +8,6 @@ import {
   DropdownItem,
 } from "@heroui/dropdown";
 import { Button } from "@heroui/button";
-import { Avatar } from "@heroui/avatar";
 import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter } from "@heroui/modal";
 import { Input } from "@heroui/input";
 import { Textarea } from "@heroui/input";
@@ -56,15 +55,7 @@ export function WorkspaceSwitcher() {
             className="gap-2 min-w-[180px] justify-between"
             endContent={<ChevronDown className="w-4 h-4" />}
           >
-            <div className="flex items-center gap-2 flex-1 min-w-0">
-              <Avatar
-                size="sm"
-                name={currentWorkspace.name}
-                src={currentWorkspace.logoUrl || undefined}
-                className="flex-shrink-0"
-              />
-              <span className="font-semibold truncate">{currentWorkspace.name}</span>
-            </div>
+            <span className="font-semibold truncate">{currentWorkspace.name}</span>
           </Button>
         </DropdownTrigger>
         <DropdownMenu
@@ -78,18 +69,15 @@ export function WorkspaceSwitcher() {
           }}
         >
           {workspaces.map((workspace) => (
-            <DropdownItem key={workspace.id}>
+            <DropdownItem key={workspace.id} textValue={workspace.name}>
               <div className="flex items-center justify-between gap-2 w-full">
-                <div className="flex items-center gap-2 flex-1 min-w-0">
-                  <Avatar size="sm" name={workspace.name} />
-                  <div className="flex flex-col min-w-0">
-                    <span className="truncate">{workspace.name}</span>
-                    {workspace.description && (
-                      <span className="text-xs text-default-400 truncate">
-                        {workspace.description}
-                      </span>
-                    )}
-                  </div>
+                <div className="flex flex-col min-w-0 flex-1">
+                  <span className="truncate font-medium">{workspace.name}</span>
+                  {workspace.description && (
+                    <span className="text-xs text-default-400 truncate">
+                      {workspace.description}
+                    </span>
+                  )}
                 </div>
                 {workspace.id === currentWorkspace.id && (
                   <Check className="w-4 h-4 text-primary flex-shrink-0" />
@@ -97,7 +85,7 @@ export function WorkspaceSwitcher() {
               </div>
             </DropdownItem>
           ))}
-          <DropdownItem key="create" className="text-primary">
+          <DropdownItem key="create" className="text-primary" textValue="새 작업공간 만들기">
             <div className="flex items-center gap-2">
               <Plus className="w-4 h-4" />
               <span>새 작업공간 만들기</span>
@@ -114,7 +102,7 @@ export function WorkspaceSwitcher() {
             <div className="space-y-4">
               <Input
                 label="작업공간 이름"
-                placeholder="예: 브랜드 A"
+                placeholder="예: 사업체 A"
                 value={newWorkspaceName}
                 onChange={(e) => setNewWorkspaceName(e.target.value)}
                 isRequired

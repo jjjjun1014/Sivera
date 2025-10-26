@@ -44,40 +44,43 @@ export const TABLE_STYLES = {
 export const CHART_CONFIG = {
   tooltip: {
     contentStyle: {
-      backgroundColor: CHART_COLORS.background,
-      border: `1px solid ${CHART_COLORS.border}`,
+      backgroundColor: "rgba(0, 0, 0, 0.9)",
+      border: "1px solid rgba(255, 255, 255, 0.1)",
       borderRadius: "12px",
-      boxShadow: "0 4px 20px rgba(0, 0, 0, 0.3)",
-      padding: "12px",
+      boxShadow: "0 8px 32px rgba(0, 0, 0, 0.4)",
+      padding: "16px",
     },
     labelStyle: {
-      color: CHART_COLORS.textBright,
+      color: "#ffffff",
       fontWeight: 600,
-      marginBottom: "8px",
-      fontSize: "13px",
+      marginBottom: "12px",
+      fontSize: "14px",
     },
     itemStyle: {
-      color: CHART_COLORS.textMedium,
-      fontSize: "12px",
-      padding: "4px 0",
+      color: "#e0e0e0",
+      fontSize: "13px",
+      padding: "6px 0",
     },
+    cursor: { fill: "rgba(255, 255, 255, 0.05)" },
   },
   cartesianGrid: {
     strokeDasharray: "3 3",
     vertical: false,
     horizontal: true,
     stroke: CHART_COLORS.grid,
-    opacity: 0.3,
+    opacity: 0.2,
   },
   axis: {
     tick: { fill: CHART_COLORS.text, fontSize: 12 },
-    axisLine: { stroke: CHART_COLORS.gridStroke },
-    tickLine: false,
+    axisLine: { stroke: CHART_COLORS.gridStroke, strokeWidth: 1 },
+    tickLine: { stroke: CHART_COLORS.gridStroke },
   },
   legend: {
     wrapperStyle: {
-      paddingTop: "20px",
+      paddingTop: "24px",
+      fontSize: "13px",
     },
+    iconType: "line" as const,
   },
 } as const;
 

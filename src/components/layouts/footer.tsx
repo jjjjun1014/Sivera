@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { usePathname } from "next/navigation";
 import { Link } from "@heroui/link";
 import { Divider } from "@heroui/divider";
 import { Button } from "@heroui/button";
@@ -12,6 +13,12 @@ import { Container } from "@/components/layouts/Container";
 export const Footer = () => {
   const currentYear = new Date().getFullYear();
   const [showBusinessInfo, setShowBusinessInfo] = useState(false);
+  const pathname = usePathname();
+
+  // 홈 페이지에서만 푸터 표시
+  if (pathname !== "/") {
+    return null;
+  }
 
   const essentialLinks = [
     { label: "이용약관", href: "/terms" },

@@ -54,7 +54,7 @@ export const PLANS: Record<PlanType, SubscriptionPlan> = {
     basePriceKRW: 0,
     baseTeamSize: 1,  // Free는 1명만
     features: {
-      adAccounts: 1,
+      adAccounts: 1,  // 광고 계정 1개만
       dataRetention: 3,  // 3일 데이터만
       apiAccess: 'none',
       aiChatbot: false,
@@ -71,7 +71,7 @@ export const PLANS: Record<PlanType, SubscriptionPlan> = {
     baseTeamSize: 5,
     highlighted: true,
     features: {
-      adAccounts: 'unlimited',
+      adAccounts: 5,  // 광고 계정 5개
       dataRetention: 'unlimited',
       apiAccess: 'read-only',
       aiChatbot: true,
@@ -87,7 +87,7 @@ export const PLANS: Record<PlanType, SubscriptionPlan> = {
     basePriceKRW: 389000,  // 기본 ₩389,000/월 (1-5명 포함)
     baseTeamSize: 5,
     features: {
-      adAccounts: 'unlimited',
+      adAccounts: 'unlimited',  // 무제한 광고 계정
       dataRetention: 'unlimited',
       apiAccess: 'full',
       aiChatbot: true,
@@ -103,28 +103,28 @@ export const PLANS: Record<PlanType, SubscriptionPlan> = {
  */
 export const PLAN_FEATURE_DESCRIPTIONS = {
   free: [
-    '1명만 사용 가능',
-    '광고 계정 1개 연결',
-    '3일 데이터만 조회',
-    'AI 챗봇 사용 불가',
-    'API 접근 불가',
+    '팀원: 1명만',
+    '계정 연동: 1개',
+    '데이터 조회: 최근 3일',
+    'AI 챗봇: 사용 불가',
+    'API: 접근 불가',
   ],
   standard: [
-    '1-5명 기본 포함 (추가 인원은 별도 요금)',
-    '무제한 광고 계정 연결',
-    '무제한 데이터 조회',
-    'AI 챗봇 사용 가능',
-    'API 읽기 전용',
+    '팀원: 1-5명 기본 포함',
+    '계정 연동: 5개',
+    '데이터 조회: 무제한',
+    'AI 챗봇: 사용 가능',
+    'API: 읽기 전용',
     '이메일 지원',
   ],
   pro: [
-    '1-5명 기본 포함 (추가 인원은 별도 요금)',
-    '무제한 광고 계정 연결',
-    '무제한 데이터 조회',
-    'AI 챗봇 사용 가능',
-    'API 읽기/쓰기 모두 가능',
+    '팀원: 1-5명 기본 포함',
+    '계정 연동: 무제한',
+    '데이터 조회: 무제한',
+    'AI 챗봇: 사용 가능',
+    'API: 읽기/쓰기 모두',
     '우선 지원',
-    '커스텀 연동 지원',
+    '커스텀 연동',
   ],
 } as const;
 

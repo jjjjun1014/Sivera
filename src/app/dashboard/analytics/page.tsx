@@ -1,10 +1,11 @@
 "use client";
 
 import { useState, useMemo, useEffect } from "react";
-import { Card, CardBody } from "@heroui/card";
+import { Card, CardBody, CardHeader } from "@heroui/card";
 import { Button } from "@heroui/button";
 import { DateRangePicker } from "@heroui/date-picker";
 import { Pagination } from "@heroui/pagination";
+import { Checkbox } from "@heroui/checkbox";
 import { useDisclosure } from "@heroui/modal";
 import { Target, TrendingUp, TrendingDown } from "lucide-react";
 import { getLocalTimeZone, today } from "@internationalized/date";
@@ -15,10 +16,9 @@ import { PLATFORM_COLORS } from "@/types";
 import { CHART_CONFIG } from "@/lib/constants";
 import { usePagination } from "@/hooks";
 import {
-  PieChart,
-  Pie,
-  Cell,
-  BarChart,
+  ComposedChart,
+  Line,
+  Area,
   Bar,
   XAxis,
   YAxis,
@@ -30,18 +30,28 @@ import {
 
 const PLATFORM_NAME = "integrated-dashboard";
 
-// 파이 차트용 데이터
-const pieChartData = platformPerformance.map((p) => ({
-  name: p.platform,
-  value: p.spent,
-}));
+// 14일간의 샘플 차트 데이터 생성
+const generateChartData = () => {
+  const data = [];
+  const startDate = new Date();
+  startDate.setDate(startDate.getDate() - 13); // 14일 전부터
 
-// 막대 차트용 데이터
-const barChartData = platformPerformance.map((p) => ({
-  platform: p.platform.replace(" Ads", ""),
-  전환수: p.conversions,
-  ROAS: p.roas,
-}));
+  for (let i = 0; i < 14; i++) {
+    const date = new Date(startDate);
+    date.setDate(date.getDate() + i);
+    const month = date.getMonth() + 1;
+    const day = date.getDate();
+    data.push({
+      date: `${month}/${day}`,
+      impressions: Math.floor(30000 + Math.random() * 10000),
+      clicks: Math.floor(1000 + Math.random() * 500),
+      conversions: Math.floor(30 + Math.random() * 20),
+      cost: Math.floor(150000 + Math.random() * 50000),
+      roas: parseFloat((2.5 + Math.random() * 2.5).toFixed(2)),
+    });
+  }
+  return data;
+};
 
 // 전체 합산 데이터
 const totalData = {
@@ -62,6 +72,17 @@ export default function IntegratedDashboardPage() {
     start: fourteenDaysAgo,
     end: todayDate,
   });
+
+  // 차트 지표 토글 상태
+  const [chartMetrics, setChartMetrics] = useState({
+    cost: true,
+    conversions: true,
+    roas: false,
+    impressions: false,
+    clicks: false,
+  });
+
+  const chartData = useMemo(() => generateChartData(), []);
 
   // 페이지네이션
   const { currentPage, totalPages, paginatedData: paginatedCampaigns, setCurrentPage } = usePagination(topCampaigns, {
@@ -126,7 +147,7 @@ export default function IntegratedDashboardPage() {
             radius="sm"
             variant="bordered"
             value={dateRange}
-            onChange={setDateRange}
+            onChange={(value) => value && setDateRange(value)}
             defaultValue={{
               start: fourteenDaysAgo,
               end: todayDate,
@@ -264,66 +285,152 @@ export default function IntegratedDashboardPage() {
       </div>
 
       {/* 차트 섹션 */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-        {/* 파이 차트 - 광고비 비중 */}
+      <div className="mb-6">
+        {/* ComposedChart - 통합 성과 지표 */}
         <Card>
-          <CardBody className="pt-6">
-            <h3 className="text-lg font-semibold mb-4">플랫폼별 광고비 비중</h3>
-            <ResponsiveContainer width="100%" height={300}>
-              <PieChart>
-                <Pie
-                  data={pieChartData}
-                  cx="50%"
-                  cy="50%"
-                  labelLine={false}
-                  label={({ name, percent }) => `${name.replace(" Ads", "")}: ${(percent * 100).toFixed(0)}%`}
-                  outerRadius={100}
-                  innerRadius={60}
-                  fill="#8884d8"
-                  dataKey="value"
-                  paddingAngle={5}
-                  cornerRadius={10}
-                >
-                  {pieChartData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={PLATFORM_COLORS[entry.name]} />
-                  ))}
-                </Pie>
-                <Tooltip
-                  {...CHART_CONFIG.tooltip}
-                  formatter={(value: number) => [`₩${value.toLocaleString()}`, "광고비"]}
-                />
-              </PieChart>
-            </ResponsiveContainer>
-          </CardBody>
-        </Card>
-
-        {/* 막대 차트 - 플랫폼별 전환수 & ROAS */}
-        <Card>
-          <CardBody className="pt-6">
-            <h3 className="text-lg font-semibold mb-4">플랫폼별 전환수 & ROAS</h3>
-            <ResponsiveContainer width="100%" height={300}>
-              <BarChart
-                data={barChartData}
-                margin={{ top: 10, right: 30, left: 0, bottom: 0 }}
+          <CardHeader className="flex flex-col gap-4">
+            <h3 className="text-lg font-semibold">통합 성과 지표</h3>
+            <div className="flex gap-6 flex-wrap">
+              <Checkbox
+                isSelected={chartMetrics.cost}
+                onValueChange={(checked) =>
+                  setChartMetrics({ ...chartMetrics, cost: checked })
+                }
+                size="sm"
               >
-                <CartesianGrid {...CHART_CONFIG.cartesianGrid} />
-                <XAxis dataKey="platform" {...CHART_CONFIG.axis} />
+                <span style={{ color: "#17c964" }}>광고비</span>
+              </Checkbox>
+              <Checkbox
+                isSelected={chartMetrics.conversions}
+                onValueChange={(checked) =>
+                  setChartMetrics({ ...chartMetrics, conversions: checked })
+                }
+                size="sm"
+              >
+                <span style={{ color: "#f5a524" }}>전환수</span>
+              </Checkbox>
+              <Checkbox
+                isSelected={chartMetrics.roas}
+                onValueChange={(checked) =>
+                  setChartMetrics({ ...chartMetrics, roas: checked })
+                }
+                size="sm"
+              >
+                <span style={{ color: "#ff0080" }}>ROAS</span>
+              </Checkbox>
+              <Checkbox
+                isSelected={chartMetrics.impressions}
+                onValueChange={(checked) =>
+                  setChartMetrics({ ...chartMetrics, impressions: checked })
+                }
+                size="sm"
+              >
+                <span style={{ color: "#0070f3" }}>노출수</span>
+              </Checkbox>
+              <Checkbox
+                isSelected={chartMetrics.clicks}
+                onValueChange={(checked) =>
+                  setChartMetrics({ ...chartMetrics, clicks: checked })
+                }
+                size="sm"
+              >
+                <span style={{ color: "#7928ca" }}>클릭수</span>
+              </Checkbox>
+            </div>
+          </CardHeader>
+          <CardBody>
+            <ResponsiveContainer width="100%" height={400}>
+              <ComposedChart data={chartData}>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#333" opacity={0.3} />
+                <XAxis 
+                  dataKey="date" 
+                  tick={{ fill: "#888", fontSize: 12 }}
+                  axisLine={{ stroke: "#444" }}
+                />
                 <YAxis
                   yAxisId="left"
-                  {...CHART_CONFIG.axis}
-                  label={{ value: "전환수", angle: -90, position: "insideLeft", fill: CHART_CONFIG.axis.tick.fill }}
+                  tickFormatter={(value) => value.toLocaleString()}
+                  tick={{ fill: "#888", fontSize: 12 }}
+                  axisLine={{ stroke: "#444" }}
                 />
                 <YAxis
                   yAxisId="right"
                   orientation="right"
-                  {...CHART_CONFIG.axis}
-                  label={{ value: "ROAS", angle: 90, position: "insideRight", fill: CHART_CONFIG.axis.tick.fill }}
+                  tickFormatter={(value) => value.toLocaleString()}
+                  tick={{ fill: "#888", fontSize: 12 }}
+                  axisLine={{ stroke: "#444" }}
                 />
-                <Tooltip {...CHART_CONFIG.tooltip} />
-                <Legend {...CHART_CONFIG.legend} />
-                <Bar yAxisId="left" dataKey="전환수" fill="#17C964" radius={[8, 8, 0, 0]} />
-                <Bar yAxisId="right" dataKey="ROAS" fill="#F5A524" radius={[8, 8, 0, 0]} />
-              </BarChart>
+                <Tooltip
+                  contentStyle={{
+                    backgroundColor: "rgba(0, 0, 0, 0.85)",
+                    border: "1px solid #444",
+                    borderRadius: "8px",
+                    color: "#fff",
+                  }}
+                  formatter={(value: number) => value.toLocaleString()}
+                  labelStyle={{ color: "#fff" }}
+                />
+                <Legend 
+                  wrapperStyle={{ paddingTop: "20px" }}
+                  iconType="line"
+                />
+                {chartMetrics.cost && (
+                  <Line
+                    yAxisId="left"
+                    type="monotone"
+                    dataKey="cost"
+                    stroke="#17c964"
+                    strokeWidth={3}
+                    name="광고비"
+                    dot={false}
+                  />
+                )}
+                {chartMetrics.conversions && (
+                  <Line
+                    yAxisId="right"
+                    type="monotone"
+                    dataKey="conversions"
+                    stroke="#f5a524"
+                    strokeWidth={3}
+                    name="전환수"
+                    dot={false}
+                  />
+                )}
+                {chartMetrics.roas && (
+                  <Bar
+                    yAxisId="right"
+                    dataKey="roas"
+                    fill="#ff0080"
+                    fillOpacity={0.7}
+                    name="ROAS"
+                    barSize={20}
+                    radius={[8, 8, 0, 0]}
+                  />
+                )}
+                {chartMetrics.impressions && (
+                  <Area
+                    yAxisId="left"
+                    type="monotone"
+                    dataKey="impressions"
+                    fill="#0070f3"
+                    fillOpacity={0.3}
+                    stroke="#0070f3"
+                    strokeWidth={2}
+                    name="노출수"
+                  />
+                )}
+                {chartMetrics.clicks && (
+                  <Line
+                    yAxisId="left"
+                    type="monotone"
+                    dataKey="clicks"
+                    stroke="#7928ca"
+                    strokeWidth={3}
+                    name="클릭수"
+                    dot={false}
+                  />
+                )}
+              </ComposedChart>
             </ResponsiveContainer>
           </CardBody>
         </Card>

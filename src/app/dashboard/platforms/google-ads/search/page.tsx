@@ -10,6 +10,8 @@ import { getLocalTimeZone, today } from "@internationalized/date";
 import { CampaignTable, Campaign } from "@/components/tables/CampaignTable";
 import { AdGroupTable } from "@/components/tables/AdGroupTable";
 import { AdTable } from "@/components/tables/AdTable";
+import { CreateCampaignModal } from "@/components/modals/CreateCampaignModal";
+import { useDisclosure } from "@heroui/modal";
 import {
   ComposedChart,
   Line,
@@ -245,6 +247,8 @@ export default function GoogleAdsSearchPage() {
     impressions: false,
     clicks: false,
   });
+
+  const { isOpen: isCreateModalOpen, onOpen: onCreateModalOpen, onClose: onCreateModalClose } = useDisclosure();
 
   const chartData = useMemo(() => generateChartData(), []);
 
@@ -517,7 +521,7 @@ export default function GoogleAdsSearchPage() {
             <>
               <div className="flex justify-between items-center mb-4">
                 <h3 className="text-xl font-semibold">캠페인 목록 ({campaigns.length})</h3>
-                <Button color="primary" radius="sm" variant="flat" size="sm">
+                <Button color="primary" radius="sm" variant="flat" size="sm" onPress={onCreateModalOpen}>
                   + 새 캠페인
                 </Button>
               </div>
@@ -600,6 +604,13 @@ export default function GoogleAdsSearchPage() {
           campaigns: campaigns,
           selectedMetrics: chartMetrics,
         }}
+      />
+
+      <CreateCampaignModal
+        isOpen={isCreateModalOpen}
+        onClose={onCreateModalClose}
+        platformName="Google Ads"
+        campaignType="검색 광고"
       />
     </div>
   );

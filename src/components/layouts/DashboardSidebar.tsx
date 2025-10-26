@@ -4,13 +4,14 @@ import { useState } from "react";
 import NextLink from "next/link";
 import { usePathname } from "next/navigation";
 import { Button } from "@heroui/button";
-import { Avatar } from "@heroui/avatar";
 import {
   Dropdown,
   DropdownTrigger,
   DropdownMenu,
   DropdownItem,
+  DropdownSection,
 } from "@heroui/dropdown";
+import { ThemeSwitch } from "@/components/theme-switch";
 
 const menuItems = [
   {
@@ -425,21 +426,16 @@ export default function DashboardSidebar({
                   className={`w-full ${isCollapsed ? "lg:justify-center lg:px-0" : "justify-start"}`}
                   startContent={
                     !isCollapsed ? (
-                      <Avatar
-                        size="sm"
-                        name="사용자"
-                        src="https://i.pravatar.cc/150?u=user"
-                      />
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                      </svg>
                     ) : undefined
                   }
                 >
                   {isCollapsed ? (
-                    <Avatar
-                      size="sm"
-                      name="사용자"
-                      src="https://i.pravatar.cc/150?u=user"
-                      className="lg:block hidden"
-                    />
+                    <svg className="w-5 h-5 lg:block hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                    </svg>
                   ) : null}
                   <div className={`flex flex-col items-start transition-opacity duration-300 ${isCollapsed ? "lg:opacity-0 lg:hidden" : "opacity-100"}`}>
                     <span className="text-sm font-medium">사용자</span>
@@ -450,15 +446,23 @@ export default function DashboardSidebar({
                 </Button>
               </DropdownTrigger>
               <DropdownMenu aria-label="사용자 메뉴">
-                <DropdownItem key="profile" href="/dashboard/profile">
-                  프로필
-                </DropdownItem>
-                <DropdownItem key="settings" href="/dashboard/settings">
-                  설정
-                </DropdownItem>
-                <DropdownItem key="logout" color="danger">
-                  로그아웃
-                </DropdownItem>
+                <DropdownSection showDivider>
+                  <DropdownItem 
+                    key="theme"
+                    closeOnSelect={false}
+                    endContent={<ThemeSwitch />}
+                  >
+                    테마
+                  </DropdownItem>
+                </DropdownSection>
+                <DropdownSection>
+                  <DropdownItem key="settings" href="/dashboard/settings">
+                    설정
+                  </DropdownItem>
+                  <DropdownItem key="logout" color="danger">
+                    로그아웃
+                  </DropdownItem>
+                </DropdownSection>
               </DropdownMenu>
             </Dropdown>
           </div>

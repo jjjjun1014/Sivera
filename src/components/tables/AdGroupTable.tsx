@@ -367,19 +367,76 @@ export function AdGroupTable({
         accessorKey: "budget",
         header: "예산",
         cell: ({ row, getValue }) => {
-          const budget = getValue() as number | undefined;
-          if (budget === undefined) return null;
+          const adGroupId = row.original.id;
+          const field = "budget";
+          const key = `${adGroupId}-${field}`;
+          const currentValue = getValue() as number | undefined;
+          
+          if (currentValue === undefined) return null;
 
           const budgetEditable = isBudgetEditable(row.original.campaignType);
+          const isEditing = editingCell?.id === adGroupId && editingCell?.field === field;
+          const displayValue = tempValues[key] !== undefined ? tempValues[key] : currentValue;
 
-          return (
-            <div className="flex items-center gap-2 justify-end">
-              <span className="whitespace-nowrap">₩{budget.toLocaleString()}</span>
-              {!budgetEditable && (
+          if (!budgetEditable) {
+            return (
+              <div className="flex items-center gap-2 justify-end">
+                <span className="whitespace-nowrap">₩{currentValue.toLocaleString()}</span>
                 <Tooltip content="자동 예산 할당 캠페인" placement="left">
                   <Lock className="w-3 h-3 text-default-400" />
                 </Tooltip>
-              )}
+              </div>
+            );
+          }
+
+          if (isEditing) {
+            return (
+              <Input
+                type="number"
+                value={displayValue}
+                onChange={(e) => {
+                  const newValue = Number(e.target.value);
+                  setTempValues((prev) => ({ ...prev, [key]: newValue }));
+                }}
+                onBlur={() => {
+                  const newValue = tempValues[key] !== undefined ? tempValues[key] : currentValue;
+                  if (newValue !== currentValue) {
+                    setPendingChange({
+                      id: adGroupId,
+                      field,
+                      value: newValue,
+                      oldValue: currentValue,
+                    });
+                    onOpen();
+                  }
+                  setEditingCell(null);
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.currentTarget.blur();
+                  } else if (e.key === "Escape") {
+                    setTempValues((prev) => {
+                      const newValues = { ...prev };
+                      delete newValues[key];
+                      return newValues;
+                    });
+                    setEditingCell(null);
+                  }
+                }}
+                size="sm"
+                className="w-32"
+                autoFocus
+              />
+            );
+          }
+
+          return (
+            <div
+              className="group relative flex items-center gap-2 cursor-pointer hover:text-primary transition-colors justify-end"
+              onClick={() => setEditingCell({ id: adGroupId, field })}
+            >
+              <span className="whitespace-nowrap">₩{currentValue.toLocaleString()}</span>
+              <Edit2 className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity" />
             </div>
           );
         },
@@ -636,19 +693,25 @@ export function AdGroupTable({
                     </p>
                     <div className="bg-default-100 rounded-lg p-4 space-y-2">
                       <div className="flex justify-between items-center">
-                        <span className="text-sm font-medium text-default-700">광고그룹명</span>
+                        <span className="text-sm font-medium text-default-700">
+                          {pendingChange.field === "name" ? "광고그룹명" : "예산"}
+                        </span>
                       </div>
                       <div className="grid grid-cols-2 gap-4">
                         <div>
                           <p className="text-xs text-default-500 mb-1">변경 전</p>
                           <p className="text-sm font-medium text-danger">
-                            {pendingChange.oldValue}
+                            {pendingChange.field === "budget"
+                              ? `₩${pendingChange.oldValue.toLocaleString()}`
+                              : pendingChange.oldValue}
                           </p>
                         </div>
                         <div>
                           <p className="text-xs text-default-500 mb-1">변경 후</p>
                           <p className="text-sm font-medium text-success">
-                            {pendingChange.value}
+                            {pendingChange.field === "budget"
+                              ? `₩${pendingChange.value.toLocaleString()}`
+                              : pendingChange.value}
                           </p>
                         </div>
                       </div>

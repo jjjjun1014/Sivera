@@ -40,8 +40,8 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       const mockWorkspaces: Workspace[] = [
         {
           id: "1",
-          name: "브랜드 A",
-          description: "메인 브랜드",
+          name: "사업체 A",
+          description: "메인 사업체",
           ownerId: "user1",
           subscriptionId: "sub1",
           createdAt: new Date(),
@@ -49,8 +49,8 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
         },
         {
           id: "2",
-          name: "브랜드 B",
-          description: "서브 브랜드",
+          name: "사업체 B",
+          description: "서브 사업체",
           ownerId: "user1",
           subscriptionId: "sub2",
           createdAt: new Date(),

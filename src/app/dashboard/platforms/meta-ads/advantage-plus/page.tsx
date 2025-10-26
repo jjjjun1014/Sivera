@@ -20,8 +20,10 @@ import {
   Legend,
   ResponsiveContainer,
 } from "recharts";
-import type { Ad } from "@/types/campaign";
+import type { AdGroup, Ad } from "@/types/campaign";
 import { AIChatAssistant } from "@/components/features/AIChatAssistant";
+import { CreateCampaignModal } from "@/components/modals/CreateCampaignModal";
+import { useDisclosure } from "@heroui/modal";
 
 const generateChartData = () => {
   const data = [];
@@ -134,7 +136,8 @@ const initialAds: Ad[] = [
   },
 ];
 
-export default function MetaAdsAdvantagePlusPage() {
+export default function MetaAdsStandardPage() {
+  const { isOpen: isCreateModalOpen, onOpen: onCreateModalOpen, onClose: onCreateModalClose } = useDisclosure();
   const [selectedTab, setSelectedTab] = useState("campaigns");
   const [campaigns, setCampaigns] = useState(initialCampaigns);
   const [ads, setAds] = useState(initialAds);
@@ -396,7 +399,7 @@ export default function MetaAdsAdvantagePlusPage() {
             <>
               <div className="flex justify-between items-center mb-4">
                 <h3 className="text-xl font-semibold">캠페인 목록 ({campaigns.length})</h3>
-                <Button color="primary" radius="sm" variant="flat" size="sm">
+                <Button color="primary" radius="sm" variant="flat" size="sm" onPress={onCreateModalOpen}>
                   + 새 캠페인
                 </Button>
               </div>
@@ -448,6 +451,13 @@ export default function MetaAdsAdvantagePlusPage() {
           campaigns: campaigns,
           selectedMetrics: chartMetrics,
         }}
+      />
+
+      <CreateCampaignModal
+        isOpen={isCreateModalOpen}
+        onClose={onCreateModalClose}
+        platformName="Meta Ads"
+        campaignType="Advantage+ 캠페인"
       />
     </div>
   );
