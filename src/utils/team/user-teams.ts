@@ -1,4 +1,5 @@
-import { createClient } from "@/utils/supabase/server";
+// TODO: Replace with backend API integration
+// import { createClient } from "@/utils/supabase/server";
 import log from "@/utils/logger";
 
 export interface UserTeam {
@@ -15,130 +16,20 @@ export interface UserTeam {
  */
 export async function getUserTeams(userId: string): Promise<UserTeam[]> {
   try {
-    const supabase = await createClient();
+    // TODO: Backend API Integration Required
+    // Endpoint: GET /api/users/:userId/teams
+    // Response: { teams: UserTeam[] }
 
-    // 먼저 사용자가 마스터인 팀을 확인
-    const { data: masterTeams, error: masterError } = await supabase
-      .from("teams")
-      .select("id, name")
-      .eq("master_user_id", userId);
+    log.warn("getUserTeams called - backend integration needed", { userId });
 
-    if (masterError) {
-      log.error("Error fetching master teams", {
-        error: masterError,
-        userId,
-      });
-    }
+    // Stub response - return empty array
+    return [];
 
-    // 사용자가 멤버인 팀을 확인
-    const { data: memberTeams, error: memberError } = await supabase
-      .from("team_members")
-      .select(
-        `
-        team_id,
-        role,
-        teams!inner(id, name)
-      `,
-      )
-      .eq("user_id", userId);
-
-    if (memberError) {
-      log.error("Error fetching team memberships", {
-        error: memberError,
-        userId,
-      });
-    }
-
-    const teams: UserTeam[] = [];
-
-    // 마스터 팀 추가
-    if (masterTeams) {
-      masterTeams.forEach((team) => {
-        teams.push({
-          teamId: team.id,
-          role: "master",
-          teamName: team.name,
-        });
-      });
-    }
-
-    // 멤버 팀 추가
-    if (memberTeams) {
-      memberTeams.forEach((membership) => {
-        const teamData = membership.teams as unknown as {
-          id: string;
-          name: string;
-        };
-
-        teams.push({
-          teamId: membership.team_id,
-          role: membership.role as "team_mate" | "viewer",
-          teamName: teamData.name,
-        });
-      });
-    }
-
-    // 팀이 없으면 새로 생성
-    if (teams.length === 0) {
-      log.info("No teams found for user, creating new team", { userId });
-
-      const { data: user } = await supabase.auth.getUser();
-
-      if (!user.user) {
-        log.error("Cannot create team: user not found", { userId });
-
-        return [];
-      }
-
-      const { data: newTeam, error: createError } = await supabase
-        .from("teams")
-        .insert({
-          name: user.user.email || "My Team",
-          master_user_id: userId,
-        })
-        .select("id, name")
-        .single();
-
-      if (createError) {
-        log.error("Error creating team for user", {
-          error: createError,
-          userId,
-        });
-
-        return [];
-      }
-
-      // 팀 멤버 테이블에도 추가
-      const { error: memberError } = await supabase
-        .from("team_members")
-        .insert({
-          team_id: newTeam.id,
-          user_id: userId,
-          role: "master",
-        });
-
-      if (memberError) {
-        log.warn("Error adding user to team_members", {
-          error: memberError,
-          userId,
-          teamId: newTeam.id,
-        });
-      }
-
-      teams.push({
-        teamId: newTeam.id,
-        role: "master",
-        teamName: newTeam.name,
-      });
-
-      log.info("Successfully created team for user", {
-        userId,
-        teamId: newTeam.id,
-        teamName: newTeam.name,
-      });
-    }
-
-    return teams;
+    // TODO: The backend should handle:
+    // 1. Fetch teams where user is master
+    // 2. Fetch teams where user is a member
+    // 3. If no teams exist, create a new team for the user
+    // 4. Return list of teams with user's role
   } catch (error) {
     log.error("Unexpected error in getUserTeams", {
       error: error instanceof Error ? error.message : String(error),

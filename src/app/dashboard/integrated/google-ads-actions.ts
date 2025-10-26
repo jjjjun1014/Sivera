@@ -2,90 +2,45 @@
 
 import { redirect } from "next/navigation";
 
-import { createClient } from "@/utils/supabase/server";
-// Legacy OAuth imports removed
+// TODO: Replace with backend API integration
+// import { createClient } from "@/utils/supabase/server";
 import log from "@/utils/logger";
 
 export async function startGoogleAdsAuth(lang: string = "en") {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  // TODO: Backend API Integration Required
+  // Endpoint: POST /api/integrations/google-ads/auth/start
+  // Body: { lang }
+  // Response: { authUrl }
 
-  if (!user) {
-    redirect(`/${lang}/login`);
-  }
+  log.warn("startGoogleAdsAuth called - backend integration needed");
 
-  try {
-    // Get user's team
-    const { data: teamMember } = await supabase
-      .from("team_members")
-      .select("team_id")
-      .eq("user_id", user.id)
-      .single();
+  // Redirect to error page since OAuth flow needs backend implementation
+  redirect(`/${lang}/integrated?error=auth_not_implemented&platform=google`);
 
-    if (!teamMember) {
-      throw new Error("Team not found");
-    }
-
-    // Legacy OAuth implementation removed
-    // TODO: Implement new OAuth flow
-    log.error("Google Ads OAuth needs to be reimplemented");
-    throw new Error("OAuth flow not implemented");
-
-    /*
-    log.info("Starting Google Ads OAuth flow", {
-      userId: user.id,
-      teamId: teamMember.team_id,
-    });
-
-    redirect(authUrl);
-    */
-  } catch (error) {
-    log.error("Failed to start Google Ads auth", error as Error);
-    redirect(`/${lang}/integrated?error=auth_failed&platform=google`);
-  }
+  // TODO: The backend should handle:
+  // 1. Get authenticated user from session/token
+  // 2. Get user's team
+  // 3. Generate OAuth state with team_id and user_id
+  // 4. Create OAuth authorization URL
+  // 5. Return authUrl to redirect to
 }
 
 export async function disconnectGoogleAds() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) {
-    throw new Error("Unauthorized");
-  }
-
   try {
-    // Get user's team
-    const { data: teamMember } = await supabase
-      .from("team_members")
-      .select("team_id")
-      .eq("user_id", user.id)
-      .single();
+    // TODO: Backend API Integration Required
+    // Endpoint: DELETE /api/integrations/google-ads
+    // Response: { success }
 
-    if (!teamMember) {
-      throw new Error("Team not found");
-    }
+    log.warn("disconnectGoogleAds called - backend integration needed");
 
-    // Deactivate Google Ads credentials
-    const { error } = await supabase
-      .from("platform_credentials")
-      .update({ is_active: false })
-      .eq("team_id", teamMember.team_id)
-      .eq("platform", "google");
+    // Stub response for UI compatibility
+    throw new Error("Backend API integration required. Please implement DELETE /api/integrations/google-ads endpoint.");
 
-    if (error) {
-      throw error;
-    }
-
-    log.info("Google Ads disconnected", {
-      userId: user.id,
-      teamId: teamMember.team_id,
-    });
-
-    return { success: true };
+    // TODO: The backend should handle:
+    // 1. Get authenticated user from session/token
+    // 2. Get user's team
+    // 3. Deactivate Google Ads credentials for the team
+    // 4. Return success status
   } catch (error) {
     log.error("Failed to disconnect Google Ads", error as Error);
     throw error;

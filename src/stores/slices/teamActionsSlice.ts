@@ -10,6 +10,9 @@ import { Team, TeamMemberWithProfile, TeamInvitation, UserRole } from "@/types";
 import log from "@/utils/logger";
 import { TeamService } from "@/services/team/team.service";
 
+// TODO: Replace with backend API integration
+// import { createClient } from "@/utils/supabase/client";
+
 // Type definitions
 
 export interface TeamActionsSlice {
@@ -35,66 +38,23 @@ export const createTeamActionsSlice: StateCreator<
   TeamActionsSlice
 > = (set, get) => ({
   fetchCurrentTeam: async () => {
-    const supabase = createClient();
-
     set({ isLoading: true, error: null });
 
     try {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
+      // TODO: Backend API Integration Required
+      // Endpoint: GET /api/teams/current
+      // Response: { team: Team, userRole: UserRole }
 
-      if (!user) throw new Error("No user logged in");
+      log.warn("fetchCurrentTeam called - backend integration needed");
 
-      log.info("Fetching team for user", { userId: user.id });
-
-      // First, try to get team where user is master
-      const { data: masterTeam, error: masterError } = await supabase
-        .from("teams")
-        .select("*")
-        .eq("master_user_id", user.id)
-        .maybeSingle();
-
-      if (!masterError && masterTeam) {
-        log.info("User is master of team", { teamId: masterTeam.id });
-        set({
-          currentTeam: masterTeam,
-          userRole: "master",
-          isLoading: false,
-        });
-
-        return;
-      }
-
-      // If not master, check team membership
-      const { data: membership, error: memberError } = await supabase
-        .from("team_members")
-        .select(
-          `
-          team_id,
-          role,
-          teams!inner (*)
-        `,
-        )
-        .eq("user_id", user.id)
-        .maybeSingle();
-
-      if (!memberError && membership) {
-        log.info("User is member of team", {
-          teamId: membership.team_id,
-          role: membership.role,
-        });
-        set({
-          currentTeam: membership.teams as Team,
-          userRole: membership.role as UserRole,
-          isLoading: false,
-        });
-
-        return;
-      }
-
-      log.warn("User has no team", { userId: user.id });
+      // Stub - return null team
       set({ currentTeam: null, userRole: null, isLoading: false });
+
+      // TODO: The backend should handle:
+      // 1. Get authenticated user from session/token
+      // 2. Check if user is master of any team
+      // 3. If not master, check team membership
+      // 4. Return team and user's role
     } catch (error) {
       log.error("Failed to fetch current team", error);
       set({ error: (error as Error).message, isLoading: false });
@@ -106,54 +66,22 @@ export const createTeamActionsSlice: StateCreator<
 
     if (!currentTeam) return;
 
-    const supabase = createClient();
-
     set({ isLoading: true, error: null });
 
     try {
-      // First get team members
-      const { data: teamMembersData, error: teamMembersError } = await supabase
-        .from("team_members")
-        .select("*")
-        .eq("team_id", currentTeam.id);
+      // TODO: Backend API Integration Required
+      // Endpoint: GET /api/teams/:teamId/members
+      // Response: { members: TeamMemberWithProfile[] }
 
-      if (teamMembersError) throw teamMembersError;
+      log.warn("fetchTeamMembers called - backend integration needed");
 
-      // Then get profiles for each team member
-      const userIds =
-        teamMembersData?.map((member) => member.user_id).filter(Boolean) || [];
+      // Stub - return empty array
+      set({ teamMembers: [], isLoading: false });
 
-      const { data: profilesData, error: profilesError } = await supabase
-        .from("profiles")
-        .select("*")
-        .in("id", userIds as string[]);
-
-      if (profilesError) throw profilesError;
-
-      // Merge the data
-      const data = teamMembersData?.map((member) => ({
-        ...member,
-        profiles:
-          profilesData?.find((profile) => profile.id === member.user_id) ||
-          null,
-      }));
-
-      const error = null;
-
-      if (error) throw error;
-
-      const teamMembers: TeamMemberWithProfile[] =
-        data?.map((member) => ({
-          id: member.id,
-          team_id: member.team_id || "",
-          user_id: member.user_id || "",
-          role: member.role as UserRole,
-          invited_by: member.invited_by,
-          joined_at: member.joined_at,
-          profiles: member.profiles || null,
-        })) || [];
-
-      set({ teamMembers, isLoading: false });
+      // TODO: The backend should handle:
+      // 1. Get team members for the team
+      // 2. Include user profiles for each member
+      // 3. Return members with profiles
     } catch (error) {
       log.error("Failed to fetch team members", error);
       set({ error: (error as Error).message, isLoading: false });
@@ -234,30 +162,16 @@ export const createTeamActionsSlice: StateCreator<
   },
 
   acceptInvitation: async (invitationId) => {
-    const supabase = createClient();
-
     set({ isLoading: true, error: null });
 
     try {
-      // First get the invitation token from the invitation id
-      const { data: invitation, error: fetchError } = await supabase
-        .from("team_invitations")
-        .select("token")
-        .eq("id", invitationId)
-        .single();
+      // TODO: Backend API Integration Required
+      // Endpoint: POST /api/invitations/:invitationId/accept
+      // Response: { success }
 
-      if (fetchError || !invitation)
-        throw fetchError || new Error("Invitation not found");
+      log.warn("acceptInvitation called - backend integration needed", { invitationId });
 
-      const { error } = await supabase.rpc("accept_team_invitation", {
-        invitation_token: invitation.token,
-      });
-
-      if (error) throw error;
-
-      await get().fetchCurrentTeam();
-      await get().fetchInvitations();
-      set({ isLoading: false });
+      throw new Error("Backend API integration required. Please implement POST /api/invitations/:invitationId/accept endpoint.");
     } catch (error) {
       log.error("Failed to accept invitation", error);
       set({ error: (error as Error).message, isLoading: false });
@@ -265,20 +179,16 @@ export const createTeamActionsSlice: StateCreator<
   },
 
   declineInvitation: async (invitationId) => {
-    const supabase = createClient();
-
     set({ isLoading: true, error: null });
 
     try {
-      const { error } = await supabase
-        .from("team_invitations")
-        .update({ status: "cancelled" })
-        .eq("id", invitationId);
+      // TODO: Backend API Integration Required
+      // Endpoint: POST /api/invitations/:invitationId/decline
+      // Response: { success }
 
-      if (error) throw error;
+      log.warn("declineInvitation called - backend integration needed", { invitationId });
 
-      await get().fetchInvitations();
-      set({ isLoading: false });
+      throw new Error("Backend API integration required. Please implement POST /api/invitations/:invitationId/decline endpoint.");
     } catch (error) {
       log.error("Failed to decline invitation", error);
       set({ error: (error as Error).message, isLoading: false });
@@ -286,39 +196,23 @@ export const createTeamActionsSlice: StateCreator<
   },
 
   fetchInvitations: async () => {
-    const supabase = createClient();
-
     set({ isLoading: true, error: null });
 
     try {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
+      // TODO: Backend API Integration Required
+      // Endpoint: GET /api/invitations/pending
+      // Response: { invitations: TeamInvitation[] }
 
-      if (!user || !user.email)
-        throw new Error("No user logged in or email not found");
+      log.warn("fetchInvitations called - backend integration needed");
 
-      const { data, error } = await supabase
-        .from("team_invitations")
-        .select(
-          `
-          *,
-          teams (
-            id,
-            name
-          )
-        `,
-        )
-        .eq("email", user.email)
-        .eq("status", "pending")
-        .order("created_at", { ascending: false });
+      // Stub - return empty array
+      set({ teamInvitations: [], isLoading: false });
 
-      if (error) throw error;
-
-      set({
-        teamInvitations: data as TeamInvitation[],
-        isLoading: false,
-      });
+      // TODO: The backend should handle:
+      // 1. Get authenticated user from session/token
+      // 2. Fetch pending invitations for user's email
+      // 3. Include team name for each invitation
+      // 4. Return invitations
     } catch (error) {
       log.error("Failed to fetch invitations", error);
       set({ error: (error as Error).message, isLoading: false });

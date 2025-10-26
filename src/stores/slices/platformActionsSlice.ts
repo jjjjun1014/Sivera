@@ -10,6 +10,9 @@ import { PlatformCredential, PlatformType } from "@/types";
 import { Json } from "@/types/supabase.types";
 import log from "@/utils/logger";
 
+// TODO: Replace with backend API integration
+// import { createClient } from "@/utils/supabase/client";
+
 export interface PlatformActionsSlice {
   fetchCredentials: () => Promise<void>;
   addCredential: (
@@ -38,59 +41,23 @@ export const createPlatformActionsSlice: StateCreator<
   PlatformActionsSlice
 > = (set, get) => ({
   fetchCredentials: async () => {
-    const supabase = createClient();
-
     set({ isLoading: true, error: null });
 
     try {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
+      // TODO: Backend API Integration Required
+      // Endpoint: GET /api/credentials
+      // Response: { credentials: PlatformCredential[] }
 
-      if (!user) throw new Error("No user logged in");
+      log.warn("fetchCredentials called - backend integration needed");
 
-      // Get user's team - check if user is master first
-      let teamId: string | null = null;
+      // Stub - return empty array
+      set({ credentials: [], isLoading: false });
 
-      const { data: masterTeam } = await supabase
-        .from("teams")
-        .select("id")
-        .eq("master_user_id", user.id)
-        .single();
-
-      if (masterTeam) {
-        teamId = masterTeam.id;
-      } else {
-        const { data: teamMember } = await supabase
-          .from("team_members")
-          .select("team_id")
-          .eq("user_id", user.id)
-          .single();
-
-        if (teamMember) {
-          teamId = teamMember.team_id;
-        }
-      }
-
-      if (!teamId) {
-        // Return empty credentials if no team
-        set({ credentials: [], isLoading: false });
-
-        return;
-      }
-
-      const { data, error } = await supabase
-        .from("platform_credentials")
-        .select("*")
-        .eq("team_id", teamId)
-        .order("created_at", { ascending: false });
-
-      if (error) throw error;
-
-      set({
-        credentials: (data || []) as PlatformCredential[],
-        isLoading: false,
-      });
+      // TODO: The backend should handle:
+      // 1. Get authenticated user from session/token
+      // 2. Get user's team
+      // 3. Fetch platform credentials for the team
+      // 4. Return credentials
     } catch (error) {
       log.error("Failed to fetch credentials", error);
       set({ error: (error as Error).message, isLoading: false });
@@ -98,60 +65,23 @@ export const createPlatformActionsSlice: StateCreator<
   },
 
   addCredential: async (platform, credentials) => {
-    const supabase = createClient();
-
     set({ isLoading: true, error: null });
 
     try {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
+      // TODO: Backend API Integration Required
+      // Endpoint: POST /api/credentials
+      // Body: { platform, credentials }
+      // Response: { success, credential }
 
-      if (!user) throw new Error("No user logged in");
+      log.warn("addCredential called - backend integration needed", { platform });
 
-      // Get user's team and role - check if user is master first
-      let teamId: string | null = null;
-      let userRole: string = "viewer";
+      throw new Error("Backend API integration required. Please implement POST /api/credentials endpoint.");
 
-      const { data: masterTeam } = await supabase
-        .from("teams")
-        .select("id")
-        .eq("master_user_id", user.id)
-        .single();
-
-      if (masterTeam) {
-        teamId = masterTeam.id;
-        userRole = "master";
-      } else {
-        const { data: teamMember } = await supabase
-          .from("team_members")
-          .select("team_id, role")
-          .eq("user_id", user.id)
-          .single();
-
-        if (teamMember) {
-          teamId = teamMember.team_id;
-          userRole = teamMember.role;
-        }
-      }
-
-      if (!teamId) throw new Error("No team found");
-      if (userRole === "viewer") {
-        throw new Error("Viewers cannot add credentials");
-      }
-
-      const { error } = await supabase.from("platform_credentials").insert({
-        team_id: teamId,
-        platform,
-        account_id: (credentials.account_id as string) || "default",
-        credentials: credentials as Json,
-        created_by: user.id,
-      });
-
-      if (error) throw error;
-
-      await get().fetchCredentials();
-      set({ isLoading: false });
+      // TODO: The backend should handle:
+      // 1. Get authenticated user from session/token
+      // 2. Get user's team and verify role (not viewer)
+      // 3. Create platform credential
+      // 4. Return success
     } catch (error) {
       log.error("Failed to add credential", error);
       set({ error: (error as Error).message, isLoading: false });
@@ -159,23 +89,17 @@ export const createPlatformActionsSlice: StateCreator<
   },
 
   updateCredential: async (id, credentials) => {
-    const supabase = createClient();
-
     set({ isLoading: true, error: null });
 
     try {
-      const { error } = await supabase
-        .from("platform_credentials")
-        .update({
-          credentials: credentials as Json,
-          updated_at: new Date().toISOString(),
-        })
-        .eq("id", id);
+      // TODO: Backend API Integration Required
+      // Endpoint: PATCH /api/credentials/:id
+      // Body: { credentials }
+      // Response: { success }
 
-      if (error) throw error;
+      log.warn("updateCredential called - backend integration needed", { id });
 
-      await get().fetchCredentials();
-      set({ isLoading: false });
+      throw new Error("Backend API integration required. Please implement PATCH /api/credentials/:id endpoint.");
     } catch (error) {
       log.error("Failed to update credential", error);
       set({ error: (error as Error).message, isLoading: false });
@@ -183,7 +107,6 @@ export const createPlatformActionsSlice: StateCreator<
   },
 
   toggleCredentialStatus: async (id) => {
-    const supabase = createClient();
     const credential = get().credentials.find((c) => c.id === id);
 
     if (!credential) {
@@ -195,18 +118,13 @@ export const createPlatformActionsSlice: StateCreator<
     set({ isLoading: true, error: null });
 
     try {
-      const { error } = await supabase
-        .from("platform_credentials")
-        .update({
-          is_active: !credential.is_active,
-          updated_at: new Date().toISOString(),
-        })
-        .eq("id", id);
+      // TODO: Backend API Integration Required
+      // Endpoint: PATCH /api/credentials/:id/toggle
+      // Response: { success }
 
-      if (error) throw error;
+      log.warn("toggleCredentialStatus called - backend integration needed", { id });
 
-      await get().fetchCredentials();
-      set({ isLoading: false });
+      throw new Error("Backend API integration required. Please implement PATCH /api/credentials/:id/toggle endpoint.");
     } catch (error) {
       log.error("Failed to toggle credential status", error);
       set({ error: (error as Error).message, isLoading: false });
@@ -214,20 +132,16 @@ export const createPlatformActionsSlice: StateCreator<
   },
 
   deleteCredential: async (id) => {
-    const supabase = createClient();
-
     set({ isLoading: true, error: null });
 
     try {
-      const { error } = await supabase
-        .from("platform_credentials")
-        .delete()
-        .eq("id", id);
+      // TODO: Backend API Integration Required
+      // Endpoint: DELETE /api/credentials/:id
+      // Response: { success }
 
-      if (error) throw error;
+      log.warn("deleteCredential called - backend integration needed", { id });
 
-      await get().fetchCredentials();
-      set({ isLoading: false });
+      throw new Error("Backend API integration required. Please implement DELETE /api/credentials/:id endpoint.");
     } catch (error) {
       log.error("Failed to delete credential", error);
       set({ error: (error as Error).message, isLoading: false });

@@ -8,7 +8,6 @@ export const PAGE_PATH = {
   profile: "/profile",
   team: "/team",
   analytics: "/analytics",
-  pricing: "/pricing",
   contact: "/contact",
 } as const;
 
@@ -16,16 +15,7 @@ export const siteConfig: SiteConfig = {
   name: "A.ll + Ad",
   description: "All in one advertising solution - 모든 광고를 하나로",
   tagline: "All your ads in one place.",
-  navItems: [
-    {
-      label: "홈",
-      href: "/",
-    },
-    {
-      label: "요금제",
-      href: "/pricing",
-    },
-  ],
+  navItems: [],
   navMenuItems: [
     {
       label: "대시보드",

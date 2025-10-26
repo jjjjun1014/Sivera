@@ -1,13 +1,17 @@
 // Type conversion utilities between database and application layers
 
-import type { Database } from "./supabase.types";
+/**
+ * TODO: Backend Integration Required
+ *
+ * Define database schema types based on your backend API.
+ * These placeholder types should be replaced with actual backend types.
+ */
 
 import { Campaign, PlatformCredential, CampaignStatus } from "./index";
 
-// Database types from Supabase (raw database row types)
-type DbCampaign = Database["public"]["Tables"]["campaigns"]["Row"];
-type DbPlatformCredential =
-  Database["public"]["Tables"]["platform_credentials"]["Row"];
+// TODO: Replace with actual database types from backend
+type DbCampaign = any;
+type DbPlatformCredential = any;
 
 export type NonNullable<T> = T extends null | undefined ? never : T;
 export type Concrete<Type> = {

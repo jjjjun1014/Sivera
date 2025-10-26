@@ -1,5 +1,5 @@
 // Common types for all platform services
-import type { Json } from "@/types/supabase.types";
+import type { Json } from "@/types";
 import type { PlatformType } from "@/types";
 import type { PlatformCredentials } from "@/services/platforms/platform-service.interface";
 

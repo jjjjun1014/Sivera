@@ -1,7 +1,6 @@
 // Campaign related types
 import { CampaignStatus, DateRange } from "./base.types";
-import { PlatformType } from "@/types";
-import { Json } from "./supabase.types";
+import { PlatformType, Json } from "@/types";
 
 // Platform credentials interface
 export interface PlatformCredentials {

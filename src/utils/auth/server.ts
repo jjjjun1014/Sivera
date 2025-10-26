@@ -1,83 +1,52 @@
 import { cache } from "react";
 import { cookies } from "next/headers";
 
-import { createClient } from "@/utils/supabase/server";
+// TODO: Replace with backend API integration
+// import { createClient } from "@/utils/supabase/server";
 
 // Cache the team ID retrieval to prevent duplicate queries
 export const getTeamId = cache(async (): Promise<string | null> => {
-  const supabase = await createClient();
+  // TODO: Backend API Integration Required
+  // Endpoint: GET /api/auth/me/team
+  // Response: { teamId: string | null }
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  // For now, return null
+  return null;
 
-  if (!user) {
-    return null;
-  }
-
-  // Check for team ID in cookies first
-  const cookieStore = await cookies();
-  const teamIdCookie = cookieStore.get("team_id");
-
-  if (teamIdCookie?.value) {
-    return teamIdCookie.value;
-  }
-
-  // If not in cookies, fetch from database
-  const { data: teamMember } = await supabase
-    .from("team_members")
-    .select("team_id")
-    .eq("user_id", user.id)
-    .single();
-
-  return teamMember?.team_id || null;
+  // TODO: The backend should handle:
+  // 1. Get authenticated user from session/token
+  // 2. Check for team_id in cookies first
+  // 3. If not in cookies, fetch from database
+  // 4. Return team_id or null
 });
 
 // Cache user role retrieval
 export const getUserRole = cache(async (): Promise<string | null> => {
-  const supabase = await createClient();
+  // TODO: Backend API Integration Required
+  // Endpoint: GET /api/auth/me/role
+  // Response: { role: string | null }
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  // For now, return null
+  return null;
 
-  if (!user) {
-    return null;
-  }
-
-  const teamId = await getTeamId();
-
-  if (!teamId) {
-    return null;
-  }
-
-  const { data: teamMember } = await supabase
-    .from("team_members")
-    .select("role")
-    .eq("user_id", user.id)
-    .eq("team_id", teamId)
-    .single();
-
-  return teamMember?.role || null;
+  // TODO: The backend should handle:
+  // 1. Get authenticated user from session/token
+  // 2. Get user's team_id
+  // 3. Fetch user's role in that team
+  // 4. Return role or null
 });
 
 // Cache user profile retrieval
 export const getUserProfile = cache(async () => {
-  const supabase = await createClient();
+  // TODO: Backend API Integration Required
+  // Endpoint: GET /api/auth/me/profile
+  // Response: { profile: Profile | null }
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  // For now, return null
+  return null;
 
-  if (!user) {
-    return null;
-  }
-
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("*")
-    .eq("id", user.id)
-    .single();
-
-  return profile;
+  // TODO: The backend should handle:
+  // 1. Get authenticated user from session/token
+  // 2. Fetch user's profile from database
+  // 3. Return profile or null
 });

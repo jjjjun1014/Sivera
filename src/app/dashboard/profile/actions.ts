@@ -2,7 +2,8 @@
 
 import { revalidatePath } from "next/cache";
 
-import { createClient } from "@/utils/supabase/server";
+// TODO: Replace with backend API integration
+// import { createClient } from "@/utils/supabase/server";
 import {
   getProfileServer,
   updateProfileServer as updateProfileUtil,
@@ -10,50 +11,21 @@ import {
 import log from "@/utils/logger";
 
 export async function getProfileData() {
-  const supabase = await createClient();
-
   try {
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    // TODO: Backend API Integration Required
+    // Endpoint: GET /api/profile
+    // Response: { user, profile }
 
-    if (!user) {
-      throw new Error("User not authenticated");
-    }
+    log.warn("getProfileData called - backend integration needed");
 
-    // Fetch or create profile
-    let profile = await getProfileServer(user.id);
+    // Stub response for UI compatibility
+    throw new Error("Backend API integration required. Please implement GET /api/profile endpoint.");
 
-    if (!profile) {
-      // Create profile if it doesn't exist
-      const { data, error } = await supabase
-        .from("profiles")
-        .insert({
-          id: user.id,
-          email: user.email!,
-        })
-        .select()
-        .single();
-
-      if (error) {
-        // If duplicate key error, try to fetch the profile again
-        if (error.code === "23505") {
-          profile = await getProfileServer(user.id);
-          if (!profile) {
-            throw new Error("Profile exists but could not be fetched");
-          }
-        } else {
-          throw error;
-        }
-      } else {
-        profile = data;
-      }
-    }
-
-    return {
-      user,
-      profile,
-    };
+    // TODO: The backend should handle:
+    // 1. Get authenticated user from session/token
+    // 2. Fetch user profile from database
+    // 3. Create profile if it doesn't exist
+    // 4. Return user and profile data
   } catch (error) {
     log.error("Failed to get profile data", error as Error, {
       module: "profile/actions",
@@ -66,26 +38,26 @@ export async function getProfileData() {
 export async function updateProfileAction(formData: FormData) {
   "use server";
 
-  const supabase = await createClient();
-
   try {
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-
-    if (!user) {
-      throw new Error("User not authenticated");
-    }
+    // TODO: Backend API Integration Required
+    // Endpoint: PATCH /api/profile
+    // Body: { full_name }
+    // Response: { success, message }
 
     const fullName = formData.get("full_name") as string;
 
-    await updateProfileUtil(user.id, {
-      full_name: fullName,
-    });
+    log.warn("updateProfileAction called - backend integration needed", { fullName });
 
-    revalidatePath("/profile");
+    // Stub response for UI compatibility
+    return {
+      success: false,
+      message: "Backend API integration required. Please implement PATCH /api/profile endpoint.",
+    };
 
-    return { success: true, message: "프로필이 업데이트되었습니다." };
+    // TODO: The backend should handle:
+    // 1. Get authenticated user from session/token
+    // 2. Update user profile in database
+    // 3. Return success message
   } catch (error) {
     log.error("Failed to update profile", error as Error, {
       module: "profile/actions",
@@ -102,24 +74,23 @@ export async function updateProfileAction(formData: FormData) {
 export async function updateAvatarAction(avatarUrl: string | null) {
   "use server";
 
-  const supabase = await createClient();
-
   try {
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    // TODO: Backend API Integration Required
+    // Endpoint: PATCH /api/profile/avatar
+    // Body: { avatar_url }
+    // Response: { success }
 
-    if (!user) {
-      throw new Error("User not authenticated");
-    }
+    log.warn("updateAvatarAction called - backend integration needed", { avatarUrl });
 
-    await updateProfileUtil(user.id, {
-      avatar_url: avatarUrl,
-    });
+    // Stub response for UI compatibility
+    return {
+      success: false,
+    };
 
-    revalidatePath("/profile");
-
-    return { success: true };
+    // TODO: The backend should handle:
+    // 1. Get authenticated user from session/token
+    // 2. Update avatar_url in user profile
+    // 3. Return success status
   } catch (error) {
     log.error("Failed to update avatar", error as Error, {
       module: "profile/actions",

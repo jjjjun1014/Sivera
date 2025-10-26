@@ -1,7 +1,12 @@
 "use client";
 
 import { useEffect } from "react";
-import { User } from "@supabase/supabase-js";
+// TODO: Replace with backend API type
+// Previously: import { User } from "@supabase/supabase-js";
+interface User {
+  id: string;
+  email?: string;
+}
 import { useShallow } from "zustand/shallow";
 
 import { usePlatformStore, useTeamStore, useAuthStore } from "@/stores";

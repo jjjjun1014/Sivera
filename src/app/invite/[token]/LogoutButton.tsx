@@ -2,7 +2,7 @@
 
 import { Button } from "@heroui/button";
 
-import { clientLogout } from "@/app/[lang]/(auth)/login/client-actions";
+import { clientLogout } from "@/app/login/client-actions";
 import { useDictionary } from "@/hooks/use-dictionary";
 
 interface LogoutButtonProps {

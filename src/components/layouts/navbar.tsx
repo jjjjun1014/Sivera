@@ -67,8 +67,6 @@ export const Navbar = () => {
 
   const getNavLabel = (label: string) => {
     const navMap: Record<string, string> = {
-      홈: dict.nav.home,
-      요금제: dict.nav.pricing,
       "고객 지원": dict.nav.support,
     };
 
@@ -97,27 +95,15 @@ export const Navbar = () => {
     }
 
     return (
-      <>
-        <Button
-          as={NextLink}
-          href="/login"
-          variant="light"
-          data-testid="navbar-login-button"
-          aria-label={dict.nav.login}
-        >
-          {dict.nav.login}
-        </Button>
-        <Button
-          as={NextLink}
-          color="primary"
-          href="/signup"
-          variant="flat"
-          data-testid="navbar-signup-button"
-          aria-label={dict.nav.freeTrial}
-        >
-          {dict.nav.freeTrial}
-        </Button>
-      </>
+      <Button
+        as={NextLink}
+        href="/login"
+        variant="light"
+        data-testid="navbar-login-button"
+        aria-label={dict.nav.login}
+      >
+        {dict.nav.login}
+      </Button>
     );
   };
 
@@ -227,19 +213,6 @@ export const Navbar = () => {
                 aria-label={dict.nav.login}
               >
                 {dict.nav.login}
-              </Button>
-            </NavbarMenuItem>
-            <NavbarMenuItem>
-              <Button
-                as={NextLink}
-                className="w-full"
-                color="primary"
-                href="/signup"
-                variant="flat"
-                data-testid="navbar-mobile-signup-button"
-                aria-label={dict.nav.freeTrial}
-              >
-                {dict.nav.freeTrial}
               </Button>
             </NavbarMenuItem>
           </div>

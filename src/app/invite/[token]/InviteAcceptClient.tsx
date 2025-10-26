@@ -7,7 +7,8 @@ import { Button } from "@heroui/button";
 import { Chip } from "@heroui/chip";
 import { FaCheckCircle } from "react-icons/fa";
 
-import { createClient } from "@/utils/supabase/client";
+// TODO: Replace with backend API integration
+// import { createClient } from "@/utils/supabase/client";
 import log from "@/utils/logger";
 import { AcceptTeamInvitationResult } from "@/types";
 import { toast } from "@/utils/toast";
@@ -52,42 +53,24 @@ export default function InviteAcceptClient({
     setIsLoading(true);
 
     try {
-      const supabase = createClient();
+      // TODO: Backend API Integration Required
+      // Endpoint: POST /api/invitations/:token/accept
+      // Response: { success, team_id, error? }
 
-      log.info("Accepting invitation", { token });
+      log.warn("handleAccept called - backend integration needed", { token });
 
-      // Call the RPC function to accept invitation
-      const { data, error: acceptError } = await supabase.rpc(
-        "accept_team_invitation",
-        {
-          invitation_token: token,
-        },
-      );
-
-      if (acceptError) {
-        log.error("Failed to accept invitation", acceptError);
-        throw new Error(acceptError.message);
-      }
-
-      const result = data as AcceptTeamInvitationResult | null;
-
-      if (!result || !result.success) {
-        throw new Error(result?.error || "Failed to accept invitation");
-      }
-
-      log.info("Invitation accepted successfully", { teamId: result.team_id });
-
-      setSuccess(true);
-
-      toast.success({
-        title: dict.team.invite.accept.toast.successTitle,
-        description: dict.team.invite.accept.toast.successDescription,
+      // Stub - show error toast
+      toast.error({
+        title: "Backend Integration Required",
+        description: "Please implement POST /api/invitations/:token/accept endpoint.",
       });
 
-      // Redirect to dashboard after 2 seconds
-      setTimeout(() => {
-        router.push("/dashboard");
-      }, 2000);
+      // TODO: The backend should handle:
+      // 1. Validate invitation token
+      // 2. Check if user is authenticated
+      // 3. Accept the invitation (add user to team)
+      // 4. Update invitation status to 'accepted'
+      // 5. Return success with team_id
     } catch (err) {
       log.error("Error accepting invitation", err as Error);
       toast.error({

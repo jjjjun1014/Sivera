@@ -1,5 +1,5 @@
 // Platform service related types
-import type { Json } from "@/types/supabase.types";
+import type { Json } from "@/types";
 
 // Common platform types
 export type PlatformType =

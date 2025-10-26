@@ -1,94 +1,72 @@
 "use server";
 
-import { cache } from "react";
-import { revalidateTag } from "next/cache";
-import { createClient } from "@/utils/supabase/server";
+/**
+ * TODO: Backend Integration Required
+ *
+ * This file contains server actions for the dashboard.
+ * All Supabase references have been removed and need to be replaced
+ * with your backend API endpoints.
+ *
+ * Required API endpoints:
+ * - GET /api/campaigns (with pagination, filtering)
+ * - PUT /api/campaigns/:id (update campaign)
+ * - DELETE /api/campaigns/:id (delete campaign)
+ * - POST /api/campaigns/:id/sync (sync campaign data)
+ */
+
 import { Campaign } from "@/types/campaign.types";
 
-const getCampaigns = cache(
-  async ({
-    page = 1,
-    limit = 10,
-    filters = {},
-  }: {
-    page?: number;
-    limit?: number;
-    filters?: Record<string, unknown>;
-  }): Promise<{ campaigns: Campaign[]; hasMore: boolean }> => {
-    const supabase = await createClient();
-    const from = (page - 1) * limit;
-    const to = from + limit - 1;
+export async function getCampaigns({
+  page = 1,
+  limit = 10,
+  filters = {},
+}: {
+  page?: number;
+  limit?: number;
+  filters?: Record<string, unknown>;
+}): Promise<{ campaigns: Campaign[]; hasMore: boolean }> {
+  // TODO: Replace with backend API call
+  // Example: await fetch(`/api/campaigns?page=${page}&limit=${limit}`, ...)
 
-    let query = supabase
-      .from("campaigns")
-      .select("*, metrics:campaign_metrics(*)")
-      .order("created_at", { ascending: false })
-      .range(from, to);
-
-    if (filters.search) {
-      query = query.ilike("name", `%${filters.search}%`);
-    }
-    if (filters.platform) {
-      query = query.eq("platform", filters.platform);
-    }
-    if (filters.isActive !== undefined) {
-      query = query.eq("is_active", filters.isActive);
-    }
-
-    const { data: campaigns, error } = await query;
-
-    if (error) {
-      console.error("Error fetching campaigns:", error);
-      throw new Error("Failed to fetch campaigns.");
-    }
-
-    const { count } = await supabase
-      .from("campaigns")
-      .select("*", { count: "exact", head: true });
-
-    const hasMore = (count ?? 0) > page * limit;
-
-    return { campaigns: campaigns as Campaign[], hasMore };
-  },
-);
-
-async function updateCampaignStatus(campaignId: string, isActive: boolean) {
-  const supabase = await createClient();
-  const { error } = await supabase
-    .from("campaigns")
-    .update({ is_active: isActive })
-    .eq("id", campaignId);
-
-  if (error) {
-    console.error("Error updating campaign status:", error);
-    throw new Error("Failed to update campaign status.");
-  }
-
-  revalidateTag("campaigns");
+  return {
+    campaigns: [],
+    hasMore: false,
+  };
 }
 
-async function updateCampaignBudget(campaignId: string, budget: number) {
-  const supabase = await createClient();
-  const { error } = await supabase
-    .from("campaigns")
-    .update({ budget })
-    .eq("id", campaignId);
+export async function updateCampaign(
+  id: string,
+  updates: Partial<Campaign>
+): Promise<{ success: boolean; error?: string }> {
+  // TODO: Replace with backend API call
+  // Example: await fetch(`/api/campaigns/${id}`, { method: 'PUT', body: JSON.stringify(updates) })
 
-  if (error) {
-    console.error("Error updating campaign budget:", error);
-    throw new Error("Failed to update campaign budget.");
-  }
-
-  revalidateTag("campaigns");
+  return {
+    success: false,
+    error: "Backend API not implemented yet",
+  };
 }
 
-async function revalidateCampaigns() {
-  revalidateTag("campaigns");
+export async function deleteCampaign(
+  id: string
+): Promise<{ success: boolean; error?: string }> {
+  // TODO: Replace with backend API call
+  // Example: await fetch(`/api/campaigns/${id}`, { method: 'DELETE' })
+
+  return {
+    success: false,
+    error: "Backend API not implemented yet",
+  };
 }
 
-export {
-  getCampaigns,
-  updateCampaignStatus,
-  updateCampaignBudget,
-  revalidateCampaigns,
-};
+export async function syncCampaign(
+  id: string
+): Promise<{ success: boolean; error?: string }> {
+  // TODO: Replace with backend API call
+  // Example: await fetch(`/api/campaigns/${id}/sync`, { method: 'POST' })
+
+  return {
+    success: false,
+    error: "Backend API not implemented yet",
+  };
+}

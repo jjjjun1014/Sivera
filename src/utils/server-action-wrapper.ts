@@ -1,14 +1,19 @@
-import { User } from "@supabase/supabase-js";
+// TODO: Replace with backend API integration
+// Previously: import { User } from "@supabase/supabase-js";
+// Now using a minimal User type - should be replaced with backend API type
+interface User {
+  id: string;
+  email?: string;
+}
 
-import { createClient } from "@/utils/supabase/server";
+// TODO: Replace with backend API integration
+// import { createClient } from "@/utils/supabase/server";
 import { UserRole } from "@/types";
 import log from "@/utils/logger";
 
 interface ActionContext {
   user: User;
-  supabase: ReturnType<typeof createClient> extends Promise<infer T>
-    ? T
-    : never;
+  supabase: any; // TODO: Replace with backend API client type
   teamId?: string;
   teamRole?: UserRole;
 }
@@ -22,62 +27,21 @@ export async function withAuth<T>(
   action: (context: ActionContext) => Promise<T>,
   options: ActionOptions = {},
 ): Promise<T> {
-  const supabase = await createClient();
-
   try {
-    // Check authentication
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser();
+    // TODO: Backend API Integration Required
+    // Endpoint: GET /api/auth/me
+    // Response: { user: User }
 
-    if (authError || !user) {
-      log.error("Authentication failed", authError);
-      throw new Error("인증되지 않은 사용자입니다");
-    }
+    log.warn("withAuth called - backend integration needed");
 
-    let teamRole: UserRole | undefined;
-    const teamId = options.teamId;
+    // Stub - throw error
+    throw new Error("Backend API integration required. Please implement GET /api/auth/me endpoint.");
 
-    // Check team permissions if teamId is provided
-    if (teamId && options.requiredRole) {
-      const { data: teamMember, error: teamError } = await supabase
-        .from("team_members")
-        .select("role, team_id")
-        .eq("user_id", user.id)
-        .eq("team_id", teamId)
-        .single();
-
-      if (teamError || !teamMember) {
-        log.error("Team member not found", { userId: user.id, teamId });
-        throw new Error("팀 접근 권한이 없습니다");
-      }
-
-      teamRole = teamMember.role as UserRole;
-
-      // Check role permissions
-      const requiredRoles = Array.isArray(options.requiredRole)
-        ? options.requiredRole
-        : [options.requiredRole];
-
-      if (!requiredRoles.includes(teamRole)) {
-        log.warn("Insufficient permissions", {
-          userId: user.id,
-          teamId,
-          userRole: teamRole,
-          requiredRoles,
-        });
-        throw new Error("권한이 부족합니다");
-      }
-    }
-
-    // Execute the action
-    return await action({
-      user,
-      supabase,
-      teamId,
-      teamRole,
-    });
+    // TODO: The backend should handle:
+    // 1. Get authenticated user from session/token
+    // 2. If teamId and requiredRole specified, verify team access and role
+    // 3. Execute the action with context
+    // 4. Return result
   } catch (error) {
     log.error("Server action failed", error);
     throw error;

@@ -1,47 +1,40 @@
-import { createClient } from "@/utils/supabase/server";
+// TODO: Replace with backend API integration
+// import { createClient } from "@/utils/supabase/server";
 import { Profile } from "@/types";
 import log from "@/utils/logger";
 
 export async function getProfileServer(
   userId: string,
 ): Promise<Profile | null> {
-  const supabase = await createClient();
+  // TODO: Backend API Integration Required
+  // Endpoint: GET /api/profiles/:userId
+  // Response: { profile: Profile | null }
 
-  const { data, error } = await supabase
-    .from("profiles")
-    .select("*")
-    .eq("id", userId)
-    .single();
+  log.warn("getProfileServer called - backend integration needed", { userId });
 
-  if (error) {
-    log.error("Error fetching profile", error, {
-      module: "profile-utils-server",
-      function: "getProfileServer",
-      userId,
-    });
+  // Stub response
+  return null;
 
-    return null;
-  }
-
-  return data;
+  // TODO: The backend should handle:
+  // 1. Fetch profile from database by user ID
+  // 2. Return profile data or null
 }
 
 export async function updateProfileServer(
   userId: string,
   updates: Partial<Profile>,
 ) {
-  const supabase = await createClient();
+  // TODO: Backend API Integration Required
+  // Endpoint: PATCH /api/profiles/:userId
+  // Body: updates (Partial<Profile>)
+  // Response: { profile: Profile }
 
-  const { data, error } = await supabase
-    .from("profiles")
-    .update(updates)
-    .eq("id", userId)
-    .select()
-    .single();
+  log.warn("updateProfileServer called - backend integration needed", { userId, updates });
 
-  if (error) {
-    throw error;
-  }
+  // Stub response - throw error
+  throw new Error("Backend API integration required. Please implement PATCH /api/profiles/:userId endpoint.");
 
-  return data;
+  // TODO: The backend should handle:
+  // 1. Update profile in database
+  // 2. Return updated profile data
 }

@@ -5,7 +5,13 @@ import { CircularProgress } from "@heroui/progress";
 import { Tabs, Tab } from "@heroui/tabs";
 import { Card, CardBody } from "@heroui/card";
 import { FaChartBar, FaKey, FaUsers } from "react-icons/fa";
-import { User } from "@supabase/supabase-js";
+
+// TODO: Replace with backend API type
+// Previously: import { User } from "@supabase/supabase-js";
+interface User {
+  id: string;
+  email?: string;
+}
 
 import { IntegratedDataProvider } from "../IntegratedDataProvider";
 

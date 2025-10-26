@@ -1,11 +1,15 @@
 // Platform credentials types
-import { Database } from "./supabase.types";
+
+/**
+ * TODO: Backend Integration Required
+ *
+ * Define credential types based on your backend API schema.
+ */
 
 import { PlatformType } from ".";
 
-// Unified credential values interface for forms
-export type CredentialValues =
-  Database["public"]["Tables"]["platform_credentials"]["Row"];
+// TODO: Replace with actual credential types from backend
+export type CredentialValues = Record<string, unknown>;
 // Base credential interface
 export interface PlatformCredential {
   id: string;
