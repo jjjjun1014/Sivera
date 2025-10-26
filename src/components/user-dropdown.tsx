@@ -16,9 +16,13 @@ import {
   FiHelpCircle,
   FiBarChart2,
   FiUsers,
+  FiMoon,
+  FiSun,
 } from "react-icons/fi";
 import { useShallow } from "zustand/shallow";
 import { motion, useReducedMotion } from "framer-motion";
+import { useTheme } from "next-themes";
+import { useEffect, useState } from "react";
 
 import { useAuthStore } from "@/stores/useAuthStore";
 import { clientLogout } from "@/app/login/client-actions";
@@ -29,6 +33,13 @@ export function UserDropdown() {
   const { dictionary: dict } = useDictionary();
   const user = useAuthStore(useShallow((state) => state.user));
   const prefersReducedMotion = useReducedMotion();
+  const { theme, setTheme } = useTheme();
+  const [mounted, setMounted] = useState(false);
+
+  // 클라이언트에서만 렌더링
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   if (!user) return null;
 
@@ -93,6 +104,9 @@ export function UserDropdown() {
             case "analytics":
               router.push("/dashboard/analytics");
               break;
+            case "theme-toggle":
+              setTheme(theme === "dark" ? "light" : "dark");
+              break;
             case "help":
               router.push("/support");
               break;
@@ -144,6 +158,21 @@ export function UserDropdown() {
             data-testid="user-menu-analytics"
           >
             {dict.nav.analytics}
+          </DropdownItem>
+        </DropdownSection>
+        <DropdownSection showDivider>
+          <DropdownItem
+            key="theme-toggle"
+            startContent={
+              mounted && theme === "dark" ? (
+                <FiSun className="text-xl" aria-hidden={true} />
+              ) : (
+                <FiMoon className="text-xl" aria-hidden={true} />
+              )
+            }
+            data-testid="user-menu-theme"
+          >
+            {mounted && theme === "dark" ? "라이트 모드" : "다크 모드"}
           </DropdownItem>
         </DropdownSection>
         <DropdownSection>
