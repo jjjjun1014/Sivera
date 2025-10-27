@@ -39,13 +39,6 @@ export interface EChartsProps {
   className?: string;
 }
 
-export interface AvatarUploadProps {
-  userId: string;
-  currentAvatarUrl?: string;
-  onUploadComplete: (url: string) => void;
-  onDeleteComplete: () => void;
-}
-
 export interface MessageCardProps {
   message: string;
   type: "success" | "error" | "info" | "warning";

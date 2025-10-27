@@ -11,6 +11,7 @@ import { Target, TrendingUp, TrendingDown } from "lucide-react";
 import { getLocalTimeZone, today } from "@internationalized/date";
 import { GoalSettingModal, PlatformGoals } from "@/components/modals/GoalSettingModal";
 import { platformGoalsStorage } from "@/lib/storage/platformGoals";
+import { useWorkspace } from "@/contexts/WorkspaceContext";
 import { platformPerformance, topCampaigns } from "@/lib/mock-data";
 import { PLATFORM_COLORS } from "@/types";
 import { CHART_CONFIG } from "@/lib/constants";
@@ -62,6 +63,10 @@ const totalData = {
 };
 
 export default function IntegratedDashboardPage() {
+  // Workspace context
+  const { currentWorkspace } = useWorkspace();
+  const workspaceId = currentWorkspace?.id || "default";
+
   const [goals, setGoals] = useState<PlatformGoals>(platformGoalsStorage.getDefaultGoals());
   const { isOpen: isGoalModalOpen, onOpen: onGoalModalOpen, onClose: onGoalModalClose } = useDisclosure();
 
@@ -89,17 +94,17 @@ export default function IntegratedDashboardPage() {
     itemsPerPage: 5,
   });
 
-  // localStorage에서 목표 불러오기
+  // localStorage에서 목표 불러오기 (사업체별)
   useEffect(() => {
-    const loadedGoals = platformGoalsStorage.loadPlatform(PLATFORM_NAME);
+    const loadedGoals = platformGoalsStorage.loadPlatform(PLATFORM_NAME, workspaceId);
     if (loadedGoals) {
       setGoals(loadedGoals);
     }
-  }, []);
+  }, [workspaceId]);
 
   const handleSaveGoals = (newGoals: PlatformGoals) => {
     setGoals(newGoals);
-    platformGoalsStorage.savePlatform(PLATFORM_NAME, newGoals);
+    platformGoalsStorage.savePlatform(PLATFORM_NAME, workspaceId, newGoals);
   };
 
   // 달성률 계산
@@ -499,6 +504,7 @@ export default function IntegratedDashboardPage() {
         isOpen={isGoalModalOpen}
         onClose={onGoalModalClose}
         platformName="통합 계정"
+        workspaceId={workspaceId}
         currentGoals={goals}
         onSave={handleSaveGoals}
       />

@@ -35,16 +35,6 @@ export async function updatePassword(formData: FormData) {
   };
 }
 
-export async function uploadAvatar(formData: FormData) {
-  // TODO: Replace with backend API call
-  // Example: await fetch('/api/user/avatar/upload', { method: 'POST', body: formData })
-  
-  return {
-    success: false,
-    error: 'Backend API not implemented yet'
-  };
-}
-
 export async function deleteAccount() {
   // TODO: Replace with backend API call
   // Example: await fetch('/api/user/account', { method: 'DELETE' })

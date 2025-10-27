@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useCallback } from "react";
 import {
   useReactTable,
   getCoreRowModel,
@@ -26,9 +26,7 @@ import {
   arrayMove,
   SortableContext,
   horizontalListSortingStrategy,
-  useSortable,
 } from "@dnd-kit/sortable";
-import { CSS } from "@dnd-kit/utilities";
 import { Chip } from "@heroui/chip";
 import { Switch } from "@heroui/switch";
 import { Input } from "@heroui/input";
@@ -43,11 +41,17 @@ import {
   ModalFooter,
   useDisclosure,
 } from "@heroui/modal";
-import { ChevronUp, ChevronDown, Settings2, Lock, Edit2 } from "lucide-react";
+import { Settings2, Lock, Edit2 } from "lucide-react";
 import { toast } from "@/utils/toast";
 import { ColumnManagerModal, ColumnOption } from "@/components/modals/ColumnManagerModal";
+import { statusColorMap, statusTextMap } from "@/lib/constants/status";
 import type { AdGroup } from "@/types/campaign";
 import { isBudgetEditable } from "@/types/campaign";
+import { useTableEditing } from "@/hooks/useTableEditing";
+import { useDebounce } from "@/hooks/useDebounce";
+import { DraggableTableHeader } from "@/components/tables/common/DraggableTableHeader";
+import { formatMetricValue } from "@/utils/table-formatters";
+import { PINNED_COLUMN_IDS } from "@/types/table.types";
 
 interface AdGroupTableProps {
   data: AdGroup[];
@@ -59,75 +63,6 @@ interface AdGroupTableProps {
   onColumnOrderChange?: (order: string[]) => void;
   onColumnVisibilityChange?: (visibility: Record<string, boolean>) => void;
   onAdGroupClick?: (id: number | string) => void;
-}
-
-const PINNED_COLUMN_IDS = ["select", "actions"];
-
-function DraggableTableHeader({ header }: { header: any }) {
-  const isPinned = PINNED_COLUMN_IDS.includes(header.column.id);
-
-  const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
-    useSortable({
-      id: header.column.id,
-      disabled: isPinned,
-    });
-
-  const style = {
-    transform: CSS.Transform.toString(transform),
-    transition,
-    opacity: isDragging ? 0.5 : 1,
-  };
-
-  const canSort = header.column.getCanSort();
-  const sortDirection = header.column.getIsSorted();
-
-  return (
-    <th
-      ref={setNodeRef}
-      style={style}
-      className="px-3 py-3 text-left text-xs font-semibold text-default-600 bg-default-100 border-b-2 border-divider whitespace-nowrap"
-    >
-      <div className="flex items-center gap-2">
-        {!isPinned && (
-          <div
-            {...attributes}
-            {...listeners}
-            className="cursor-move hover:bg-primary/10 px-1 rounded transition-colors"
-          >
-            <div className="flex gap-0.5">
-              <div className="w-0.5 h-4 bg-default-300 rounded-full"></div>
-              <div className="w-0.5 h-4 bg-default-300 rounded-full"></div>
-            </div>
-          </div>
-        )}
-        <button
-          onClick={header.column.getToggleSortingHandler()}
-          className={`flex items-center gap-1 ${
-            canSort ? "cursor-pointer hover:text-primary" : ""
-          }`}
-          disabled={!canSort}
-        >
-          <span>
-            {flexRender(header.column.columnDef.header, header.getContext())}
-          </span>
-          {canSort && (
-            <span className="text-default-400">
-              {sortDirection === "asc" ? (
-                <ChevronUp className="w-3 h-3" />
-              ) : sortDirection === "desc" ? (
-                <ChevronDown className="w-3 h-3" />
-              ) : (
-                <div className="flex flex-col">
-                  <ChevronUp className="w-3 h-3 -mb-1 opacity-30" />
-                  <ChevronDown className="w-3 h-3 opacity-30" />
-                </div>
-              )}
-            </span>
-          )}
-        </button>
-      </div>
-    </th>
-  );
 }
 
 export function AdGroupTable({
@@ -146,14 +81,18 @@ export function AdGroupTable({
   const [globalFilter, setGlobalFilter] = useState("");
   const [selectedRows, setSelectedRows] = useState<Record<string, boolean>>({});
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>(initialColumnVisibility);
-  const [editingCell, setEditingCell] = useState<{ id: number | string; field: string } | null>(null);
-  const [tempValues, setTempValues] = useState<Record<string, any>>({});
-  const [pendingChange, setPendingChange] = useState<{
-    id: number | string;
-    field: string;
-    value: any;
-    oldValue: any;
-  } | null>(null);
+
+  // useReducer로 통합된 편집 상태 관리
+  const {
+    editingCell,
+    tempValues,
+    pendingChange,
+    startEdit,
+    updateTempValue,
+    setPending,
+    cancelEdit,
+    confirmEdit,
+  } = useTableEditing();
 
   const { isOpen, onOpen, onClose } = useDisclosure();
   const { isOpen: isColumnModalOpen, onOpen: onColumnModalOpen, onClose: onColumnModalClose } = useDisclosure();
@@ -187,7 +126,8 @@ export function AdGroupTable({
     { id: "actions", label: "작업", category: "basic", isPinned: true },
   ];
 
-  const confirmChange = () => {
+  // 변경 확정 핸들러 (useCallback으로 최적화)
+  const handleConfirmChange = useCallback(() => {
     if (pendingChange) {
       onAdGroupChange?.(pendingChange.id, pendingChange.field, pendingChange.value);
 
@@ -196,24 +136,16 @@ export function AdGroupTable({
         description: "광고그룹명이 성공적으로 변경되었습니다.",
       });
 
-      setPendingChange(null);
+      confirmEdit();
       onClose();
     }
-  };
+  }, [pendingChange, onAdGroupChange, confirmEdit, onClose]);
 
-  const cancelChange = () => {
-    setPendingChange(null);
+  // 변경 취소 핸들러 (useCallback으로 최적화)
+  const handleCancelChange = useCallback(() => {
+    cancelEdit();
     onClose();
-    setEditingCell(null);
-    if (pendingChange) {
-      const key = `${pendingChange.id}-${pendingChange.field}`;
-      setTempValues((prev) => {
-        const newValues = { ...prev };
-        delete newValues[key];
-        return newValues;
-      });
-    }
-  };
+  }, [cancelEdit, onClose]);
 
   const columns = useMemo<ColumnDef<AdGroup>[]>(
     () => [
@@ -344,16 +276,6 @@ export function AdGroupTable({
         header: "상태",
         cell: ({ row, getValue }) => {
           const status = getValue() as string;
-          const statusColorMap: Record<string, "success" | "warning" | "danger"> = {
-            active: "success",
-            paused: "warning",
-            stopped: "danger",
-          };
-          const statusTextMap: Record<string, string> = {
-            active: "활성",
-            paused: "일시정지",
-            stopped: "중지됨",
-          };
 
           return (
             <Chip color={statusColorMap[status]} size="sm" variant="flat">
@@ -678,7 +600,7 @@ export function AdGroupTable({
         </div>
       </div>
 
-      <Modal isOpen={isOpen} onClose={cancelChange}>
+      <Modal isOpen={isOpen} onClose={handleCancelChange}>
         <ModalContent>
           {(onClose) => (
             <>
@@ -720,10 +642,10 @@ export function AdGroupTable({
                 )}
               </ModalBody>
               <ModalFooter>
-                <Button color="danger" variant="light" onPress={cancelChange}>
+                <Button color="danger" variant="light" onPress={handleCancelChange}>
                   취소
                 </Button>
-                <Button color="primary" onPress={confirmChange}>
+                <Button color="primary" onPress={handleConfirmChange}>
                   확인
                 </Button>
               </ModalFooter>

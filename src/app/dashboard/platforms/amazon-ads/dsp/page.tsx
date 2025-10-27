@@ -333,7 +333,7 @@ export default function GoogleAdsPerformanceMaxPage() {
             radius="sm"
             variant="bordered"
             value={dateRange}
-            onChange={setDateRange}
+            onChange={(value) => value && setDateRange(value)}
             defaultValue={{
               start: fourteenDaysAgo,
               end: todayDate,
@@ -584,7 +584,6 @@ export default function GoogleAdsPerformanceMaxPage() {
         context={{
           currentPage: "/dashboard/platforms/amazon-ads/dsp",
           campaigns: campaigns,
-          selectedMetrics: chartMetrics,
         }}
       />
     </div>

@@ -378,7 +378,8 @@ export default function TeamPage() {
           <h3 className="text-xl font-semibold">대기 중인 초대</h3>
         </CardHeader>
         <CardBody>
-          <Table aria-label="대기 중인 초대 테이블">
+          <div className="overflow-x-auto">
+            <Table aria-label="대기 중인 초대 테이블" classNames={{ wrapper: "min-w-[700px]" }}>
             <TableHeader>
               <TableColumn className="whitespace-nowrap">이메일</TableColumn>
               <TableColumn className="whitespace-nowrap">역할</TableColumn>
@@ -434,6 +435,7 @@ export default function TeamPage() {
               ))}
             </TableBody>
           </Table>
+          </div>
         </CardBody>
       </Card>
 
@@ -581,7 +583,8 @@ export default function TeamPage() {
               {/* 현재 부여된 계정 목록 */}
               <div className="space-y-3">
                 <h3 className="text-lg font-semibold">부여된 광고 계정</h3>
-                <Table aria-label="부여된 계정 목록">
+                <div className="overflow-x-auto">
+                  <Table aria-label="부여된 계정 목록" classNames={{ wrapper: "min-w-[600px]" }}>
                   <TableHeader>
                     <TableColumn>계정명</TableColumn>
                     <TableColumn>플랫폼</TableColumn>
@@ -632,6 +635,7 @@ export default function TeamPage() {
                       })}
                   </TableBody>
                 </Table>
+                </div>
               </div>
 
               {/* 새 계정 추가 */}

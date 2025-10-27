@@ -14,5 +14,4 @@ export * from "./SectionHeader";
 export * from "./DataProvider";
 export * from "./PlatformSetupGuide";
 export * from "./InfiniteScrollTable";
-export * from "./VirtualScrollTable";
-export { default as VirtualScrollTable } from "./VirtualScrollTable";
+export * from "./LazyComponent";

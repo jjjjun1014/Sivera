@@ -63,7 +63,7 @@ export function SmartSuggestionInput({
           setShowSuggestion(true);
         }
       } catch (error) {
-        console.error('Smart suggestion error:', error);
+        setSuggestions([]);
       } finally {
         setIsLoading(false);
       }

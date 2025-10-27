@@ -6,7 +6,7 @@ import { revalidatePath } from "next/cache";
 // import { createClient } from "@/utils/supabase/server";
 import log from "@/utils/logger";
 import { UserRole } from "@/types";
-import { createTeamForUser } from "@/lib/data/teams";
+// import { createTeamForUser } from "@/lib/data/teams"; // TODO: Backend API
 import { getTeamInvitationEmailTemplate } from "@/utils/email-templates";
 
 export async function inviteTeamMemberAction(email: string, role: UserRole) {
@@ -154,16 +154,16 @@ export async function createTeamForUserAction() {
 
 export async function syncAllPlatformDataAction() {
   try {
-    // Import DataSyncService only when needed to avoid client/server issues
-    const { DataSyncService } = await import(
-      "@/services/sync/data-sync.service"
-    );
-    const dataSyncService = new DataSyncService();
-    const result = await dataSyncService.syncAllPlatformData();
+    // TODO: Backend API Integration Required
+    // Endpoint: POST /api/sync/all-platforms
+    // Response: { success, message, syncedData }
 
-    revalidatePath("/team");
+    log.warn("syncAllPlatformDataAction called - backend integration needed");
 
-    return result;
+    return {
+      success: false,
+      error: "Backend API integration required. Please implement POST /api/sync/all-platforms endpoint.",
+    };
   } catch (error) {
     log.error(
       "Error in syncAllPlatformDataAction",

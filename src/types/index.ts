@@ -6,7 +6,6 @@
  */
 
 // Re-export all type modules
-export * from './campaign';
 export * from './subscription';
 export * from './workspace';
 export * from './permissions';
@@ -14,15 +13,26 @@ export * from './database.types';
 export * from './platform-service.types';
 export * from './campaign.types';
 export * from './user';
+export * from './notification';
 
-// Platform types
+// Re-export UI types from campaign.ts (excluding Campaign to avoid conflict)
+export type {
+  CampaignTableColumn,
+  TopCampaign,
+  AdGroup,
+  Ad,
+} from './campaign';
+export { BUDGET_LOCKED_CAMPAIGN_TYPES, isBudgetEditable } from './campaign';
+
+// Platform types - using campaign.types.ts Campaign
 export type {
   PlatformKey,
   PlatformColors,
   CampaignStatus,
-  Campaign,
-  Ad,
 } from './campaign';
+
+// Main Campaign type from campaign.types.ts (DB type)
+export type { Campaign } from './campaign.types';
 
 // Database types
 export type {

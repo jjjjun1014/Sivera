@@ -35,8 +35,7 @@ export function WorkspaceSwitcher() {
       setNewWorkspaceName("");
       setNewWorkspaceDescription("");
     } catch (error) {
-      console.error("Failed to create workspace:", error);
-      alert("작업공간 생성에 실패했습니다.");
+      alert("사업체 생성에 실패했습니다.");
     } finally {
       setIsCreating(false);
     }
@@ -68,7 +67,7 @@ export function WorkspaceSwitcher() {
             }
           }}
         >
-          {workspaces.map((workspace) => (
+          {[...workspaces.map((workspace) => (
             <DropdownItem key={workspace.id} textValue={workspace.name}>
               <div className="flex items-center justify-between gap-2 w-full">
                 <div className="flex flex-col min-w-0 flex-1">
@@ -84,13 +83,14 @@ export function WorkspaceSwitcher() {
                 )}
               </div>
             </DropdownItem>
-          ))}
+          )),
           <DropdownItem key="create" className="text-primary" textValue="새 작업공간 만들기">
             <div className="flex items-center gap-2">
               <Plus className="w-4 h-4" />
               <span>새 작업공간 만들기</span>
             </div>
           </DropdownItem>
+          ]}
         </DropdownMenu>
       </Dropdown>
 

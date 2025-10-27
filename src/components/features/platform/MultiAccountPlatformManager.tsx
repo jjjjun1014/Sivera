@@ -436,7 +436,7 @@ export function MultiAccountPlatformManager({
         expires_at: null,
         id: crypto.randomUUID(),
         is_active: true,
-        last_synced_at: null,
+        last_sync_at: null,
         error_message: null,
         platform: selectedPlatform,
         refresh_token: null,
@@ -524,8 +524,8 @@ export function MultiAccountPlatformManager({
       case "lastSync":
         return (
           <span className="text-small text-default-500">
-            {item.last_synced_at
-              ? new Date(item.last_synced_at).toLocaleDateString()
+            {item.last_sync_at
+              ? new Date(item.last_sync_at).toLocaleDateString()
               : dict.integrations.credentials.notSynced}
           </span>
         );

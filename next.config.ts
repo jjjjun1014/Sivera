@@ -1,5 +1,9 @@
 import type { NextConfig } from "next";
 
+const withBundleAnalyzer = require("@next/bundle-analyzer")({
+  enabled: process.env.ANALYZE === "true",
+});
+
 const nextConfig: NextConfig = {
   // 리다이렉트 설정
   async redirects() {
@@ -51,14 +55,6 @@ const nextConfig: NextConfig = {
     ];
   },
 
-  // 이미지 최적화
-  images: {
-    remotePatterns: [
-      // 필요시 외부 이미지 도메인 추가
-    ],
-    formats: ["image/avif", "image/webp"],
-  },
-
   // 압축 활성화
   compress: true,
 
@@ -80,4 +76,4 @@ const nextConfig: NextConfig = {
   // },
 };
 
-export default nextConfig;
+export default withBundleAnalyzer(nextConfig);

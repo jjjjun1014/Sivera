@@ -11,6 +11,7 @@ function SuccessContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [isProcessing, setIsProcessing] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   // URL 파라미터에서 정보 가져오기
   const billingKey = searchParams.get('billingKey');
@@ -38,8 +39,9 @@ function SuccessContent() {
         await new Promise(resolve => setTimeout(resolve, 2000));
         setIsProcessing(false);
       } catch (error) {
-        console.error('빌링키 저장 실패:', error);
-        router.replace('/payment/billing/failure?error=save_failed');
+        setError('빌링키 저장에 실패했습니다.');
+      } finally {
+        setIsProcessing(false);
       }
     };
 

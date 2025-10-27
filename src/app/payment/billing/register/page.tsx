@@ -184,11 +184,9 @@ function BillingRegisterContent() {
                   customerEmail={customerEmail}
                   customerPhoneNumber={customerPhoneNumber}
                   onSuccess={(billingKey) => {
-                    console.log("Billing key issued:", billingKey);
                     router.push(`/payment/billing/success?billingKey=${billingKey}&plan=${plan}&seats=${seats}`);
                   }}
                   onError={(error) => {
-                    console.error("Billing error:", error);
                     router.push(`/payment/billing/failure?error=billing_error&message=${error.message}`);
                   }}
                 />

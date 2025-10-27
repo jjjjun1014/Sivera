@@ -351,7 +351,7 @@ export default function GoogleAdsSearchPage() {
             radius="sm"
             variant="bordered"
             value={dateRange}
-            onChange={setDateRange}
+            onChange={(value) => value && setDateRange(value)}
             defaultValue={{
               start: fourteenDaysAgo,
               end: todayDate,
@@ -602,7 +602,6 @@ export default function GoogleAdsSearchPage() {
         context={{
           currentPage: "/dashboard/platforms/amazon-ads/sponsored-display",
           campaigns: campaigns,
-          selectedMetrics: chartMetrics,
         }}
       />
 

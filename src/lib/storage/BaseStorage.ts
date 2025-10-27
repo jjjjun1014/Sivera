@@ -15,8 +15,7 @@ export abstract class BaseStorage<T> {
     try {
       const item = localStorage.getItem(this.storageKey);
       return item ? JSON.parse(item) : null;
-    } catch (error) {
-      console.error(`Error reading from localStorage (${this.storageKey}):`, error);
+    } catch {
       return null;
     }
   }
@@ -27,8 +26,8 @@ export abstract class BaseStorage<T> {
 
     try {
       localStorage.setItem(this.storageKey, JSON.stringify(data));
-    } catch (error) {
-      console.error(`Error saving to localStorage (${this.storageKey}):`, error);
+    } catch {
+      // Silent fail
     }
   }
 
@@ -38,8 +37,8 @@ export abstract class BaseStorage<T> {
 
     try {
       localStorage.removeItem(this.storageKey);
-    } catch (error) {
-      console.error(`Error removing from localStorage (${this.storageKey}):`, error);
+    } catch {
+      // Silent fail
     }
   }
 

@@ -123,7 +123,7 @@ export function AuditLogModal({ isOpen, onClose }: AuditLogModalProps) {
                   radius="sm"
                   variant="bordered"
                   value={dateRange}
-                  onChange={setDateRange}
+                  onChange={(value) => value && setDateRange(value)}
                 />
               </div>
 

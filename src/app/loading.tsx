@@ -1,6 +1,6 @@
 "use client";
 
-import { CircularProgress } from "@heroui/react";
+import { CircularProgress } from "@heroui/progress";
 
 export default function Loading() {
   return (

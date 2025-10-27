@@ -45,6 +45,7 @@ import {
 } from "@/types/platform-dashboard";
 import { GoalSettingModal } from "@/components/modals/GoalSettingModal";
 import { platformGoalsStorage } from "@/lib/storage/platformGoals";
+import { useWorkspace } from "@/contexts/WorkspaceContext";
 
 interface PlatformDashboardTemplateProps {
   config: PlatformDashboardConfig;
@@ -66,10 +67,14 @@ export function PlatformDashboardTemplate({
     defaultMetrics = [],
   } = config;
 
+  // Workspace context
+  const { currentWorkspace } = useWorkspace();
+  const workspaceId = currentWorkspace?.id || "default";
+
   // State
   const [selectedKeys, setSelectedKeys] = useState<Selection>(new Set([]));
   const [isGoalModalOpen, setIsGoalModalOpen] = useState(false);
-  const [selectedMetrics] = useState<string[]>(
+  const [selectedMetrics, setSelectedMetrics] = useState<string[]>(
     initialMetrics || defaultMetrics
   );
 
@@ -81,8 +86,8 @@ export function PlatformDashboardTemplate({
     end: todayDate,
   });
 
-  // Load goals from storage
-  const goals = platformGoalsStorage.loadPlatform(platformKey);
+  // Load goals from storage (사업체별)
+  const goals = platformGoalsStorage.loadPlatform(platformKey, workspaceId);
 
   // Pagination
   const { currentPage, totalPages, paginatedData, setCurrentPage } =
@@ -213,7 +218,6 @@ export function PlatformDashboardTemplate({
     const selectedCampaigns = Array.from(selectedKeys).filter(
       (key) => key !== "all"
     );
-    console.log(`Bulk ${action} for campaigns:`, selectedCampaigns);
     // TODO: Implement actual bulk actions
   };
 
@@ -238,7 +242,7 @@ export function PlatformDashboardTemplate({
               <DateRangePicker
                 label="기간 선택"
                 value={dateRange}
-                onChange={setDateRange}
+                onChange={(value) => value && setDateRange(value)}
                 visibleMonths={2}
                 pageBehavior="single"
               />
@@ -484,8 +488,13 @@ export function PlatformDashboardTemplate({
         <GoalSettingModal
           isOpen={isGoalModalOpen}
           onClose={() => setIsGoalModalOpen(false)}
-          platform={platformKey}
-          currentGoals={goals}
+          platformName={platformName}
+          workspaceId={workspaceId}
+          currentGoals={goals || platformGoalsStorage.getDefaultGoals()}
+          onSave={(newGoals) => {
+            platformGoalsStorage.savePlatform(platformKey, workspaceId, newGoals);
+            window.location.reload(); // 목표 저장 후 새로고침
+          }}
         />
       )}
     </div>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useCallback } from "react";
 import {
   useReactTable,
   getCoreRowModel,
@@ -26,9 +26,7 @@ import {
   arrayMove,
   SortableContext,
   horizontalListSortingStrategy,
-  useSortable,
 } from "@dnd-kit/sortable";
-import { CSS } from "@dnd-kit/utilities";
 import { Chip } from "@heroui/chip";
 import { Switch } from "@heroui/switch";
 import { Input } from "@heroui/input";
@@ -48,9 +46,15 @@ import {
   ModalFooter,
   useDisclosure,
 } from "@heroui/modal";
-import { GripVertical, ChevronUp, ChevronDown, Settings2, Edit2 } from "lucide-react";
+import { GripVertical, Settings2, Edit2 } from "lucide-react";
 import { toast } from "@/utils/toast";
 import { ColumnManagerModal, ColumnOption } from "@/components/modals/ColumnManagerModal";
+import { statusColorMap, statusTextMap } from "@/lib/constants/status";
+import { useTableEditing } from "@/hooks/useTableEditing";
+import { useDebounce } from "@/hooks/useDebounce";
+import { DraggableTableHeader } from "@/components/tables/common/DraggableTableHeader";
+import { formatMetricValue } from "@/utils/table-formatters";
+import { PINNED_COLUMN_IDS } from "@/types/table.types";
 
 export interface Campaign {
   id: number;
@@ -70,85 +74,20 @@ export interface Campaign {
 
 interface CampaignTableProps {
   data: Campaign[];
-  onCampaignChange?: (id: number, field: string, value: any) => void;
+  onCampaignChange?: (id: number, field: string, value: string | number | boolean) => void;
   onToggleStatus?: (id: number, currentStatus: string) => void;
   initialColumnOrder?: string[];
   initialColumnVisibility?: Record<string, boolean>;
   onColumnOrderChange?: (order: string[]) => void;
   onColumnVisibilityChange?: (visibility: Record<string, boolean>) => void;
   onCampaignClick?: (id: number) => void;
+  isLoading?: boolean;
+  loadingMessage?: string;
+  totalCount?: number;
 }
 
-// 고정된 컬럼 ID (드래그 불가)
-const PINNED_COLUMN_IDS = ["select", "actions"];
-
-// 드래그 가능한 헤더 컴포넌트
-function DraggableTableHeader({ header }: { header: any }) {
-  const isPinned = PINNED_COLUMN_IDS.includes(header.column.id);
-
-  const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
-    useSortable({
-      id: header.column.id,
-      disabled: isPinned,
-    });
-
-  const style = {
-    transform: CSS.Transform.toString(transform),
-    transition,
-    opacity: isDragging ? 0.5 : 1,
-  };
-
-  const canSort = header.column.getCanSort();
-  const sortDirection = header.column.getIsSorted();
-
-  return (
-    <th
-      ref={setNodeRef}
-      style={style}
-      className="px-3 py-3 text-left text-xs font-semibold text-default-600 bg-default-100 border-b-2 border-divider whitespace-nowrap"
-    >
-      <div className="flex items-center gap-2">
-        {!isPinned && (
-          <div
-            {...attributes}
-            {...listeners}
-            className="cursor-move hover:bg-primary/10 px-1 rounded transition-colors"
-          >
-            <div className="flex gap-0.5">
-              <div className="w-0.5 h-4 bg-default-300 rounded-full"></div>
-              <div className="w-0.5 h-4 bg-default-300 rounded-full"></div>
-            </div>
-          </div>
-        )}
-        <button
-          onClick={header.column.getToggleSortingHandler()}
-          className={`flex items-center gap-1 ${
-            canSort ? "cursor-pointer hover:text-primary" : ""
-          }`}
-          disabled={!canSort}
-        >
-          <span>
-            {flexRender(header.column.columnDef.header, header.getContext())}
-          </span>
-          {canSort && (
-            <span className="text-default-400">
-              {sortDirection === "asc" ? (
-                <ChevronUp className="w-3 h-3" />
-              ) : sortDirection === "desc" ? (
-                <ChevronDown className="w-3 h-3" />
-              ) : (
-                <div className="flex flex-col">
-                  <ChevronUp className="w-3 h-3 -mb-1 opacity-30" />
-                  <ChevronDown className="w-3 h-3 opacity-30" />
-                </div>
-              )}
-            </span>
-          )}
-        </button>
-      </div>
-    </th>
-  );
-}
+// debounce 지연 시간 (300ms)
+const DEBOUNCE_DELAY = 300;
 
 export function CampaignTable({
   data,
@@ -159,12 +98,21 @@ export function CampaignTable({
   onColumnOrderChange,
   onColumnVisibilityChange,
   onCampaignClick,
+  isLoading = false,
+  loadingMessage,
+  totalCount,
 }: CampaignTableProps) {
   const [sorting, setSorting] = useState<SortingState>([]);
   const [columnOrder, setColumnOrder] = useState<ColumnOrderState>(initialColumnOrder);
   const [globalFilter, setGlobalFilter] = useState("");
   const [selectedRows, setSelectedRows] = useState<Record<string, boolean>>({});
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>(initialColumnVisibility);
+
+  // Debounced search
+  const debouncedGlobalFilter = useDebounce(globalFilter, 300);
+
+  // useReducer\ub85c \ud1b5\ud569\ub41c \ud3b8\uc9d1 \uc0c1\ud0dc \uad00\ub9ac
+  const editing = useTableEditing<string | number>();
 
   // 초기 값이 변경되면 상태 업데이트
   useEffect(() => {
@@ -178,14 +126,7 @@ export function CampaignTable({
       setColumnVisibility(initialColumnVisibility);
     }
   }, [initialColumnVisibility]);
-  const [editingCell, setEditingCell] = useState<{ id: number; field: string } | null>(null);
-  const [tempValues, setTempValues] = useState<Record<string, any>>({});
-  const [pendingChange, setPendingChange] = useState<{
-    id: number;
-    field: string;
-    value: any;
-    oldValue: any;
-  } | null>(null);
+
   const { isOpen, onOpen, onClose } = useDisclosure();
 
   // Switch 토글 확인 모달
@@ -213,9 +154,13 @@ export function CampaignTable({
   ];
 
   // 변경 확인 및 적용
-  const confirmChange = () => {
-    if (pendingChange) {
-      onCampaignChange?.(pendingChange.id, pendingChange.field, pendingChange.value);
+  const confirmChange = useCallback(() => {
+    if (editing.state.pendingChange) {
+      onCampaignChange?.(
+        Number(editing.state.pendingChange.id),
+        editing.state.pendingChange.field,
+        editing.state.pendingChange.value
+      );
 
       const fieldLabels: Record<string, string> = {
         name: "캠페인명",
@@ -224,29 +169,19 @@ export function CampaignTable({
 
       toast.success({
         title: "수정 완료",
-        description: `${fieldLabels[pendingChange.field] || pendingChange.field}이(가) 성공적으로 변경되었습니다.`,
+        description: `${fieldLabels[editing.state.pendingChange.field] || editing.state.pendingChange.field}이(가) 성공적으로 변경되었습니다.`,
       });
 
-      setPendingChange(null);
+      editing.confirmEdit();
       onClose();
     }
-  };
+  }, [editing, onCampaignChange, onClose]);
 
   // 변경 취소
-  const cancelChange = () => {
-    setPendingChange(null);
+  const cancelChange = useCallback(() => {
+    editing.cancelEdit();
     onClose();
-    setEditingCell(null);
-    // 임시값 초기화
-    if (pendingChange) {
-      const key = `${pendingChange.id}-${pendingChange.field}`;
-      setTempValues((prev) => {
-        const newValues = { ...prev };
-        delete newValues[key];
-        return newValues;
-      });
-    }
-  };
+  }, [editing, onClose]);
 
   const columns = useMemo<ColumnDef<Campaign>[]>(
     () => [
@@ -273,60 +208,52 @@ export function CampaignTable({
         accessorKey: "name",
         header: "캠페인명",
         cell: ({ row, getValue }) => {
-          const isEditing = editingCell?.id === row.original.id && editingCell?.field === "name";
+          const isEditing = editing.state.editingCell?.id === row.original.id && editing.state.editingCell?.field === "name";
           const key = `${row.original.id}-name`;
 
           return isEditing ? (
             <Input
               size="sm"
-              autoFocus
-              value={tempValues[key] ?? (getValue() as string)}
+              value={editing.state.tempValues[key] ?? (getValue() as string)}
               onChange={(e) => {
-                setTempValues((prev) => ({ ...prev, [key]: e.target.value }));
+                editing.updateTemp(key, e.target.value);
               }}
               onBlur={() => {
-                const newValue = tempValues[key] ?? (getValue() as string);
+                const newValue = editing.state.tempValues[key] ?? (getValue() as string);
                 const oldValue = getValue() as string;
 
                 if (newValue === oldValue) {
-                  setEditingCell(null);
+                  editing.cancelEdit();
                   return;
                 }
 
-                setPendingChange({
+                editing.setPending({
                   id: row.original.id,
                   field: "name",
                   value: newValue,
                   oldValue,
                 });
                 onOpen();
-                setEditingCell(null);
               }}
               onKeyDown={(e) => {
                 if (e.key === "Enter") {
-                  const newValue = tempValues[key] ?? (getValue() as string);
+                  const newValue = editing.state.tempValues[key] ?? (getValue() as string);
                   const oldValue = getValue() as string;
 
                   if (newValue === oldValue) {
-                    setEditingCell(null);
+                    editing.cancelEdit();
                     return;
                   }
 
-                  setPendingChange({
+                  editing.setPending({
                     id: row.original.id,
                     field: "name",
                     value: newValue,
                     oldValue,
                   });
                   onOpen();
-                  setEditingCell(null);
                 } else if (e.key === "Escape") {
-                  setEditingCell(null);
-                  setTempValues((prev) => {
-                    const newValues = { ...prev };
-                    delete newValues[key];
-                    return newValues;
-                  });
+                  editing.cancelEdit();
                 }
               }}
             />
@@ -348,8 +275,8 @@ export function CampaignTable({
                 variant="light"
                 isIconOnly
                 onPress={() => {
-                  setEditingCell({ id: row.original.id, field: "name" });
-                  setTempValues((prev) => ({ ...prev, [key]: getValue() as string }));
+                  editing.startEdit(row.original.id, "name");
+                  editing.updateTemp(key, getValue() as string);
                 }}
                 className="min-w-unit-6 w-6 h-6 flex-shrink-0"
               >
@@ -365,16 +292,6 @@ export function CampaignTable({
         header: "상태",
         cell: ({ row, getValue }) => {
           const status = getValue() as string;
-          const statusColorMap: Record<string, "success" | "warning" | "danger"> = {
-            active: "success",
-            paused: "warning",
-            stopped: "danger",
-          };
-          const statusTextMap: Record<string, string> = {
-            active: "활성",
-            paused: "일시정지",
-            stopped: "중지됨",
-          };
 
           return (
             <div className="flex items-center gap-2">
@@ -397,8 +314,8 @@ export function CampaignTable({
           const field = "budget";
           const key = `${campaignId}-${field}`;
           const currentValue = getValue() as number;
-          const isEditing = editingCell?.id === campaignId && editingCell?.field === field;
-          const displayValue = tempValues[key] !== undefined ? tempValues[key] : currentValue;
+          const isEditing = editing.state.editingCell?.id === campaignId && editing.state.editingCell?.field === field;
+          const displayValue = editing.state.tempValues[key] !== undefined ? editing.state.tempValues[key] : currentValue;
 
           if (isEditing) {
             return (
@@ -407,36 +324,34 @@ export function CampaignTable({
                 value={displayValue}
                 onChange={(e) => {
                   const newValue = Number(e.target.value);
-                  setTempValues((prev) => ({ ...prev, [key]: newValue }));
+                  // 입력 검증: 음수 방지, NaN 체크
+                  if (!isNaN(newValue) && newValue >= 0) {
+                    editing.updateTemp(key, newValue);
+                  }
                 }}
                 onBlur={() => {
-                  const newValue = tempValues[key] !== undefined ? tempValues[key] : currentValue;
-                  if (newValue !== currentValue) {
-                    setPendingChange({
+                  const newValue = editing.state.tempValues[key] !== undefined ? editing.state.tempValues[key] : currentValue;
+                  if (newValue !== currentValue && !isNaN(newValue as number)) {
+                    editing.setPending({
                       id: campaignId,
                       field,
                       value: newValue,
                       oldValue: currentValue,
                     });
                     onOpen();
+                  } else {
+                    editing.cancelEdit();
                   }
-                  setEditingCell(null);
                 }}
                 onKeyDown={(e) => {
                   if (e.key === "Enter") {
                     e.currentTarget.blur();
                   } else if (e.key === "Escape") {
-                    setTempValues((prev) => {
-                      const newValues = { ...prev };
-                      delete newValues[key];
-                      return newValues;
-                    });
-                    setEditingCell(null);
+                    editing.cancelEdit();
                   }
                 }}
                 size="sm"
                 className="w-32"
-                autoFocus
               />
             );
           }
@@ -444,7 +359,10 @@ export function CampaignTable({
           return (
             <div
               className="text-right whitespace-nowrap cursor-pointer hover:bg-default-100 px-2 py-1 rounded transition-colors"
-              onClick={() => setEditingCell({ id: campaignId, field })}
+              onClick={() => {
+                editing.startEdit(campaignId, field);
+                editing.updateTemp(key, currentValue);
+              }}
             >
               ₩{currentValue.toLocaleString()}
             </div>
@@ -529,7 +447,7 @@ export function CampaignTable({
         },
       },
     ],
-    [onCampaignChange, onToggleStatus, editingCell, tempValues, onOpen, onSwitchModalOpen]
+    [onCampaignChange, onToggleStatus, onOpen, onSwitchModalOpen] // editing hook은 안정적이므로 제외
   );
 
   const table = useReactTable({
@@ -538,7 +456,7 @@ export function CampaignTable({
     state: {
       sorting,
       columnOrder,
-      globalFilter,
+      globalFilter: debouncedGlobalFilter, // debounced 값 사용
       rowSelection: selectedRows,
       columnVisibility,
     },
@@ -621,13 +539,21 @@ export function CampaignTable({
     <div className="space-y-4">
       {/* 검색 및 컬럼 필터 */}
       <div className="flex justify-between items-center">
-        <Input
-          placeholder="캠페인 검색..."
-          value={globalFilter}
-          onChange={(e) => setGlobalFilter(e.target.value)}
-          className="max-w-sm"
-          size="sm"
-        />
+        <div className="flex items-center gap-3">
+          <Input
+            placeholder="캠페인 검색..."
+            value={globalFilter}
+            onChange={(e) => setGlobalFilter(e.target.value)}
+            className="max-w-sm"
+            size="sm"
+            isDisabled={isLoading}
+          />
+          {isLoading && totalCount && (
+            <div className="text-sm text-default-500 animate-pulse">
+              ⏳ {totalCount.toLocaleString()}개 캠페인 로딩 중...
+            </div>
+          )}
+        </div>
         <div className="flex items-center gap-3">
           <div className="text-sm text-default-500">
             선택됨: {Object.keys(selectedRows).length}개
@@ -637,85 +563,114 @@ export function CampaignTable({
             variant="flat"
             startContent={<Settings2 className="w-4 h-4" />}
             onPress={onColumnModalOpen}
+            isDisabled={isLoading}
           >
             컬럼 관리
           </Button>
         </div>
       </div>
 
-      {/* 테이블 */}
-      <DndContext
-        sensors={sensors}
-        collisionDetection={closestCenter}
-        onDragEnd={handleDragEnd}
-      >
-        <div className="overflow-x-auto rounded-lg border border-divider">
-          <table className="w-full border-collapse bg-content1">
-            <thead>
-              <SortableContext
-                items={draggableColumnIds}
-                strategy={horizontalListSortingStrategy}
-              >
-                {table.getHeaderGroups().map((headerGroup) => (
-                  <tr key={headerGroup.id}>
-                    {headerGroup.headers.map((header) => (
-                      <DraggableTableHeader key={header.id} header={header} />
+      {/* 로딩 상태 */}
+      {isLoading ? (
+        <div className="flex flex-col items-center justify-center py-20 space-y-4">
+          <div className="relative">
+            <div className="w-16 h-16 border-4 border-primary/30 border-t-primary rounded-full animate-spin"></div>
+          </div>
+          <div className="text-center space-y-2">
+            <p className="text-lg font-semibold text-default-700">
+              {loadingMessage || "캠페인 데이터 로딩 중..."}
+            </p>
+            {totalCount && (
+              <p className="text-sm text-default-500">
+                총 {totalCount.toLocaleString()}개 항목 처리 중
+              </p>
+            )}
+          </div>
+        </div>
+      ) : (
+        <>
+          {/* 테이블 */}
+          <DndContext
+            sensors={sensors}
+            collisionDetection={closestCenter}
+            onDragEnd={handleDragEnd}
+          >
+            <div className="overflow-x-auto rounded-lg border border-divider">
+              <table className="w-full border-collapse bg-content1">
+                <thead>
+                  <SortableContext
+                    items={draggableColumnIds}
+                    strategy={horizontalListSortingStrategy}
+                  >
+                    {table.getHeaderGroups().map((headerGroup) => (
+                      <tr key={headerGroup.id}>
+                        {headerGroup.headers.map((header) => (
+                          <DraggableTableHeader key={header.id} header={header} />
+                        ))}
+                      </tr>
                     ))}
-                  </tr>
-                ))}
-              </SortableContext>
-            </thead>
-            <tbody>
-              {table.getRowModel().rows.map((row) => (
-                <tr
-                  key={row.id}
-                  className="border-b border-divider hover:bg-default-100 transition-colors"
-                >
-                  {row.getVisibleCells().map((cell) => (
-                    <td key={cell.id} className="px-3 py-3 text-sm">
-                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                    </td>
-                  ))}
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </DndContext>
+                  </SortableContext>
+                </thead>
+                <tbody>
+                  {table.getRowModel().rows.length === 0 ? (
+                    <tr>
+                      <td colSpan={columns.length} className="text-center py-12">
+                        <div className="text-default-500">
+                          {debouncedGlobalFilter
+                            ? "검색 결과가 없습니다."
+                            : "캠페인 데이터가 없습니다."}
+                        </div>
+                      </td>
+                    </tr>
+                  ) : (
+                    table.getRowModel().rows.map((row) => (
+                      <tr
+                        key={row.id}
+                        className="border-b border-divider hover:bg-default-100 transition-colors"
+                      >
+                        {row.getVisibleCells().map((cell) => (
+                          <td key={cell.id} className="px-3 py-3 text-sm">
+                            {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                          </td>
+                        ))}
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </DndContext>
 
-      {/* 페이지네이션 */}
-      <div className="flex justify-between items-center">
-        <div className="text-sm text-default-500">
-          {table.getFilteredRowModel().rows.length}개 중{" "}
-          {table.getState().pagination.pageIndex *
-            table.getState().pagination.pageSize +
-            1}
-          -
-          {Math.min(
-            (table.getState().pagination.pageIndex + 1) *
-              table.getState().pagination.pageSize,
-            table.getFilteredRowModel().rows.length
-          )}
-        </div>
-        <div className="flex gap-2">
-          <Button
-            size="sm"
-            variant="flat"
-            onPress={() => table.previousPage()}
-            isDisabled={!table.getCanPreviousPage()}
-          >
-            이전
-          </Button>
-          <Button
-            size="sm"
-            variant="flat"
-            onPress={() => table.nextPage()}
-            isDisabled={!table.getCanNextPage()}
-          >
-            다음
-          </Button>
-        </div>
-      </div>
+          {/* 페이지네이션 */}
+          <div className="flex justify-between items-center">
+            <div className="text-sm text-default-500">
+              {totalCount ? (
+                <>전체 {totalCount.toLocaleString()}개 중 </>
+              ) : null}
+              {table.getFilteredRowModel().rows.length.toLocaleString()}개{" "}
+              {debouncedGlobalFilter && "(검색됨)"}
+            </div>
+            <div className="flex gap-2">
+              <Button
+                size="sm"
+                variant="flat"
+                onPress={() => table.previousPage()}
+                isDisabled={!table.getCanPreviousPage()}
+              >
+                이전
+              </Button>
+              <Button
+                size="sm"
+                variant="flat"
+                onPress={() => table.nextPage()}
+                isDisabled={!table.getCanNextPage()}
+              >
+                다음
+              </Button>
+            </div>
+          </div>
+        </>
+      )}
 
       {/* 변경 확인 모달 */}
       <Modal isOpen={isOpen} onClose={cancelChange}>

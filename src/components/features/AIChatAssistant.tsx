@@ -84,8 +84,6 @@ export function AIChatAssistant({ context }: AIChatAssistantProps) {
 
       setMessages((prev) => [...prev, assistantMessage]);
     } catch (error) {
-      console.error('Chat error:', error);
-
       const errorMessage: Message = {
         role: 'assistant',
         content: '죄송합니다. 일시적인 오류가 발생했습니다. 다시 시도해주세요.',

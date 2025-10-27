@@ -210,6 +210,8 @@ export default function GoogleAdsSearchPage() {
   const { isOpen: isCreateModalOpen, onOpen: onCreateModalOpen, onClose: onCreateModalClose } = useDisclosure();
   const [selectedTab, setSelectedTab] = useState("campaigns");
   const [campaigns, setCampaigns] = useState(initialCampaigns);
+  const [assetGroups, setAssetGroups] = useState<any[]>([]);
+  const [listingGroups, setListingGroups] = useState<any[]>([]);
 
   // Filter state
   const [selectedCampaignId, setSelectedCampaignId] = useState<number | null>(null);
@@ -334,7 +336,7 @@ export default function GoogleAdsSearchPage() {
             radius="sm"
             variant="bordered"
             value={dateRange}
-            onChange={setDateRange}
+            onChange={(value) => value && setDateRange(value)}
             defaultValue={{
               start: fourteenDaysAgo,
               end: todayDate,
@@ -585,7 +587,6 @@ export default function GoogleAdsSearchPage() {
         context={{
           currentPage: "/dashboard/platforms/google-ads/performance-max",
           campaigns: campaigns,
-          selectedMetrics: chartMetrics,
         }}
       />
 

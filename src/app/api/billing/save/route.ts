@@ -26,8 +26,6 @@ export async function POST(request: NextRequest) {
     // }
     // const userId = session.user.id;
 
-    console.log('Saving billing key:', { billingKey, plan, seats, userId });
-
     // TODO: PortOne API로 빌링키 정보 조회
     // const billingKeyInfo = await fetchBillingKeyInfo(billingKey);
 

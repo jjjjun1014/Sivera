@@ -92,7 +92,7 @@ function PlatformCredentialsManagerComponent({
           expires_at: null,
           id: crypto.randomUUID(),
           is_active: true,
-          last_synced_at: null,
+          last_sync_at: null,
           error_message: null,
           platform: selectedPlatform,
           refresh_token: null,

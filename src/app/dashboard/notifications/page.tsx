@@ -7,7 +7,6 @@ import { Chip } from "@heroui/chip";
 import { Tabs, Tab } from "@heroui/tabs";
 import { Pagination } from "@heroui/pagination";
 import { Bell, AlertTriangle, TrendingUp, TrendingDown, DollarSign, CheckCircle, Settings } from "lucide-react";
-import Link from "next/link";
 import { Notification } from "@/types";
 import { sampleNotifications } from "@/lib/mock-data";
 import { usePagination } from "@/hooks";
@@ -86,18 +85,11 @@ export default function NotificationsPage() {
             {unreadCount > 0 ? `${unreadCount}개의 읽지 않은 알림이 있습니다` : "모든 알림을 확인했습니다"}
           </p>
         </div>
-        <div className="flex gap-3">
-          {unreadCount > 0 && (
-            <Button variant="flat" onPress={markAllAsRead}>
-              전체 읽음 처리
-            </Button>
-          )}
-          <Link href="/dashboard/settings">
-            <Button variant="flat" startContent={<Settings className="w-4 h-4" />}>
-              알림 설정
-            </Button>
-          </Link>
-        </div>
+        {unreadCount > 0 && (
+          <Button variant="flat" onPress={markAllAsRead}>
+            전체 읽음 처리
+          </Button>
+        )}
       </div>
 
       {/* Tabs */}

@@ -45,10 +45,7 @@ export async function POST(request: NextRequest) {
     }
 
     // 2. 이벤트 파싱
-    const event = JSON.parse(rawBody);
-    console.log('Received webhook event:', event.type);
-
-    // 3. 이벤트 타입별 처리
+    const event = await request.json();    // 3. 이벤트 타입별 처리
     switch (event.type) {
       case 'BillingKeyIssued':
         await handleBillingKeyIssued(event.data);
@@ -71,7 +68,8 @@ export async function POST(request: NextRequest) {
         break;
 
       default:
-        console.log('Unhandled event type:', event.type);
+        // 미처리 이벤트 타입
+        break;
     }
 
     return NextResponse.json({ received: true });
@@ -88,7 +86,6 @@ export async function POST(request: NextRequest) {
  * 빌링키 발급 완료 처리
  */
 async function handleBillingKeyIssued(data: any) {
-  console.log('Billing key issued:', data);
 
   // TODO: DynamoDB에 빌링키 저장
   // const billingKeyData = {
@@ -118,7 +115,6 @@ async function handleBillingKeyIssued(data: any) {
  * 빌링키 삭제 처리
  */
 async function handleBillingKeyDeleted(data: any) {
-  console.log('Billing key deleted:', data);
 
   // TODO: DynamoDB에서 빌링키 상태 업데이트
   // await updateDynamoDB('BillingKeys', {
@@ -139,7 +135,6 @@ async function handleBillingKeyDeleted(data: any) {
  * 결제 완료 처리
  */
 async function handlePaymentCompleted(data: any) {
-  console.log('Payment completed:', data);
 
   // TODO: 구독 결제 성공 처리
   // await updateDynamoDB('Subscriptions', {
@@ -166,7 +161,6 @@ async function handlePaymentCompleted(data: any) {
  * 결제 실패 처리
  */
 async function handlePaymentFailed(data: any) {
-  console.log('Payment failed:', data);
 
   // TODO: 구독 상태 업데이트
   // await updateDynamoDB('Subscriptions', {
@@ -199,7 +193,6 @@ async function handlePaymentFailed(data: any) {
  * 결제 취소 처리
  */
 async function handlePaymentCancelled(data: any) {
-  console.log('Payment cancelled:', data);
 
   // TODO: 환불 처리
   // await updateDynamoDB('Payments', {

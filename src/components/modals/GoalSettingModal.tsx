@@ -19,6 +19,7 @@ interface GoalSettingModalProps {
   isOpen: boolean;
   onClose: () => void;
   platformName: string;
+  workspaceId: string; // 사업체 ID 추가 (필수)
   currentGoals: PlatformGoals;
   onSave: (goals: PlatformGoals) => void;
 }
@@ -27,6 +28,7 @@ export function GoalSettingModal({
   isOpen,
   onClose,
   platformName,
+  workspaceId,
   currentGoals,
   onSave,
 }: GoalSettingModalProps) {

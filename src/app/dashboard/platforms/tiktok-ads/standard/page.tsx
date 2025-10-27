@@ -336,7 +336,7 @@ export default function MetaAdsStandardPage() {
             radius="sm"
             variant="bordered"
             value={dateRange}
-            onChange={setDateRange}
+            onChange={(value) => value && setDateRange(value)}
             defaultValue={{
               start: fourteenDaysAgo,
               end: todayDate,
@@ -587,7 +587,6 @@ export default function MetaAdsStandardPage() {
         context={{
           currentPage: "/dashboard/platforms/tiktok-ads/standard",
           campaigns: campaigns,
-          selectedMetrics: chartMetrics,
         }}
       />
 

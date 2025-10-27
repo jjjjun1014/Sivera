@@ -71,7 +71,14 @@ export interface PlatformCredential {
   team_id: string;
   platform: PlatformType;
   account_id?: string;
+  account_name?: string | null;
   credentials: Record<string, any>; // JSON field
+  data?: Record<string, any> | null;
+  access_token?: string | null;
+  refresh_token?: string | null;
+  expires_at?: string | null;
+  scope?: string | null;
+  error_message?: string | null;
   is_active: boolean;
   created_at: string;
   updated_at?: string;

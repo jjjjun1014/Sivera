@@ -33,53 +33,57 @@ class PlatformGoalsStorage extends BaseStorage<Record<string, PlatformGoals>> {
   }
 
   /**
-   * localStorage 키 생성
+   * localStorage 키 생성 (사업체별 분리)
+   * @param platform 플랫폼 명
+   * @param workspaceId 사업체 ID (필수)
+   * @param userId 사용자 ID (선택)
    */
-  private getStorageKey(platform: string, userId?: string): string {
-    return userId
-      ? `${STORAGE_PREFIX}${userId}_${platform}`
-      : `${STORAGE_PREFIX}${platform}`;
+  private getStorageKey(platform: string, workspaceId: string, userId?: string): string {
+    const base = `${STORAGE_PREFIX}${platform}_${workspaceId}`;
+    return userId ? `${base}_${userId}` : base;
   }
 
   /**
-   * 특정 플랫폼 목표 불러오기
-   * TODO: AWS API로 교체 - GET /api/goals/{platform}?userId={userId}
+   * 특정 플랫폼 목표 불러오기 (사업체별)
+   * TODO: AWS API로 교체 - GET /api/goals/{platform}?workspaceId={workspaceId}&userId={userId}
    */
-  loadPlatform(platform: string, userId?: string): PlatformGoals | null {
+  loadPlatform(platform: string, workspaceId: string, userId?: string): PlatformGoals | null {
     if (typeof window === "undefined") return null;
+    if (!workspaceId) return null;
 
-    const key = this.getStorageKey(platform, userId);
+    const key = this.getStorageKey(platform, workspaceId, userId);
     const data = localStorage.getItem(key);
 
     if (!data) return null;
 
     try {
       return JSON.parse(data);
-    } catch (error) {
-      console.error("Failed to parse platform goals:", error);
+    } catch {
       return null;
     }
   }
 
   /**
-   * 특정 플랫폼 목표 저장하기
+   * 특정 플랫폼 목표 저장하기 (사업체별)
    * TODO: AWS API로 교체 - PUT /api/goals/{platform}
    */
-  savePlatform(platform: string, goals: PlatformGoals, userId?: string): void {
+  savePlatform(platform: string, workspaceId: string, goals: PlatformGoals, userId?: string): void {
     if (typeof window === "undefined") return;
+    if (!workspaceId) return;
 
-    const key = this.getStorageKey(platform, userId);
+    const key = this.getStorageKey(platform, workspaceId, userId);
     localStorage.setItem(key, JSON.stringify(goals));
   }
 
   /**
-   * 특정 플랫폼 목표 삭제하기
-   * TODO: AWS API로 교체 - DELETE /api/goals/{platform}?userId={userId}
+   * 특정 플랫폼 목표 삭제하기 (사업체별)
+   * TODO: AWS API로 교체 - DELETE /api/goals/{platform}?workspaceId={workspaceId}&userId={userId}
    */
-  deletePlatform(platform: string, userId?: string): void {
+  deletePlatform(platform: string, workspaceId: string, userId?: string): void {
     if (typeof window === "undefined") return;
+    if (!workspaceId) return;
 
-    const key = this.getStorageKey(platform, userId);
+    const key = this.getStorageKey(platform, workspaceId, userId);
     localStorage.removeItem(key);
   }
 

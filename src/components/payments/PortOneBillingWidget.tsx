@@ -45,18 +45,6 @@ export function PortOneBillingWidget({
         ...(customerPhoneNumber && { phoneNumber: customerPhoneNumber }),
       };
 
-      console.log("🔵 PortOne 빌링키 발급 요청:", {
-        storeId,
-        channelKey,
-        customerInfo,
-      });
-
-      console.log("🔵 Props 확인:", {
-        customerName,
-        customerEmail,
-        customerPhoneNumber,
-      });
-
       // PortOne V2 빌링키 발급 UI
       const response = await PortOne.requestIssueBillingKey({
         storeId,
@@ -76,7 +64,6 @@ export function PortOneBillingWidget({
       }
 
       // 성공
-      console.log("Billing key issued:", response.billingKey);
       onSuccess?.(response.billingKey);
       setIsLoading(false);
     } catch (error) {

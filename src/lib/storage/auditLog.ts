@@ -102,13 +102,9 @@ class AuditLogStorage extends BaseStorage<AuditLogEntry[]> {
     if (typeof window === "undefined") return [];
 
     try {
-      const data = localStorage.getItem(STORAGE_KEY);
-      if (!data) return this.getDefaultLogs();
-
       return JSON.parse(data);
-    } catch (error) {
-      console.error("Failed to parse audit logs:", error);
-      return this.getDefaultLogs();
+    } catch {
+      return [];
     }
 
     // TODO: AWS DynamoDB에서 조회

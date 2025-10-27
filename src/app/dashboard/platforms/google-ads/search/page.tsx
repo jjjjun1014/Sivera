@@ -229,6 +229,10 @@ export default function GoogleAdsSearchPage() {
   const [adGroups, setAdGroups] = useState(initialAdGroups);
   const [ads, setAds] = useState(initialAds);
 
+  // 로딩 상태 (API 연동 시 사용)
+  // const [isLoading, setIsLoading] = useState(false);
+  // const [totalCount, setTotalCount] = useState<number | undefined>(undefined);
+
   // Filter state
   const [selectedCampaignId, setSelectedCampaignId] = useState<number | null>(null);
   const [selectedAdGroupId, setSelectedAdGroupId] = useState<number | string | null>(null);
@@ -351,7 +355,7 @@ export default function GoogleAdsSearchPage() {
             radius="sm"
             variant="bordered"
             value={dateRange}
-            onChange={setDateRange}
+            onChange={(value) => value && setDateRange(value)}
             defaultValue={{
               start: fourteenDaysAgo,
               end: todayDate,
@@ -530,6 +534,10 @@ export default function GoogleAdsSearchPage() {
                 onCampaignChange={handleCampaignChange}
                 onToggleStatus={handleToggleCampaignStatus}
                 onCampaignClick={handleCampaignClick}
+                // API 연동 시 추가
+                // isLoading={isLoading}
+                // loadingMessage="캠페인 데이터 불러오는 중..."
+                // totalCount={totalCount}
               />
             </>
           )}
@@ -602,7 +610,6 @@ export default function GoogleAdsSearchPage() {
         context={{
           currentPage: "/dashboard/platforms/google-ads/search",
           campaigns: campaigns,
-          selectedMetrics: chartMetrics,
         }}
       />
 

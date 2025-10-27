@@ -226,7 +226,7 @@ export function DashboardClient({
               fallback={<LoadingFallback label={dictionary.common.loading} />}
             >
               <MultiAccountPlatformManager
-                credentials={credentials}
+                credentials={credentials as unknown as Record<string, unknown>[]}
                 teamId={teamId}
                 userId={userId}
                 onDelete={onDelete}

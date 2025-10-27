@@ -43,9 +43,8 @@ class PlatformConfigStorage {
       }
 
       return JSON.parse(data);
-    } catch (error) {
-      console.error("Failed to load platform config:", error);
-      return null;
+    } catch {
+      return fallback;
     }
   }
 
@@ -61,8 +60,8 @@ class PlatformConfigStorage {
       };
 
       localStorage.setItem(key, JSON.stringify(data));
-    } catch (error) {
-      console.error("Failed to save platform config:", error);
+    } catch {
+      // Silent fail
     }
   }
 
@@ -184,20 +183,14 @@ class PlatformConfigStorage {
   async syncWithServer(platform: string, userId: string): Promise<void> {
     // TODO: AWS API Gateway 연동
     // import { apiGateway } from "@/lib/aws/api-gateway";
-    //
     // const localSettings = this.load(platform, userId);
     // const serverSettings = await apiGateway.getPlatformConfigs(userId, platform);
-    //
-    // // 병합 로직 (lastUpdated 기준)
+    // 넷합 로직 (lastUpdated 기준)
     // const mergedSettings = this.mergeSettings(localSettings, serverSettings);
-    //
-    // // 서버에 저장
+    // 서버에 저장
     // await apiGateway.savePlatformConfig(userId, platform, mergedSettings);
-    //
-    // // 로컬 업데이트
+    // 로컬 업데이트
     // this.save(mergedSettings, userId);
-
-    console.log(`[Future] Sync ${platform} config for user ${userId} with AWS`);
   }
 }
 

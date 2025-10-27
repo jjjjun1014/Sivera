@@ -10,6 +10,7 @@ import { Target, TrendingUp, TrendingDown, AlertCircle, Link as LinkIcon } from 
 import { getLocalTimeZone, today } from "@internationalized/date";
 import { GoalSettingModal, PlatformGoals } from "@/components/modals/GoalSettingModal";
 import { platformGoalsStorage } from "@/lib/storage/platformGoals";
+import { useWorkspace } from "@/contexts/WorkspaceContext";
 import { CHART_CONFIG } from "@/lib/constants";
 import { usePagination } from "@/hooks";
 import { Campaign } from "@/types";
@@ -66,6 +67,10 @@ const generateChartData = () => {
 };
 
 export function PlatformGoalDashboard({ config }: { config: PlatformGoalDashboardConfig }) {
+  // Workspace context
+  const { currentWorkspace } = useWorkspace();
+  const workspaceId = currentWorkspace?.id || "default";
+
   const [goals, setGoals] = useState<PlatformGoals>(platformGoalsStorage.getDefaultGoals());
   const { isOpen: isGoalModalOpen, onOpen: onGoalModalOpen, onClose: onGoalModalClose } = useDisclosure();
 
@@ -83,17 +88,17 @@ export function PlatformGoalDashboard({ config }: { config: PlatformGoalDashboar
     { itemsPerPage: 5 }
   );
 
-  // localStorage에서 목표 불러오기
+  // localStorage에서 목표 불러오기 (사업체별)
   useEffect(() => {
-    const loadedGoals = platformGoalsStorage.loadPlatform(config.platformKey);
+    const loadedGoals = platformGoalsStorage.loadPlatform(config.platformKey, workspaceId);
     if (loadedGoals) {
       setGoals(loadedGoals);
     }
-  }, [config.platformKey]);
+  }, [config.platformKey, workspaceId]);
 
   const handleSaveGoals = (newGoals: PlatformGoals) => {
     setGoals(newGoals);
-    platformGoalsStorage.savePlatform(config.platformKey, newGoals);
+    platformGoalsStorage.savePlatform(config.platformKey, workspaceId, newGoals);
   };
 
   const chartData = useMemo(() => generateChartData(), []);
@@ -190,7 +195,7 @@ export function PlatformGoalDashboard({ config }: { config: PlatformGoalDashboar
             radius="sm"
             variant="bordered"
             value={dateRange}
-            onChange={setDateRange}
+            onChange={(value) => value && setDateRange(value)}
             defaultValue={{
               start: fourteenDaysAgo,
               end: todayDate,
@@ -441,6 +446,7 @@ export function PlatformGoalDashboard({ config }: { config: PlatformGoalDashboar
         isOpen={isGoalModalOpen}
         onClose={onGoalModalClose}
         platformName={config.platformName}
+        workspaceId={workspaceId}
         currentGoals={goals}
         onSave={handleSaveGoals}
       />

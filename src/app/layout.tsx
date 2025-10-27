@@ -38,7 +38,6 @@ export const metadata: Metadata = {
       index: true,
       follow: true,
       "max-video-preview": -1,
-      "max-image-preview": "large",
       "max-snippet": -1,
     },
   },
@@ -49,20 +48,11 @@ export const metadata: Metadata = {
     siteName: "Sivera",
     title: "Sivera - 통합 광고 관리 플랫폼",
     description: "Google, Meta, Amazon, TikTok 광고를 하나의 플랫폼에서 관리하세요",
-    images: [
-      {
-        url: "/og-image.png",
-        width: 1200,
-        height: 630,
-        alt: "Sivera 통합 광고 관리 플랫폼",
-      },
-    ],
   },
   twitter: {
-    card: "summary_large_image",
+    card: "summary",
     title: "Sivera - 통합 광고 관리 플랫폼",
     description: "Google, Meta, Amazon, TikTok 광고를 하나의 플랫폼에서 관리하세요",
-    images: ["/og-image.png"],
     creator: "@sivera",
   },
   verification: {
