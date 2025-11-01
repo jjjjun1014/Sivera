@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardBody, CardHeader } from "@heroui/card";
 import { Table, TableHeader, TableColumn, TableBody, TableRow, TableCell, Selection } from "@heroui/table";
 import { Chip } from "@heroui/chip";
@@ -13,6 +13,8 @@ import { History } from "lucide-react";
 import { toast } from "@/utils/toast";
 import { AuditLogModal } from "@/components/modals/AuditLogModal";
 import { useWorkspace } from "@/contexts/WorkspaceContext";
+import { useTeamRole } from "@/hooks/use-team-role";
+import { getCurrentUser } from "@/lib/services/user.service";
 
 // 광고 계정 샘플 데이터
 const adAccounts = [
@@ -98,6 +100,22 @@ export default function TeamPage() {
   const [currentEditingMember, setCurrentEditingMember] = useState<typeof teamMembers[0] | null>(null);
   const [editingAccountRoles, setEditingAccountRoles] = useState<Record<string, string>>({});
   const { workspaces } = useWorkspace();
+  
+  // 현재 사용자 정보 및 권한
+  const [currentUser, setCurrentUser] = useState<any>(null);
+  const { role, isMaster, canManageTeam, isLoading } = useTeamRole(
+    currentUser?.data?.teamID || null,
+    currentUser?.data?.id || null
+  );
+
+  useEffect(() => {
+    // 현재 사용자 정보 조회
+    const fetchUser = async () => {
+      const user = await getCurrentUser();
+      setCurrentUser(user);
+    };
+    fetchUser();
+  }, []);
 
   const roleColorMap: Record<string, "primary" | "success" | "default"> = {
     owner: "primary",
@@ -225,6 +243,11 @@ export default function TeamPage() {
           <h1 className="text-3xl font-bold mb-2">팀 관리</h1>
           <p className="text-default-500">
             팀원을 초대하고 권한을 관리하세요
+            {role && (
+              <Chip size="sm" variant="flat" color="primary" className="ml-2">
+                내 역할: {role === 'master' ? '마스터' : role === 'team_mate' ? '팀원' : '뷰어'}
+              </Chip>
+            )}
           </p>
         </div>
         <div className="flex gap-3">
@@ -233,6 +256,7 @@ export default function TeamPage() {
             radius="sm"
             startContent={<History className="w-4 h-4" />}
             onPress={onAuditLogOpen}
+            isDisabled={!canManageTeam}
           >
             변경 이력
           </Button>
@@ -240,6 +264,7 @@ export default function TeamPage() {
             color="primary"
             radius="sm"
             onPress={onOpen}
+            isDisabled={!isMaster || isLoading}
           >
             + 팀원 초대
           </Button>
@@ -343,7 +368,7 @@ export default function TeamPage() {
                         variant="flat"
                         color="primary"
                         radius="sm"
-                        isDisabled={member.role === "owner"}
+                        isDisabled={member.role === "owner" || !canManageTeam}
                         onPress={() => handleRoleChange(member.id, member.name)}
                       >
                         역할 변경
@@ -353,7 +378,7 @@ export default function TeamPage() {
                         variant="flat"
                         color="danger"
                         radius="sm"
-                        isDisabled={member.role === "owner"}
+                        isDisabled={member.role === "owner" || !isMaster}
                         onPress={() => handleRemoveMember(member.id, member.name)}
                       >
                         제거
@@ -416,6 +441,7 @@ export default function TeamPage() {
                         variant="flat"
                         color="primary"
                         radius="sm"
+                        isDisabled={!isMaster}
                         onPress={() => handleResendInvite(invite.email)}
                       >
                         재전송
@@ -425,6 +451,7 @@ export default function TeamPage() {
                         variant="flat"
                         color="danger"
                         radius="sm"
+                        isDisabled={!isMaster}
                         onPress={() => handleCancelInvite(invite.email)}
                       >
                         취소
