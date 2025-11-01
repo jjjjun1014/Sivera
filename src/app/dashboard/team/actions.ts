@@ -2,39 +2,58 @@
 
 import { revalidatePath } from "next/cache";
 
-// TODO: Replace with backend API integration
-// import { createClient } from "@/utils/supabase/server";
 import log from "@/utils/logger";
 import { UserRole } from "@/types";
-// import { createTeamForUser } from "@/lib/data/teams"; // TODO: Backend API
-import { getTeamInvitationEmailTemplate } from "@/utils/email-templates";
+import { createInvitation } from "@/lib/services/team.service";
+import { getCurrentUser } from "@/lib/services/user.service";
 
 export async function inviteTeamMemberAction(email: string, role: UserRole) {
   try {
-    // TODO: Backend API Integration Required
-    // Endpoint: POST /api/teams/invitations
-    // Body: { email, role }
-    // Response: { success, message, inviteUrl, token }
+    // 1. 현재 사용자 조회
+    const currentUser = await getCurrentUser();
+    
+    if (!currentUser?.data) {
+      return {
+        success: false,
+        error: "인증되지 않은 사용자입니다.",
+      };
+    }
 
-    // TODO: Replace Supabase auth with backend API call
-    // const user = await fetch('/api/auth/me').then(r => r.json());
+    // 2. 사용자의 팀 ID 조회 (첫 번째 팀 사용)
+    const userId = currentUser.data.id;
+    const teamId = currentUser.data.teamID;
+    
+    if (!teamId) {
+      return {
+        success: false,
+        error: "팀이 없습니다. 먼저 팀을 생성해주세요.",
+      };
+    }
 
-    log.warn("inviteTeamMemberAction called - backend integration needed");
+    // 3. 초대 생성 (GraphQL을 통해 직접 생성 + 이메일 발송은 Lambda에서)
+    const result = await createInvitation({
+      teamID: teamId,
+      email: email.toLowerCase(),
+      role,
+      invitedByID: userId,
+    });
 
-    // Stub response for UI compatibility
+    if (result.error || !result.data) {
+      return {
+        success: false,
+        error: result.error || "초대 생성에 실패했습니다.",
+      };
+    }
+
+    // TODO: Lambda 함수로 이메일 발송 트리거
+    // 현재는 GraphQL로 초대만 생성, 이메일은 나중에 Lambda 통합
+    
+    revalidatePath('/dashboard/team');
+    
     return {
-      success: false,
-      error: "Backend API integration required. Please implement POST /api/teams/invitations endpoint.",
+      success: true,
+      invitationLink: `${process.env.NEXT_PUBLIC_SITE_URL}/invite/${result.data.id}`,
     };
-
-    // TODO: The backend should handle:
-    // 1. Get authenticated user from session/token
-    // 2. Get user's team and verify permissions (master or team_mate)
-    // 3. Check if email is already a team member
-    // 4. Check for existing pending invitations
-    // 5. Create invitation with token
-    // 6. Send invitation email
-    // 7. Return success with invite URL
   } catch (error) {
     log.error(
       "Error in inviteTeamMemberAction",
