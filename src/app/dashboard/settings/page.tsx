@@ -9,7 +9,7 @@ import { Input } from "@heroui/input";
 import { Button } from "@heroui/button";
 import { Divider } from "@heroui/divider";
 import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, useDisclosure } from "@heroui/modal";
-import { User as UserIcon, Settings as SettingsIcon, CreditCard, Lock } from "lucide-react";
+import { User as UserIcon, Settings as SettingsIcon, CreditCard, Lock, AlertTriangle } from "lucide-react";
 import { toast } from "@/utils/toast";
 import { BillingSection } from "@/components/settings/BillingSection";
 
@@ -31,6 +31,8 @@ const DATA_RETENTION = [
 export default function SettingsPage() {
   const [selectedTab, setSelectedTab] = useState("profile");
   const { isOpen: isPasswordOpen, onOpen: onPasswordOpen, onClose: onPasswordClose } = useDisclosure();
+  const { isOpen: isDeleteOpen, onOpen: onDeleteOpen, onClose: onDeleteClose } = useDisclosure();
+  const [deleteConfirmText, setDeleteConfirmText] = useState("");
 
   // 프로필 설정
   const [profile, setProfile] = useState({
@@ -144,6 +146,28 @@ export default function SettingsPage() {
       title: "환경설정 저장 완료",
       description: "환경설정이 성공적으로 저장되었습니다.",
     });
+  };
+
+  // 회원 탈퇴
+  const handleDeleteAccount = () => {
+    if (deleteConfirmText !== "회원탈퇴") {
+      toast.error({
+        title: "입력 오류",
+        description: "'회원탈퇴'를 정확히 입력해주세요.",
+      });
+      return;
+    }
+
+    // TODO: 실제 회원 탈퇴 API 호출
+    toast.success({
+      title: "회원 탈퇴 완료",
+      description: "계정이 성공적으로 삭제되었습니다. 이용해주셔서 감사합니다.",
+    });
+
+    // 로그아웃 처리
+    setTimeout(() => {
+      window.location.href = "/login";
+    }, 2000);
   };
 
   return (
@@ -286,6 +310,47 @@ export default function SettingsPage() {
                 <div className="flex justify-end">
                   <Button color="primary" onPress={handleSaveProfile}>
                     프로필 저장
+                  </Button>
+                </div>
+              </CardBody>
+            </Card>
+
+            {/* 회원 탈퇴 섹션 */}
+            <Card className="border-danger">
+              <CardHeader>
+                <h2 className="text-xl font-semibold text-danger">위험 구역</h2>
+              </CardHeader>
+              <CardBody className="space-y-4">
+                <div className="flex items-start gap-4 p-4 bg-danger-50 rounded-lg">
+                  <AlertTriangle className="w-5 h-5 text-danger shrink-0 mt-0.5" />
+                  <div className="flex-1">
+                    <p className="font-semibold text-danger mb-1">회원 탈퇴</p>
+                    <p className="text-sm text-danger-600">
+                      계정을 삭제하면 모든 데이터가 영구적으로 삭제됩니다. 이 작업은 되돌릴 수 없습니다.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="space-y-3">
+                  <p className="text-sm font-medium">삭제될 데이터:</p>
+                  <ul className="text-sm text-default-600 space-y-2 list-disc list-inside">
+                    <li>프로필 정보 및 계정 설정</li>
+                    <li>팀 멤버십 및 권한</li>
+                    <li>모든 캠페인 데이터 및 광고 성과 기록</li>
+                    <li>연동된 광고 플랫폼 계정 정보</li>
+                    <li>결제 내역 및 구독 정보</li>
+                    <li>백업 데이터 및 히스토리</li>
+                  </ul>
+                </div>
+
+                <div className="flex justify-end pt-4 border-t border-divider">
+                  <Button
+                    color="danger"
+                    variant="flat"
+                    onPress={onDeleteOpen}
+                    startContent={<AlertTriangle className="w-4 h-4" />}
+                  >
+                    회원 탈퇴
                   </Button>
                 </div>
               </CardBody>
@@ -443,6 +508,113 @@ export default function SettingsPage() {
             </Button>
             <Button color="primary" onPress={handleChangePassword}>
               비밀번호 변경
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
+
+      {/* 회원 탈퇴 모달 */}
+      <Modal 
+        isOpen={isDeleteOpen} 
+        onClose={() => {
+          onDeleteClose();
+          setDeleteConfirmText("");
+        }}
+        size="lg"
+      >
+        <ModalContent>
+          <ModalHeader className="flex items-center gap-2 text-danger">
+            <AlertTriangle className="w-5 h-5" />
+            회원 탈퇴 확인
+          </ModalHeader>
+          <ModalBody>
+            <div className="space-y-4">
+              <div className="p-4 bg-danger-50 rounded-lg">
+                <p className="text-sm text-danger-700 font-medium mb-2">
+                  ⚠️ 이 작업은 되돌릴 수 없습니다
+                </p>
+                <p className="text-sm text-danger-600">
+                  계정을 삭제하면 아래의 모든 데이터가 영구적으로 삭제되며 복구할 수 없습니다.
+                </p>
+              </div>
+
+              <div className="space-y-3">
+                <p className="text-sm font-semibold">삭제될 데이터:</p>
+                <div className="space-y-2 pl-4">
+                  <div className="flex items-start gap-2">
+                    <div className="w-1.5 h-1.5 rounded-full bg-danger mt-1.5" />
+                    <p className="text-sm text-default-600">
+                      <strong>프로필 및 계정 정보</strong> - 이름, 이메일, 전화번호 등
+                    </p>
+                  </div>
+                  <div className="flex items-start gap-2">
+                    <div className="w-1.5 h-1.5 rounded-full bg-danger mt-1.5" />
+                    <p className="text-sm text-default-600">
+                      <strong>팀 멤버십</strong> - 소속된 팀에서 자동으로 제거됩니다
+                    </p>
+                  </div>
+                  <div className="flex items-start gap-2">
+                    <div className="w-1.5 h-1.5 rounded-full bg-danger mt-1.5" />
+                    <p className="text-sm text-default-600">
+                      <strong>캠페인 데이터</strong> - 생성한 모든 캠페인 및 성과 기록
+                    </p>
+                  </div>
+                  <div className="flex items-start gap-2">
+                    <div className="w-1.5 h-1.5 rounded-full bg-danger mt-1.5" />
+                    <p className="text-sm text-default-600">
+                      <strong>광고 플랫폼 연동</strong> - 연동된 모든 광고 계정 정보
+                    </p>
+                  </div>
+                  <div className="flex items-start gap-2">
+                    <div className="w-1.5 h-1.5 rounded-full bg-danger mt-1.5" />
+                    <p className="text-sm text-default-600">
+                      <strong>결제 정보</strong> - 구독 내역 및 결제 기록
+                    </p>
+                  </div>
+                  <div className="flex items-start gap-2">
+                    <div className="w-1.5 h-1.5 rounded-full bg-danger mt-1.5" />
+                    <p className="text-sm text-default-600">
+                      <strong>백업 데이터</strong> - 저장된 모든 백업 및 히스토리
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <Divider />
+
+              <div className="space-y-2">
+                <p className="text-sm font-medium">
+                  계속하려면 아래에 <span className="text-danger font-bold">"회원탈퇴"</span>를 입력하세요:
+                </p>
+                <Input
+                  value={deleteConfirmText}
+                  onChange={(e) => setDeleteConfirmText(e.target.value)}
+                  placeholder="회원탈퇴"
+                  radius="sm"
+                  variant="bordered"
+                  classNames={{
+                    input: "text-center font-medium",
+                  }}
+                />
+              </div>
+            </div>
+          </ModalBody>
+          <ModalFooter>
+            <Button 
+              variant="light" 
+              onPress={() => {
+                onDeleteClose();
+                setDeleteConfirmText("");
+              }}
+            >
+              취소
+            </Button>
+            <Button 
+              color="danger" 
+              onPress={handleDeleteAccount}
+              isDisabled={deleteConfirmText !== "회원탈퇴"}
+            >
+              영구 삭제
             </Button>
           </ModalFooter>
         </ModalContent>
