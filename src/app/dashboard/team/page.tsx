@@ -16,79 +16,8 @@ import { useWorkspace } from "@/contexts/WorkspaceContext";
 import { useTeamRole } from "@/hooks/use-team-role";
 import { getCurrentUser } from "@/lib/services/user.service";
 
-// 광고 계정 샘플 데이터
-const adAccounts = [
-  { id: "ga1", name: "Google Ads - 메인 계정", platform: "google" },
-  { id: "ga2", name: "Google Ads - 서브 계정", platform: "google" },
-  { id: "meta1", name: "Meta Ads - 공식 계정", platform: "meta" },
-  { id: "tiktok1", name: "TikTok Ads - 브랜드 계정", platform: "tiktok" },
-  { id: "amazon1", name: "Amazon Ads - 스토어 계정", platform: "amazon" },
-];
-
-// 샘플 데이터
-const teamMembers = [
-  {
-    id: 1,
-    name: "김민수",
-    email: "minsu.kim@company.com",
-    role: "owner",
-    adAccounts: [
-      { accountId: "ga1", role: "admin" },
-      { accountId: "ga2", role: "admin" },
-      { accountId: "meta1", role: "admin" },
-      { accountId: "tiktok1", role: "admin" },
-      { accountId: "amazon1", role: "admin" },
-    ],
-  },
-  {
-    id: 2,
-    name: "이지은",
-    email: "jieun.lee@company.com",
-    role: "member",
-    adAccounts: [
-      { accountId: "ga1", role: "editor" },
-      { accountId: "meta1", role: "editor" },
-      { accountId: "tiktok1", role: "viewer" },
-    ],
-  },
-  {
-    id: 3,
-    name: "박서준",
-    email: "seojun.park@company.com",
-    role: "member",
-    adAccounts: [
-      { accountId: "ga2", role: "editor" },
-      { accountId: "amazon1", role: "editor" },
-    ],
-  },
-  {
-    id: 4,
-    name: "최유리",
-    email: "yuri.choi@company.com",
-    role: "viewer",
-    adAccounts: [
-      { accountId: "ga1", role: "viewer" },
-      { accountId: "meta1", role: "viewer" },
-    ],
-  },
-];
-
-const pendingInvites = [
-  {
-    id: 1,
-    email: "new.member@company.com",
-    role: "member",
-    invitedBy: "김민수",
-    invitedAt: "2024-10-08",
-  },
-  {
-    id: 2,
-    email: "viewer@company.com",
-    role: "viewer",
-    invitedBy: "김민수",
-    invitedAt: "2024-10-09",
-  },
-];
+// TODO: 광고 계정 데이터는 API에서 가져오기
+const adAccounts: any[] = [];
 
 export default function TeamPage() {
   const [selectedKeys, setSelectedKeys] = useState<Selection>(new Set([]));
@@ -103,6 +32,8 @@ export default function TeamPage() {
   
   // 현재 사용자 정보 및 권한
   const [currentUser, setCurrentUser] = useState<any>(null);
+  const [teamMembers, setTeamMembers] = useState<any[]>([]);
+  const [pendingInvites, setPendingInvites] = useState<any[]>([]);
   const { role, isMaster, canManageTeam, isLoading } = useTeamRole(
     currentUser?.data?.teamID || null,
     currentUser?.data?.id || null
@@ -116,6 +47,45 @@ export default function TeamPage() {
     };
     fetchUser();
   }, []);
+
+  useEffect(() => {
+    // 팀원 목록 조회
+    const fetchTeamMembers = async () => {
+      if (!currentUser?.data?.teamID) return;
+      
+      try {
+        // TODO: GraphQL로 TeamMember 조회
+        // const response = await client.graphql({
+        //   query: listTeamMembers,
+        //   variables: { filter: { teamID: { eq: currentUser.data.teamID } } }
+        // });
+        // setTeamMembers(response.data.listTeamMembers.items);
+      } catch (error) {
+        console.error('Failed to fetch team members:', error);
+      }
+    };
+
+    // 대기 중 초대 조회
+    const fetchPendingInvites = async () => {
+      if (!currentUser?.data?.teamID) return;
+      
+      try {
+        // TODO: GraphQL로 TeamInvitation 조회
+        // const response = await client.graphql({
+        //   query: listTeamInvitations,
+        //   variables: { filter: { teamID: { eq: currentUser.data.teamID }, status: { eq: 'pending' } } }
+        // });
+        // setPendingInvites(response.data.listTeamInvitations.items);
+      } catch (error) {
+        console.error('Failed to fetch pending invites:', error);
+      }
+    };
+
+    if (currentUser?.data?.teamID) {
+      fetchTeamMembers();
+      fetchPendingInvites();
+    }
+  }, [currentUser]);
 
   const roleColorMap: Record<string, "primary" | "success" | "default"> = {
     owner: "primary",
@@ -276,25 +246,25 @@ export default function TeamPage() {
         <Card>
           <CardBody className="text-center py-6">
             <p className="text-sm text-default-500 mb-1">전체 팀원</p>
-            <p className="text-3xl font-bold">4</p>
+            <p className="text-3xl font-bold">{teamMembers.length}</p>
           </CardBody>
         </Card>
         <Card>
           <CardBody className="text-center py-6">
             <p className="text-sm text-default-500 mb-1">활성 팀원</p>
-            <p className="text-3xl font-bold text-success">3</p>
+            <p className="text-3xl font-bold text-success">{teamMembers.length}</p>
           </CardBody>
         </Card>
         <Card>
           <CardBody className="text-center py-6">
             <p className="text-sm text-default-500 mb-1">대기 중 초대</p>
-            <p className="text-3xl font-bold text-warning">2</p>
+            <p className="text-3xl font-bold text-warning">{pendingInvites.length}</p>
           </CardBody>
         </Card>
         <Card>
           <CardBody className="text-center py-6">
             <p className="text-sm text-default-500 mb-1">총 캠페인 접근</p>
-            <p className="text-3xl font-bold">25</p>
+            <p className="text-3xl font-bold">0</p>
           </CardBody>
         </Card>
       </div>
@@ -323,7 +293,7 @@ export default function TeamPage() {
               <TableColumn className="whitespace-nowrap">광고 계정</TableColumn>
               <TableColumn align="center" className="whitespace-nowrap">작업</TableColumn>
             </TableHeader>
-            <TableBody>
+            <TableBody emptyContent="팀원이 없습니다.">
               {teamMembers.map((member) => (
                 <TableRow key={member.id}>
                   <TableCell>
@@ -391,9 +361,11 @@ export default function TeamPage() {
           </Table>
           </div>
 
-          <div className="mt-4 text-sm text-default-500">
-            선택됨: {selectedKeys === "all" ? teamMembers.length : selectedKeys.size}개
-          </div>
+          {teamMembers.length > 0 && (
+            <div className="mt-4 text-sm text-default-500">
+              선택됨: {selectedKeys === "all" ? teamMembers.length : selectedKeys.size}개
+            </div>
+          )}
         </CardBody>
       </Card>
 
@@ -412,7 +384,7 @@ export default function TeamPage() {
               <TableColumn className="whitespace-nowrap">초대일</TableColumn>
               <TableColumn align="center" className="whitespace-nowrap">작업</TableColumn>
             </TableHeader>
-            <TableBody>
+            <TableBody emptyContent="대기 중인 초대가 없습니다.">
               {pendingInvites.map((invite) => (
                 <TableRow key={invite.id}>
                   <TableCell>
