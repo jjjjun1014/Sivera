@@ -1,0 +1,38 @@
+{
+  "auth": {
+    "user_pool_id": "YOUR_USER_POOL_ID",
+    "aws_region": "YOUR_AWS_REGION",
+    "user_pool_client_id": "YOUR_USER_POOL_CLIENT_ID",
+    "identity_pool_id": "YOUR_IDENTITY_POOL_ID",
+    "mfa_methods": [],
+    "standard_required_attributes": ["email"],
+    "username_attributes": ["email"],
+    "user_verification_types": ["email"],
+    "mfa_configuration": "OPTIONAL",
+    "password_policy": {
+      "min_length": 8,
+      "require_numbers": true,
+      "require_lowercase": true,
+      "require_uppercase": true,
+      "require_symbols": true
+    }
+  },
+  "data": {
+    "url": "YOUR_GRAPHQL_ENDPOINT",
+    "aws_region": "YOUR_AWS_REGION",
+    "default_authorization_type": "AMAZON_COGNITO_USER_POOLS",
+    "authorization_types": ["AWS_IAM", "API_KEY"],
+    "api_key": "YOUR_API_KEY"
+  },
+  "custom": {
+    "google_ads_client_id": "YOUR_GOOGLE_ADS_CLIENT_ID",
+    "google_ads_client_secret": "YOUR_GOOGLE_ADS_CLIENT_SECRET",
+    "google_developer_token": "YOUR_GOOGLE_DEVELOPER_TOKEN",
+    "meta_app_id": "YOUR_META_APP_ID",
+    "meta_app_secret": "YOUR_META_APP_SECRET",
+    "amazon_client_id": "YOUR_AMAZON_CLIENT_ID",
+    "amazon_client_secret": "YOUR_AMAZON_CLIENT_SECRET",
+    "tiktok_app_id": "YOUR_TIKTOK_APP_ID",
+    "tiktok_app_secret": "YOUR_TIKTOK_APP_SECRET"
+  }
+}

@@ -45,16 +45,6 @@ export function AnimatedTabs({
       color={color}
       disableAnimation={disableAnimation || prefersReducedMotion}
       fullWidth={fullWidth}
-      motionProps={
-        prefersReducedMotion
-          ? undefined
-          : {
-              initial: { opacity: 0 },
-              animate: { opacity: 1 },
-              exit: { opacity: 0 },
-              transition: { duration: 0.3 },
-            }
-      }
       selectedKey={selectedKey}
       size={size}
       variant={variant}

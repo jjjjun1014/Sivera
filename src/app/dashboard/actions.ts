@@ -70,3 +70,31 @@ export async function syncCampaign(
     error: "Backend API not implemented yet",
   };
 }
+
+export async function updateCampaignBudget(
+  campaignId: string,
+  newBudget: number
+): Promise<{ success: boolean; error?: string }> {
+  // TODO: Replace with backend API call
+  // Example: await fetch(`/api/campaigns/${campaignId}/budget`, { method: 'PUT', body: JSON.stringify({ budget: newBudget }) })
+
+  console.log(`Mock: Updating campaign ${campaignId} budget to ${newBudget}`);
+  
+  return {
+    success: true,
+  };
+}
+
+export async function updateCampaignStatus(
+  campaignId: string,
+  isActive: boolean
+): Promise<{ success: boolean; error?: string }> {
+  // TODO: Replace with backend API call
+  // Example: await fetch(`/api/campaigns/${campaignId}/status`, { method: 'PUT', body: JSON.stringify({ isActive }) })
+
+  console.log(`Mock: Updating campaign ${campaignId} status to ${isActive ? 'active' : 'inactive'}`);
+  
+  return {
+    success: true,
+  };
+}

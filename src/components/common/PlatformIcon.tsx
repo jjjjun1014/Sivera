@@ -20,7 +20,9 @@ function PlatformIconComponent({
   showBackground = false,
   "aria-label": ariaLabel,
 }: PlatformIconProps) {
-  const config = platformConfig[platform];
+  const config = platformConfig[platform as keyof typeof platformConfig];
+  if (!config) return null;
+  
   const Icon = config.icon;
   const defaultAriaLabel =
     ariaLabel || `${config.name || platform} platform icon`;

@@ -262,7 +262,7 @@ export function AdGroupTable({
                   setEditingCell({ id: row.original.id, field: "name" });
                   setTempValues((prev) => ({ ...prev, [key]: getValue() as string }));
                 }}
-                className="min-w-unit-6 w-6 h-6 flex-shrink-0"
+                className="min-w-unit-6 w-6 h-6 shrink-0"
               >
                 <Edit2 className="w-3 h-3" />
               </Button>
@@ -298,7 +298,7 @@ export function AdGroupTable({
 
           const budgetEditable = isBudgetEditable(row.original.campaignType);
           const isEditing = editingCell?.id === adGroupId && editingCell?.field === field;
-          const displayValue = tempValues[key] !== undefined ? tempValues[key] : currentValue;
+          const displayValue = (tempValues && tempValues[key] !== undefined) ? tempValues[key] : currentValue;
 
           if (!budgetEditable) {
             return (
@@ -318,10 +318,10 @@ export function AdGroupTable({
                 value={displayValue}
                 onChange={(e) => {
                   const newValue = Number(e.target.value);
-                  setTempValues((prev) => ({ ...prev, [key]: newValue }));
+                  setTempValues((prev) => ({ ...(prev || {}), [key]: newValue }));
                 }}
                 onBlur={() => {
-                  const newValue = tempValues[key] !== undefined ? tempValues[key] : currentValue;
+                  const newValue = (tempValues && tempValues[key] !== undefined) ? tempValues[key] : currentValue;
                   if (newValue !== currentValue) {
                     setPendingChange({
                       id: adGroupId,
@@ -338,7 +338,7 @@ export function AdGroupTable({
                     e.currentTarget.blur();
                   } else if (e.key === "Escape") {
                     setTempValues((prev) => {
-                      const newValues = { ...prev };
+                      const newValues = { ...(prev || {}) };
                       delete newValues[key];
                       return newValues;
                     });

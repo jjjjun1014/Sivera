@@ -13,6 +13,14 @@ import { Input } from "@heroui/input";
 import { Chip } from "@heroui/chip";
 import { Tabs, Tab } from "@heroui/tabs";
 import {
+  Table,
+  TableHeader,
+  TableBody,
+  TableColumn,
+  TableRow,
+  TableCell,
+} from "@heroui/table";
+import {
   Modal,
   ModalContent,
   ModalHeader,
@@ -30,8 +38,6 @@ import {
   StatCard,
   PlatformBadge,
   TableActions,
-  VirtualScrollTable,
-  InfiniteScrollTableColumn,
 } from "@/components/common";
 import {
   TableSkeleton,
@@ -107,7 +113,7 @@ export function CampaignDashboardClient({
     }
   }, [isOpen]);
 
-  const columns: InfiniteScrollTableColumn<Campaign>[] = useMemo(
+  const columns = useMemo(
     () => [
       { key: "name", label: dict.campaigns.table.name },
       { key: "platform", label: dict.campaigns.table.platform },
@@ -323,13 +329,22 @@ export function CampaignDashboardClient({
                 {isLoading ? (
                   <TableSkeleton columns={6} rows={5} />
                 ) : (
-                  <VirtualScrollTable
-                    aria-label={dict.campaigns.title}
-                    columns={columns}
-                    emptyContent={dict.campaigns.table.noCampaigns}
-                    items={campaigns}
-                    renderCell={renderCell}
-                  />
+                  <Table aria-label={dict.campaigns.title}>
+                    <TableHeader columns={columns}>
+                      {(column) => (
+                        <TableColumn key={column.key}>{column.label}</TableColumn>
+                      )}
+                    </TableHeader>
+                    <TableBody items={campaigns} emptyContent={dict.campaigns.table.noCampaigns}>
+                      {(campaign) => (
+                        <TableRow key={campaign.id}>
+                          {(columnKey) => (
+                            <TableCell>{renderCell(campaign, columnKey as string)}</TableCell>
+                          )}
+                        </TableRow>
+                      )}
+                    </TableBody>
+                  </Table>
                 )}
               </Tab>
               {Object.entries(campaignCounts).map(([platform, count]) => {
@@ -347,13 +362,25 @@ export function CampaignDashboardClient({
                     {isLoading ? (
                       <TableSkeleton columns={6} rows={5} />
                     ) : (
-                      <VirtualScrollTable
-                        aria-label={`${config.name} 캠페인 목록`}
-                        columns={columns}
-                        emptyContent={`${config.name} 캠페인이 없습니다`}
-                        items={campaigns.filter((c) => c.platform === platform)}
-                        renderCell={renderCell}
-                      />
+                      <Table aria-label={`${config.name} 캠페인 목록`}>
+                        <TableHeader columns={columns}>
+                          {(column) => (
+                            <TableColumn key={column.key}>{column.label}</TableColumn>
+                          )}
+                        </TableHeader>
+                        <TableBody 
+                          items={campaigns.filter((c) => c.platform === platform)}
+                          emptyContent={`${config.name} 캠페인이 없습니다`}
+                        >
+                          {(campaign) => (
+                            <TableRow key={campaign.id}>
+                              {(columnKey) => (
+                                <TableCell>{renderCell(campaign, columnKey as string)}</TableCell>
+                              )}
+                            </TableRow>
+                          )}
+                        </TableBody>
+                      </Table>
                     )}
                   </Tab>
                 );

@@ -6,7 +6,7 @@ import DashboardSidebar from "./DashboardSidebar";
 import { Button } from "@heroui/button";
 import { WorkspaceProvider } from "@/contexts/WorkspaceContext";
 import { WorkspaceSwitcher } from "@/components/workspace/WorkspaceSwitcher";
-import { AIChatAssistant } from "@/components/features/AIChatAssistant";
+import DashboardAuthGuard from "@/components/auth/DashboardAuthGuard";
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
@@ -17,23 +17,20 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const pathname = usePathname();
 
-  // AI 챗봇을 숨길 경로들
-  const hideAIChatPaths = ["/", "/login", "/signup", "/forgot-password", "/reset-password"];
-  const showAIChat = !hideAIChatPaths.includes(pathname);
-
   // 사업체 스위처를 숨길 경로들
   const hideWorkspaceSwitcherPaths = ["/dashboard/integrated", "/dashboard/team", "/dashboard/settings"];
   const showWorkspaceSwitcher = !hideWorkspaceSwitcherPaths.some(path => pathname.startsWith(path));
 
   return (
-    <WorkspaceProvider>
-      <div className="min-h-screen bg-background">
-        <DashboardSidebar
-          isOpen={sidebarOpen}
-          isCollapsed={sidebarCollapsed}
-          onClose={() => setSidebarOpen(false)}
-          onToggleCollapse={() => setSidebarCollapsed(!sidebarCollapsed)}
-        />
+    <DashboardAuthGuard>
+      <WorkspaceProvider>
+        <div className="min-h-screen bg-background">
+          <DashboardSidebar
+            isOpen={sidebarOpen}
+            isCollapsed={sidebarCollapsed}
+            onClose={() => setSidebarOpen(false)}
+            onToggleCollapse={() => setSidebarCollapsed(!sidebarCollapsed)}
+          />
 
         {/* Main Content */}
         <div className={`transition-all duration-300 ${sidebarCollapsed ? 'lg:pl-20' : 'lg:pl-64'}`}>
@@ -79,16 +76,8 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
           {/* Page Content */}
           <main className="min-h-[calc(100vh-4rem)]">{children}</main>
         </div>
-
-        {/* AI Chat Assistant - 홈 제외 모든 대시보드 페이지에서 표시 */}
-        {showAIChat && (
-          <AIChatAssistant
-            context={{
-              currentPage: pathname,
-            }}
-          />
-        )}
       </div>
     </WorkspaceProvider>
+    </DashboardAuthGuard>
   );
 }

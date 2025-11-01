@@ -13,7 +13,7 @@ import {
   ChartSkeleton,
 } from "@/components/common/skeletons";
 import { AutoGrid } from "@/components/common/AutoGrid";
-import { getDictionary, type Locale } from "@/app/[lang]/dictionaries";
+import { getDictionary, type Locale } from "@/app/dictionaries";
 
 interface AnalyticsServerProps {
   teamId: string;
@@ -112,20 +112,20 @@ async function PlatformAnalyticsSection({
           <div className="space-y-1 text-sm">
             <div className="flex justify-between">
               <span>{dictionary.analytics.impressions}:</span>
-              <span>{platform.metrics.totalImpressions.toLocaleString()}</span>
+              <span>{platform.impressions.toLocaleString()}</span>
             </div>
             <div className="flex justify-between">
               <span>{dictionary.analytics.clicks}:</span>
-              <span>{platform.metrics.totalClicks.toLocaleString()}</span>
+              <span>{platform.clicks.toLocaleString()}</span>
             </div>
             <div className="flex justify-between">
               <span>{dictionary.analytics.cost}:</span>
-              <span>₩{platform.metrics.totalCost.toLocaleString()}</span>
+              <span>₩{platform.cost.toLocaleString()}</span>
             </div>
             <div className="flex justify-between">
               <span>{dictionary.analytics.roas}:</span>
               <span>
-                {platform.metrics.roas.toFixed(2)}
+                {platform.roas.toFixed(2)}
                 {dictionary.analytics.ui?.multiplierSuffix ?? "x"}
               </span>
             </div>

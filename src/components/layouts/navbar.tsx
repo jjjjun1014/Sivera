@@ -27,13 +27,14 @@ import { siteConfig } from "@/config/site";
 import { ThemeSwitch } from "@/components/theme-switch";
 import { LanguageSwitcher } from "@/components/language-switcher";
 import { useDictionary } from "@/hooks/use-dictionary";
+import { useAuth } from "@/contexts/auth-context";
 
 export const Navbar = () => {
   const { dictionary: dict } = useDictionary();
   const pathname = usePathname();
+  const { user, loading } = useAuth();
 
   // ALL HOOKS MUST BE CALLED BEFORE ANY CONDITIONAL RETURNS
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [hidden, setHidden] = useState(false);
   const [lastScrollY, setLastScrollY] = useState(0);
   const { scrollY } = useScroll();
@@ -41,17 +42,7 @@ export const Navbar = () => {
 
   // 대시보드 페이지에서는 네비게이션바 숨기기
   const isDashboard = pathname?.startsWith('/dashboard');
-
-  useEffect(() => {
-    const checkAuth = () => {
-      const authStatus = localStorage.getItem('isAuthenticated') === 'true';
-      setIsAuthenticated(authStatus);
-    };
-
-    checkAuth();
-    window.addEventListener('storage', checkAuth);
-    return () => window.removeEventListener('storage', checkAuth);
-  }, []);
+  const isAuthenticated = !!user;
 
   useMotionValueEvent(scrollY, "change", (latest) => {
     if (prefersReducedMotion) return;
@@ -79,12 +70,16 @@ export const Navbar = () => {
   }
 
   const LoginButtons = () => {
+    if (loading) {
+      return null;
+    }
+
     if (isAuthenticated) {
       return (
         <Button
           as={NextLink}
           color="primary"
-          href="/dashboard"
+          href="/dashboard/analytics"
           variant="flat"
           data-testid="navbar-dashboard-button"
           aria-label="대시보드"

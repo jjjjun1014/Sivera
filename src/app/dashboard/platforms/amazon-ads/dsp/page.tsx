@@ -22,7 +22,6 @@ import {
   ResponsiveContainer,
 } from "recharts";
 import type { AdGroup, Ad } from "@/types/campaign";
-import { AIChatAssistant } from "@/components/features/AIChatAssistant";
 
 const generateChartData = () => {
   const data = [];
@@ -579,13 +578,6 @@ export default function GoogleAdsPerformanceMaxPage() {
           )}
         </CardBody>
       </Card>
-
-      <AIChatAssistant
-        context={{
-          currentPage: "/dashboard/platforms/amazon-ads/dsp",
-          campaigns: campaigns,
-        }}
-      />
     </div>
   );
 }

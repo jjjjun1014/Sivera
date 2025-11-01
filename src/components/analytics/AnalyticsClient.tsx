@@ -142,19 +142,19 @@ const AnalyticsClient = memo(function AnalyticsClient({
 
           switch (selectedMetric) {
             case "impressions":
-              value = p.metrics.totalImpressions;
+              value = p.impressions;
               break;
             case "clicks":
-              value = p.metrics.totalClicks;
+              value = p.clicks;
               break;
             case "cost":
-              value = p.metrics.totalCost;
+              value = p.cost;
               break;
             case "conversions":
-              value = p.metrics.totalConversions;
+              value = p.conversions;
               break;
             case "revenue":
-              value = p.metrics.totalRevenue;
+              value = p.revenue;
               break;
           }
 
@@ -319,7 +319,7 @@ const AnalyticsClient = memo(function AnalyticsClient({
                           {dict.analytics.impressions}:
                         </span>
                         <span className="font-medium">
-                          {platform.metrics.totalImpressions.toLocaleString()}
+                          {platform.impressions.toLocaleString()}
                         </span>
                       </div>
                       <div className="flex justify-between">
@@ -327,7 +327,7 @@ const AnalyticsClient = memo(function AnalyticsClient({
                           {dict.analytics.clicks}:
                         </span>
                         <span className="font-medium">
-                          {platform.metrics.totalClicks.toLocaleString()}
+                          {platform.clicks.toLocaleString()}
                         </span>
                       </div>
                       <div className="flex justify-between">
@@ -335,7 +335,7 @@ const AnalyticsClient = memo(function AnalyticsClient({
                           {dict.analytics.ctr}:
                         </span>
                         <span className="font-medium">
-                          {platform.metrics.ctr.toFixed(2)}%
+                          {platform.ctr.toFixed(2)}%
                         </span>
                       </div>
                       <div className="flex justify-between">
@@ -343,7 +343,7 @@ const AnalyticsClient = memo(function AnalyticsClient({
                           {dict.analytics.cost}:
                         </span>
                         <span className="font-medium">
-                          ₩{platform.metrics.totalCost.toLocaleString()}
+                          ₩{platform.cost.toLocaleString()}
                         </span>
                       </div>
                       <div className="flex justify-between">
@@ -351,21 +351,10 @@ const AnalyticsClient = memo(function AnalyticsClient({
                           {dict.analytics.roas}:
                         </span>
                         <span className="font-medium">
-                          {platform.metrics.roas.toFixed(2)}
+                          {platform.roas.toFixed(2)}
                           {dict.analytics.ui?.multiplierSuffix ?? "x"}
                         </span>
                       </div>
-                      {platform.trend !== 0 && (
-                        <div className="pt-2 border-t">
-                          <span
-                            className={`text-xs ${platform.trend > 0 ? "text-success" : "text-danger"}`}
-                          >
-                            {(platform.trend > 0 ? ARROW_UP : ARROW_DOWN) + " "}
-                            {Math.abs(platform.trend).toFixed(1)}%{" "}
-                            {dict.analytics.ui?.vsPreviousPeriod ?? ""}
-                          </span>
-                        </div>
-                      )}
                     </div>
                   </CardBody>
                 </Card>

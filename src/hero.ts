@@ -1,3 +1,4 @@
-// hero.ts
 import { heroui } from "@heroui/theme";
-export default heroui();
+
+const theme = heroui();
+export default theme;

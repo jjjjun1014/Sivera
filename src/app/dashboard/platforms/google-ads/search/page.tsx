@@ -24,7 +24,6 @@ import {
   ResponsiveContainer,
 } from "recharts";
 import type { AdGroup, Ad } from "@/types/campaign";
-import { AIChatAssistant } from "@/components/features/AIChatAssistant";
 
 const generateChartData = () => {
   const data = [];
@@ -605,14 +604,6 @@ export default function GoogleAdsSearchPage() {
           )}
         </CardBody>
       </Card>
-
-      <AIChatAssistant
-        context={{
-          currentPage: "/dashboard/platforms/google-ads/search",
-          campaigns: campaigns,
-        }}
-      />
-
       <CreateCampaignModal
         isOpen={isCreateModalOpen}
         onClose={onCreateModalClose}

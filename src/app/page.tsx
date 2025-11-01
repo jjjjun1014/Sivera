@@ -17,8 +17,8 @@ export default function Home() {
       {/* Hero Section */}
       <section className="relative overflow-hidden px-6 py-20 lg:py-32">
         {/* Animated background gradient */}
-        <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-background to-secondary/10 dark:from-primary/5 dark:via-background dark:to-secondary/5" />
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-primary/20 via-transparent to-transparent dark:from-primary/10" />
+        <div className="absolute inset-0 bg-linear-to-br from-primary/10 via-background to-secondary/10 dark:from-primary/5 dark:via-background dark:to-secondary/5" />
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,var(--tw-gradient-stops))] from-primary/20 via-transparent to-transparent dark:from-primary/10" />
 
         {/* Decorative elements */}
         <div className="absolute top-20 left-10 w-72 h-72 bg-primary/10 rounded-full blur-3xl animate-pulse" />
@@ -26,7 +26,7 @@ export default function Home() {
 
         <div className="relative z-10 max-w-7xl mx-auto text-center">
           <div className="space-y-6">
-            <h1 className={title({ size: "lg", class: "bg-clip-text text-transparent bg-gradient-to-r from-primary via-secondary to-primary dark:from-primary dark:via-purple-400 dark:to-primary animate-gradient" })}>
+            <h1 className={title({ size: "lg", class: "bg-clip-text text-transparent bg-linear-to-r from-primary via-secondary to-primary dark:from-primary dark:via-purple-400 dark:to-primary animate-gradient" })}>
               광고 관리, 이제 하나로
             </h1>
             <p className={subtitle({ class: "mt-4 max-w-2xl mx-auto text-default-600 dark:text-default-400" })}>
@@ -94,7 +94,7 @@ export default function Home() {
       <FAQSection />
 
       {/* CTA Section */}
-      <section className="px-6 py-20 bg-gradient-to-r from-primary to-secondary">
+      <section className="px-6 py-20 bg-linear-to-r from-primary to-secondary">
         <div className="max-w-4xl mx-auto text-center">
           <div>
             <h2 className="text-3xl lg:text-4xl font-bold text-white mb-4">

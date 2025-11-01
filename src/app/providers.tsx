@@ -1,22 +1,39 @@
-"use client";
+'use client';
 
-import { HeroUIProvider } from "@heroui/system";
-import { ThemeProvider as NextThemesProvider } from "next-themes";
-import { AuthProvider } from "@/components/features/auth/AuthProvider";
-import { Toaster } from "sonner";
+import { useEffect } from 'react';
+import { HeroUIProvider } from '@heroui/system';
+import { ThemeProvider as NextThemesProvider } from 'next-themes';
+import { ThemeProviderProps } from 'next-themes/dist/types';
+import { useRouter } from 'next/navigation';
+import { Toaster } from 'sonner';
 
-export function Providers({ children }: { children: React.ReactNode }) {
+import { configureAmplify } from '@/lib/amplify-client';
+import { AuthProvider } from '@/contexts/auth-context';
+
+export interface ProvidersProps {
+  children: React.ReactNode;
+  themeProps?: ThemeProviderProps;
+}
+
+export function Providers({ children, themeProps }: ProvidersProps) {
+  const router = useRouter();
+
+  // Amplify 설정 (클라이언트 사이드에서 한 번만 실행)
+  useEffect(() => {
+    configureAmplify();
+  }, []);
+
   return (
-    <HeroUIProvider>
-      <NextThemesProvider attribute="class" defaultTheme="light">
+    <HeroUIProvider navigate={router.push}>
+      <NextThemesProvider 
+        defaultTheme="system"
+        attribute="class"
+        enableSystem
+        {...themeProps}
+      >
         <AuthProvider>
+          <Toaster position="top-right" richColors />
           {children}
-          <Toaster
-            position="bottom-right"
-            richColors
-            expand={false}
-            duration={4000}
-          />
         </AuthProvider>
       </NextThemesProvider>
     </HeroUIProvider>

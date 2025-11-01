@@ -139,14 +139,14 @@ export default function IntegratedDashboardPage() {
   return (
     <div className="container mx-auto px-6 py-8">
       {/* Header */}
-      <div className="mb-6 flex justify-between items-start">
-        <div>
-          <h1 className="text-3xl font-bold mb-2">통합 대시보드</h1>
-          <p className="text-default-500">
+      <div className="mb-6 flex flex-col lg:flex-row justify-between lg:items-start gap-4">
+        <div className="min-w-0">
+          <h1 className="text-2xl sm:text-3xl font-bold mb-2 break-keep">통합 대시보드</h1>
+          <p className="text-sm sm:text-base text-default-500 break-keep">
             전체 계정의 광고 성과를 한눈에 확인하세요
           </p>
         </div>
-        <div className="flex gap-3">
+        <div className="flex flex-wrap gap-3 shrink-0">
           <DateRangePicker
             label="기간 선택"
             radius="sm"

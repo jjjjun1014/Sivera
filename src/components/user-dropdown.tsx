@@ -25,7 +25,7 @@ import { useTheme } from "next-themes";
 import { useEffect, useState } from "react";
 
 import { useAuthStore } from "@/stores/useAuthStore";
-import { clientLogout } from "@/app/login/client-actions";
+import { clientLogout, emergencyLogout } from "@/app/login/client-actions";
 import { useDictionary } from "@/hooks/use-dictionary";
 
 export function UserDropdown() {
@@ -44,10 +44,12 @@ export function UserDropdown() {
   if (!user) return null;
 
   const handleSignOut = async () => {
+    console.log('🚪 Logout button clicked');
     try {
-      await clientLogout(router);
-    } catch {
-      // Error is handled in the client action
+      await clientLogout();
+    } catch (error) {
+      console.error('❌ Logout error, trying emergency logout:', error);
+      emergencyLogout();
     }
   };
 

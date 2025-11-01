@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { motion, useReducedMotion } from "framer-motion";
 
 import log from "@/utils/logger";
+import { useAuth } from "@/contexts/auth-context";
 
 interface HeroButtonsProps {
   primaryButtonText: string;
@@ -16,6 +17,7 @@ export function HeroButtons({
 }: HeroButtonsProps) {
   const router = useRouter();
   const prefersReducedMotion = useReducedMotion();
+  const { user, loading } = useAuth();
 
   const handleNavigation = (path: string, action: string) => {
     log.info("Navigation initiated", {
@@ -26,6 +28,10 @@ export function HeroButtons({
     });
     router.push(path);
   };
+
+  // 로그인된 사용자는 대시보드로
+  const targetPath = user ? "/dashboard/analytics" : "/signup";
+  const buttonText = user ? "대시보드로 이동" : primaryButtonText;
 
   return (
     <motion.div
@@ -50,11 +56,12 @@ export function HeroButtons({
           color="primary"
           size="lg"
           variant="shadow"
-          onPress={() => handleNavigation("/signup", "start-free")}
+          onPress={() => handleNavigation(targetPath, user ? "dashboard" : "start-free")}
           data-testid="hero-primary-button"
-          aria-label={primaryButtonText}
+          aria-label={buttonText}
+          isLoading={loading}
         >
-          {primaryButtonText}
+          {buttonText}
         </Button>
       </motion.div>
     </motion.div>

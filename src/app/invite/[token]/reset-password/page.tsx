@@ -80,7 +80,7 @@ export default function InviteResetPasswordPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center px-4 bg-gradient-to-br from-primary/5 to-secondary/5">
+    <div className="min-h-screen flex items-center justify-center px-4 bg-linear-to-br from-primary/5 to-secondary/5">
       <Card className="w-full max-w-md">
         <CardHeader className="flex flex-col gap-2 pt-8 pb-4">
           <div className="flex items-center justify-center w-12 h-12 rounded-full bg-primary/10 mb-2">

@@ -22,7 +22,6 @@ import {
   ResponsiveContainer,
 } from "recharts";
 import type { AdGroup, Ad } from "@/types/campaign";
-import { AIChatAssistant } from "@/components/features/AIChatAssistant";
 import { CreateCampaignModal } from "@/components/modals/CreateCampaignModal";
 import { useDisclosure } from "@heroui/modal";
 
@@ -582,14 +581,6 @@ export default function GoogleAdsSearchPage() {
           )}
         </CardBody>
       </Card>
-
-      <AIChatAssistant
-        context={{
-          currentPage: "/dashboard/platforms/google-ads/performance-max",
-          campaigns: campaigns,
-        }}
-      />
-
       <CreateCampaignModal
         isOpen={isCreateModalOpen}
         onClose={onCreateModalClose}

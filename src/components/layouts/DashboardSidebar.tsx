@@ -12,6 +12,7 @@ import {
   DropdownSection,
 } from "@heroui/dropdown";
 import { ThemeSwitch } from "@/components/theme-switch";
+import { clientLogout } from "@/app/login/client-actions";
 
 const menuItems = [
   {
@@ -445,7 +446,15 @@ export default function DashboardSidebar({
                   </div>
                 </Button>
               </DropdownTrigger>
-              <DropdownMenu aria-label="사용자 메뉴">
+              <DropdownMenu 
+                aria-label="사용자 메뉴"
+                onAction={(key) => {
+                  if (key === "logout") {
+                    console.log('🚪 DashboardSidebar logout clicked');
+                    clientLogout();
+                  }
+                }}
+              >
                 <DropdownSection showDivider>
                   <DropdownItem 
                     key="theme"
