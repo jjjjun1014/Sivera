@@ -12,6 +12,7 @@ import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, useDisclosure
 import { User as UserIcon, Settings as SettingsIcon, CreditCard, Lock, AlertTriangle } from "lucide-react";
 import { toast } from "@/utils/toast";
 import { BillingSection } from "@/components/settings/BillingSection";
+import { signOut, deleteUser } from "aws-amplify/auth";
 
 const DATE_RANGES = [
   { key: "7", label: "7일" },
@@ -33,16 +34,18 @@ export default function SettingsPage() {
   const { isOpen: isPasswordOpen, onOpen: onPasswordOpen, onClose: onPasswordClose } = useDisclosure();
   const { isOpen: isDeleteOpen, onOpen: onDeleteOpen, onClose: onDeleteClose } = useDisclosure();
   const [deleteConfirmText, setDeleteConfirmText] = useState("");
+  const [userTeams, setUserTeams] = useState<any[]>([]);
+  const [isLoadingProfile, setIsLoadingProfile] = useState(true);
 
   // 프로필 설정
   const [profile, setProfile] = useState({
-    name: "김민수",
-    email: "minsu.kim@company.com",
+    name: "",
+    email: "",
     phone: "",
     company: "",
     position: "",
     slackWebhook: "",
-    team: "마케팅팀", // 읽기 전용
+    team: "", // 읽기 전용
   });
 
   // 비밀번호 변경
@@ -59,42 +62,105 @@ export default function SettingsPage() {
     autoBackup: true,
   });
 
-  // localStorage에서 설정 불러오기
+  // Cognito에서 사용자 정보 및 설정 불러오기
   useEffect(() => {
-    const saved = localStorage.getItem("appSettings");
-    if (saved) {
-      const settings = JSON.parse(saved);
-      setPreferences({
-        defaultDateRange: settings.dashboardSettings?.defaultDateRange || "14",
-        retention: settings.dataSettings?.retention || "365",
-        autoBackup: settings.dataSettings?.autoBackup ?? true,
-      });
-    }
+    const loadUserData = async () => {
+      try {
+        setIsLoadingProfile(true);
+        
+        // Cognito에서 현재 사용자 정보 가져오기
+        const { authGetCurrentUser } = await import("@/lib/services/auth.service");
+        const { listTeams } = await import("@/lib/services/team.service");
+        
+        const authUser = await authGetCurrentUser();
+        
+        if (authUser) {
+          // Cognito 사용자 정보로 프로필 초기화
+          setProfile((prev) => ({
+            ...prev,
+            name: authUser.name || "",
+            email: authUser.email || "",
+          }));
 
-    // 프로필 정보 불러오기
-    const savedProfile = localStorage.getItem("userProfile");
-    if (savedProfile) {
-      const profileData = JSON.parse(savedProfile);
-      setProfile((prev) => ({
-        ...prev,
-        ...profileData,
-      }));
-    }
+          // 팀 목록 불러오기
+          const teamsResult = await listTeams(authUser.userId);
+          if (teamsResult.data && teamsResult.data.length > 0) {
+            setUserTeams(teamsResult.data);
+            // 첫 번째 팀을 기본 팀으로 설정
+            setProfile((prev) => ({
+              ...prev,
+              team: teamsResult.data[0]?.name || "",
+            }));
+          }
+        }
+
+        // localStorage에서 추가 프로필 정보 불러오기 (phone, company, position 등)
+        const savedProfile = localStorage.getItem("userProfile");
+        if (savedProfile) {
+          const profileData = JSON.parse(savedProfile);
+          setProfile((prev) => ({
+            ...prev,
+            phone: profileData.phone || prev.phone,
+            company: profileData.company || prev.company,
+            position: profileData.position || prev.position,
+            slackWebhook: profileData.slackWebhook || prev.slackWebhook,
+          }));
+        }
+
+        // localStorage에서 환경설정 불러오기
+        const saved = localStorage.getItem("appSettings");
+        if (saved) {
+          const settings = JSON.parse(saved);
+          setPreferences({
+            defaultDateRange: settings.dashboardSettings?.defaultDateRange || "14",
+            retention: settings.dataSettings?.retention || "365",
+            autoBackup: settings.dataSettings?.autoBackup ?? true,
+          });
+        }
+      } catch (error) {
+        console.error('Failed to load user data:', error);
+        toast.error({
+          title: "프로필 로드 실패",
+          description: "사용자 정보를 불러오는데 실패했습니다.",
+        });
+      } finally {
+        setIsLoadingProfile(false);
+      }
+    };
+
+    loadUserData();
   }, []);
 
   // 프로필 저장
-  const handleSaveProfile = () => {
-    // localStorage에 프로필 저장
-    localStorage.setItem("userProfile", JSON.stringify(profile));
-    
-    toast.success({
-      title: "프로필 저장 완료",
-      description: "프로필 정보가 성공적으로 저장되었습니다.",
-    });
+  const handleSaveProfile = async () => {
+    try {
+      // localStorage에 추가 프로필 정보만 저장 (name, email은 Cognito에서 관리)
+      const profileToSave = {
+        phone: profile.phone,
+        company: profile.company,
+        position: profile.position,
+        slackWebhook: profile.slackWebhook,
+      };
+      localStorage.setItem("userProfile", JSON.stringify(profileToSave));
+      
+      // TODO: 백엔드 API로 프로필 업데이트
+      // await updateUserProfile(profileToSave);
+      
+      toast.success({
+        title: "프로필 저장 완료",
+        description: "프로필 정보가 성공적으로 저장되었습니다.",
+      });
+    } catch (error) {
+      console.error('Failed to save profile:', error);
+      toast.error({
+        title: "저장 실패",
+        description: "프로필 저장 중 오류가 발생했습니다.",
+      });
+    }
   };
 
   // 비밀번호 변경
-  const handleChangePassword = () => {
+  const handleChangePassword = async () => {
     if (!passwordForm.current || !passwordForm.new || !passwordForm.confirm) {
       toast.error({
         title: "입력 오류",
@@ -119,14 +185,31 @@ export default function SettingsPage() {
       return;
     }
 
-    // TODO: 실제 비밀번호 변경 로직
-    toast.success({
-      title: "비밀번호 변경 완료",
-      description: "비밀번호가 성공적으로 변경되었습니다.",
-    });
+    try {
+      // Cognito 비밀번호 변경
+      const { authUpdatePassword } = await import("@/lib/services/auth.service");
+      const result = await authUpdatePassword(passwordForm.current, passwordForm.new);
 
-    setPasswordForm({ current: "", new: "", confirm: "" });
-    onPasswordClose();
+      if (result.success) {
+        toast.success({
+          title: "비밀번호 변경 완료",
+          description: "비밀번호가 성공적으로 변경되었습니다.",
+        });
+        setPasswordForm({ current: "", new: "", confirm: "" });
+        onPasswordClose();
+      } else {
+        toast.error({
+          title: "비밀번호 변경 실패",
+          description: result.error || "비밀번호 변경 중 오류가 발생했습니다.",
+        });
+      }
+    } catch (error) {
+      console.error('Failed to change password:', error);
+      toast.error({
+        title: "비밀번호 변경 실패",
+        description: "현재 비밀번호를 확인해주세요.",
+      });
+    }
   };
 
   // 환경설정 저장
@@ -148,8 +231,41 @@ export default function SettingsPage() {
     });
   };
 
+  // 팀 탈퇴
+  const handleLeaveTeam = async (teamId: string, teamName: string) => {
+    if (!confirm(`"${teamName}" 팀에서 탈퇴하시겠습니까?\n\n탈퇴 후에는 해당 팀의 데이터에 접근할 수 없습니다.`)) {
+      return;
+    }
+
+    try {
+      const { leaveTeamAction } = await import("@/app/dashboard/team/actions");
+      const result = await leaveTeamAction(teamId);
+
+      if (result.success) {
+        toast.success({
+          title: "팀 탈퇴 완료",
+          description: `"${teamName}" 팀에서 탈퇴되었습니다.`,
+        });
+
+        // 팀 목록 갱신
+        setUserTeams(userTeams.filter(t => t.id !== teamId));
+      } else {
+        toast.error({
+          title: "탈퇴 실패",
+          description: result.error || "팀 탈퇴 중 오류가 발생했습니다.",
+        });
+      }
+    } catch (error) {
+      console.error("Failed to leave team:", error);
+      toast.error({
+        title: "오류",
+        description: "팀 탈퇴 중 오류가 발생했습니다.",
+      });
+    }
+  };
+
   // 회원 탈퇴
-  const handleDeleteAccount = () => {
+  const handleDeleteAccount = async () => {
     if (deleteConfirmText !== "회원탈퇴") {
       toast.error({
         title: "입력 오류",
@@ -158,16 +274,32 @@ export default function SettingsPage() {
       return;
     }
 
-    // TODO: 실제 회원 탈퇴 API 호출
-    toast.success({
-      title: "회원 탈퇴 완료",
-      description: "계정이 성공적으로 삭제되었습니다. 이용해주셔서 감사합니다.",
-    });
+    try {
+      // 1. Cognito 사용자 삭제
+      await deleteUser();
 
-    // 로그아웃 처리
-    setTimeout(() => {
-      window.location.href = "/login";
-    }, 2000);
+      // 2. localStorage 정리
+      localStorage.clear();
+
+      // 3. 세션 정리 및 로그아웃
+      await signOut({ global: true });
+
+      toast.success({
+        title: "회원 탈퇴 완료",
+        description: "계정이 성공적으로 삭제되었습니다. 이용해주셔서 감사합니다.",
+      });
+
+      // 4. 로그인 페이지로 리다이렉트
+      setTimeout(() => {
+        window.location.href = "/login";
+      }, 1000);
+    } catch (error) {
+      console.error("Failed to delete account:", error);
+      toast.error({
+        title: "탈퇴 실패",
+        description: error instanceof Error ? error.message : "계정 삭제 중 오류가 발생했습니다. 다시 시도해주세요.",
+      });
+    }
   };
 
   return (
@@ -205,87 +337,115 @@ export default function SettingsPage() {
                 <h2 className="text-xl font-semibold">개인 정보</h2>
               </CardHeader>
               <CardBody className="space-y-6">
-                {/* 기본 정보 */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <Input
-                    label="이름"
-                    value={profile.name}
-                    onChange={(e) => setProfile({ ...profile, name: e.target.value })}
-                    radius="sm"
-                    variant="bordered"
-                  />
-
-                  <Input
-                    label="이메일"
-                    value={profile.email}
-                    onChange={(e) => setProfile({ ...profile, email: e.target.value })}
-                    radius="sm"
-                    variant="bordered"
-                    type="email"
-                    isDisabled
-                  />
-
-                  <Input
-                    label="전화번호"
-                    value={profile.phone}
-                    onChange={(e) => setProfile({ ...profile, phone: e.target.value })}
-                    radius="sm"
-                    variant="bordered"
-                    placeholder="010-1234-5678"
-                  />
-
-                  <Input
-                    label="소속팀"
-                    value={profile.team}
-                    radius="sm"
-                    variant="bordered"
-                    isDisabled
-                    description="팀 관리자가 설정한 정보입니다"
-                  />
-                </div>
-
-                <Divider />
-
-                {/* 회사 정보 */}
-                <div className="space-y-4">
-                  <h3 className="text-lg font-semibold">회사 정보</h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <Input
-                      label="회사명"
-                      value={profile.company}
-                      onChange={(e) => setProfile({ ...profile, company: e.target.value })}
-                      radius="sm"
-                      variant="bordered"
-                      placeholder="회사명을 입력하세요"
-                    />
-
-                    <Input
-                      label="직책"
-                      value={profile.position}
-                      onChange={(e) => setProfile({ ...profile, position: e.target.value })}
-                      radius="sm"
-                      variant="bordered"
-                      placeholder="직책을 입력하세요"
-                    />
+                {isLoadingProfile ? (
+                  <div className="flex justify-center items-center py-12">
+                    <div className="text-center">
+                      <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+                      <p className="mt-2 text-sm text-default-500">프로필 정보를 불러오는 중...</p>
+                    </div>
                   </div>
-                </div>
+                ) : (
+                  <>
+                    {/* 기본 정보 */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <Input
+                        label="이름"
+                        value={profile.name}
+                        onChange={(e) => setProfile({ ...profile, name: e.target.value })}
+                        radius="sm"
+                        variant="bordered"
+                        isDisabled
+                        description="Cognito에서 관리되는 정보입니다"
+                      />
 
-                <Divider />
+                      <Input
+                        label="이메일"
+                        value={profile.email}
+                        onChange={(e) => setProfile({ ...profile, email: e.target.value })}
+                        radius="sm"
+                        variant="bordered"
+                        type="email"
+                        isDisabled
+                        description="Cognito에서 관리되는 정보입니다"
+                      />
 
-                {/* 연동 설정 */}
-                <div className="space-y-4">
-                  <h3 className="text-lg font-semibold">연동 설정</h3>
-                  <Input
-                    label="Slack Webhook URL"
-                    value={profile.slackWebhook}
-                    onChange={(e) => setProfile({ ...profile, slackWebhook: e.target.value })}
-                    radius="sm"
-                    variant="bordered"
-                    placeholder="https://hooks.slack.com/services/..."
-                    description="알림을 받을 Slack Webhook URL을 입력하세요"
-                  />
-                </div>
+                      <Input
+                        label="전화번호"
+                        value={profile.phone}
+                        onChange={(e) => setProfile({ ...profile, phone: e.target.value })}
+                        radius="sm"
+                        variant="bordered"
+                        placeholder="010-1234-5678"
+                      />
 
+                      <Input
+                        label="소속팀"
+                        value={profile.team}
+                        radius="sm"
+                        variant="bordered"
+                        isDisabled
+                        description="팀 관리자가 설정한 정보입니다"
+                      />
+                    </div>
+
+                    <Divider />
+
+                    {/* 회사 정보 */}
+                    <div className="space-y-4">
+                      <h3 className="text-lg font-semibold">회사 정보</h3>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <Input
+                          label="회사명"
+                          value={profile.company}
+                          onChange={(e) => setProfile({ ...profile, company: e.target.value })}
+                          radius="sm"
+                          variant="bordered"
+                          placeholder="회사명을 입력하세요"
+                        />
+
+                        <Input
+                          label="직책"
+                          value={profile.position}
+                          onChange={(e) => setProfile({ ...profile, position: e.target.value })}
+                          radius="sm"
+                          variant="bordered"
+                          placeholder="직책을 입력하세요"
+                        />
+                      </div>
+                    </div>
+
+                    <Divider />
+
+                    {/* 연동 설정 */}
+                    <div className="space-y-4">
+                      <h3 className="text-lg font-semibold">연동 설정</h3>
+                      <Input
+                        label="Slack Webhook URL"
+                        value={profile.slackWebhook}
+                        onChange={(e) => setProfile({ ...profile, slackWebhook: e.target.value })}
+                        radius="sm"
+                        variant="bordered"
+                        placeholder="https://hooks.slack.com/services/..."
+                        description="알림을 받을 Slack Webhook URL을 입력하세요"
+                      />
+                    </div>
+
+                    <div className="flex justify-end">
+                      <Button color="primary" onPress={handleSaveProfile}>
+                        변경사항 저장
+                      </Button>
+                    </div>
+                  </>
+                )}
+              </CardBody>
+            </Card>
+
+            {/* 보안 설정 카드 */}
+            <Card>
+              <CardHeader>
+                <h2 className="text-xl font-semibold">보안 설정</h2>
+              </CardHeader>
+              <CardBody className="space-y-4">
                 <Divider />
 
                 {/* 비밀번호 변경 */}
@@ -312,6 +472,61 @@ export default function SettingsPage() {
                     프로필 저장
                   </Button>
                 </div>
+              </CardBody>
+            </Card>
+
+            {/* 팀 탈퇴 섹션 */}
+            <Card className="border-warning">
+              <CardHeader>
+                <h2 className="text-xl font-semibold text-warning">팀 탈퇴</h2>
+              </CardHeader>
+              <CardBody className="space-y-4">
+                <div className="flex items-start gap-4 p-4 bg-warning-50 rounded-lg">
+                  <AlertTriangle className="w-5 h-5 text-warning shrink-0 mt-0.5" />
+                  <div className="flex-1">
+                    <p className="font-semibold text-warning mb-1">팀에서 탈퇴</p>
+                    <p className="text-sm text-warning-600">
+                      팀에서 탈퇴하면 해당 팀의 데이터에 접근할 수 없습니다. 마스터는 탈퇴할 수 없습니다.
+                    </p>
+                  </div>
+                </div>
+
+                {userTeams.length > 0 ? (
+                  <div className="space-y-3">
+                    <p className="text-sm font-medium">소속된 팀:</p>
+                    <div className="space-y-2">
+                      {userTeams.map((team) => (
+                        <div
+                          key={team.id}
+                          className="flex items-center justify-between p-4 border border-divider rounded-lg"
+                        >
+                          <div>
+                            <p className="font-medium">{team.name}</p>
+                            <p className="text-sm text-default-500">
+                              역할: {team.role === 'master' ? '마스터' : team.role === 'team_mate' ? '팀원' : '뷰어'}
+                            </p>
+                          </div>
+                          <Button
+                            color="warning"
+                            variant="flat"
+                            size="sm"
+                            onPress={() => handleLeaveTeam(team.id, team.name)}
+                            isDisabled={team.role === 'master'}
+                          >
+                            {team.role === 'master' ? '탈퇴 불가' : '팀 탈퇴'}
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ) : (
+                  <div className="text-center py-8">
+                    <p className="text-default-500">소속된 팀이 없습니다!</p>
+                    <p className="text-sm text-default-400 mt-2">
+                      팀 페이지에서 새로운 팀을 생성하거나 초대를 받아보세요.
+                    </p>
+                  </div>
+                )}
               </CardBody>
             </Card>
 

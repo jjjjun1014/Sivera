@@ -12,6 +12,7 @@ import { AdGroupTable } from "@/components/tables/AdGroupTable";
 import { AdTable } from "@/components/tables/AdTable";
 import { CreateCampaignModal } from "@/components/modals/CreateCampaignModal";
 import { useDisclosure } from "@heroui/modal";
+import { PlatformPageHeader } from "@/components/platform/PlatformPageHeader";
 import {
   ComposedChart,
   Line,
@@ -347,24 +348,14 @@ export default function GoogleAdsSearchPage() {
         <p className="text-default-500">검색 광고 성과를 관리하세요</p>
       </div>
 
-      <Card className="mb-6">
-        <CardBody>
-          <DateRangePicker
-            label="기간 선택"
-            radius="sm"
-            variant="bordered"
-            value={dateRange}
-            onChange={(value) => value && setDateRange(value)}
-            defaultValue={{
-              start: fourteenDaysAgo,
-              end: todayDate,
-            }}
-            description="기본 14일 설정"
-            className="max-w-xs"
-          />
-        </CardBody>
-      </Card>
+      {/* 날짜 & 계정 선택 */}
+      <PlatformPageHeader
+        platform="google"
+        dateRange={dateRange}
+        onDateRangeChange={(value) => setDateRange(value)}
+      />
 
+      {/* 주요 지표 */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
         <Card>
           <CardBody className="text-center py-6">

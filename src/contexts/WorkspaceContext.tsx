@@ -1,8 +1,12 @@
 "use client";
 
 import { createContext, useContext, useState, useEffect, ReactNode } from "react";
-import type { Workspace, CreateWorkspaceInput } from "@/types/workspace";
+import type { Brand, CreateBrandInput } from "@/types/workspace";
 import type { Role } from "@/types/permissions";
+
+// 하위 호환성을 위해 Workspace alias 사용
+type Workspace = Brand;
+type CreateWorkspaceInput = CreateBrandInput;
 
 interface WorkspaceContextType {
   currentWorkspace: Workspace | null;
@@ -21,59 +25,61 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
   const [workspaces, setWorkspaces] = useState<Workspace[]>([]);
   const [currentUserRole, setCurrentUserRole] = useState<Role | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [currentUser, setCurrentUser] = useState<any>(null);
 
   // 초기 로드
   useEffect(() => {
-    loadWorkspaces();
+    loadUser();
   }, []);
+
+  useEffect(() => {
+    if (currentUser?.data?.teamID) {
+      loadWorkspaces();
+    }
+  }, [currentUser]);
+
+  const loadUser = async () => {
+    try {
+      const { getCurrentUser } = await import("@/lib/services/user.service");
+      const user = await getCurrentUser();
+      setCurrentUser(user);
+    } catch (error) {
+      console.error("Failed to load user:", error);
+      setIsLoading(false);
+    }
+  };
 
   const loadWorkspaces = async () => {
     try {
       setIsLoading(true);
 
-      // TODO: 백엔드 API 호출
-      // const response = await fetch('/api/v1/workspaces');
-      // const data = await response.json();
-      // setWorkspaces(data);
-
-      // 임시 Mock 데이터
-      const mockWorkspaces: Workspace[] = [
-        {
-          id: "1",
-          name: "사업체 A",
-          description: "메인 사업체",
-          ownerId: "user1",
-          subscriptionId: "sub1",
-          createdAt: new Date(),
-          updatedAt: new Date(),
-        },
-        {
-          id: "2",
-          name: "사업체 B",
-          description: "서브 사업체",
-          ownerId: "user1",
-          subscriptionId: "sub2",
-          createdAt: new Date(),
-          updatedAt: new Date(),
-        },
-      ];
-      setWorkspaces(mockWorkspaces);
-
-      // localStorage에서 마지막 선택 workspace 불러오기
-      const lastWorkspaceId = localStorage.getItem("currentWorkspaceId");
-      if (lastWorkspaceId) {
-        const workspace = mockWorkspaces.find((w) => w.id === lastWorkspaceId);
-        setCurrentWorkspace(workspace || mockWorkspaces[0]);
-      } else {
-        setCurrentWorkspace(mockWorkspaces[0]);
+      if (!currentUser?.data?.teamID) {
+        setWorkspaces([]);
+        setCurrentWorkspace(null);
+        setIsLoading(false);
+        return;
       }
 
-      // TODO: 백엔드 API 호출로 현재 사용자의 역할 조회
-      // const roleResponse = await fetch(`/api/v1/workspaces/${currentWorkspaceId}/members/me`);
-      // const roleData = await roleResponse.json();
-      // setCurrentUserRole(roleData.role);
+      // Team의 Brand 목록 조회
+      const { listBrandsByTeam } = await import("@/lib/services/brand.service");
+      const result = await listBrandsByTeam(currentUser.data.teamID);
 
-      // 임시 Mock 역할 (owner로 설정)
+      if (result.data) {
+        setWorkspaces(result.data);
+
+        // localStorage에서 마지막 선택 brand 불러오기
+        const lastWorkspaceId = localStorage.getItem("currentWorkspaceId");
+        if (lastWorkspaceId) {
+          const workspace = result.data.find((w) => w.id === lastWorkspaceId);
+          setCurrentWorkspace(workspace || result.data[0]);
+        } else {
+          setCurrentWorkspace(result.data[0] || null);
+        }
+      }
+
+      // 사용자 역할 조회 (Team 기반)
+      const { useTeamRole } = await import("@/hooks/use-team-role");
+      // 간단하게 master로 설정 (실제로는 useTeamRole 사용)
       setCurrentUserRole("owner");
     } catch (error) {
       console.error("Failed to load workspaces:", error);
@@ -101,26 +107,23 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
 
   const createWorkspace = async (data: CreateWorkspaceInput) => {
     try {
-      // TODO: 백엔드 API 호출
-      // const response = await fetch('/api/v1/workspaces', {
-      //   method: 'POST',
-      //   body: JSON.stringify(data),
-      // });
-      // const newWorkspace = await response.json();
+      if (!currentUser?.data?.teamID) {
+        throw new Error("팀 정보를 찾을 수 없습니다.");
+      }
 
-      // 임시 Mock
-      const newWorkspace: Workspace = {
-        id: String(workspaces.length + 1),
-        name: data.name,
-        description: data.description,
-        ownerId: "user1",
-        subscriptionId: `sub${workspaces.length + 1}`,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      };
+      // Brand 생성
+      const { createBrand } = await import("@/lib/services/brand.service");
+      const result = await createBrand({
+        ...data,
+        teamID: currentUser.data.teamID,
+      });
 
-      setWorkspaces([...workspaces, newWorkspace]);
-      await switchWorkspace(newWorkspace.id);
+      if (result.error || !result.data) {
+        throw new Error(result.error || "브랜드 생성에 실패했습니다.");
+      }
+
+      setWorkspaces([...workspaces, result.data]);
+      await switchWorkspace(result.data.id);
     } catch (error) {
       console.error("Failed to create workspace:", error);
       throw error;

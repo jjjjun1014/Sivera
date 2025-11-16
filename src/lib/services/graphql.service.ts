@@ -202,10 +202,20 @@ export async function query<T>(
   try {
     const { filter, limit, nextToken, selectionSet } = options;
     
-    // @ts-ignore - 동적 인덱스 접근
-    const response = await getClient().models[modelName][indexName]({
-      ...keyCondition,
-      filter,
+    const client = getClient();
+    const model = client.models[modelName as keyof typeof client.models];
+    
+    if (!model) {
+      throw new Error(`Model ${modelName} not found`);
+    }
+
+    // Secondary index 쿼리는 list() 메서드 사용
+    // @ts-ignore - 동적 타입
+    const response = await model.list({
+      filter: {
+        ...keyCondition,
+        ...(filter || {}),
+      },
       limit,
       nextToken,
       selectionSet,

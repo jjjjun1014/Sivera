@@ -2,556 +2,512 @@
 
 import { useState, useEffect } from "react";
 import { Card, CardBody, CardHeader } from "@heroui/card";
+import { Tabs, Tab } from "@heroui/tabs";
 import { Table, TableHeader, TableColumn, TableBody, TableRow, TableCell } from "@heroui/table";
 import { Chip } from "@heroui/chip";
 import { Button } from "@heroui/button";
 import { Switch } from "@heroui/switch";
-import { Pagination } from "@heroui/pagination";
 import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, useDisclosure } from "@heroui/modal";
-import { platformAccounts } from "@/lib/mock-data";
-import { usePagination, useWorkspaces, useWorkspaceManagement } from "@/hooks";
+import { Input } from "@heroui/input";
+import { Textarea } from "@heroui/input";
+import { Select, SelectItem } from "@heroui/select";
 import { toast } from "@/utils/toast";
-import {
-  getWorkspacesForAccount,
-  assignWorkspacesToAccount,
-  toggleAccountStatus,
-  isAccountActive,
-  type Workspace,
-} from "@/lib/mock-data/workspaces";
-import { statusColorMap, statusTextMap } from "@/lib/constants/status";
-import { Plus, Pencil, Trash2 } from "lucide-react";
-import { Input, Textarea } from "@heroui/input";
+import { useAccount } from "@/contexts/AccountContext";
+import type { Brand, AdAccount } from "@/contexts/AccountContext";
+import type { AccountRole, AccountMember } from "@/types/team";
+import { SIMPLE_TEAM_MEMBERS } from "@/lib/mock-data";
+import { ACCOUNT_ROLE_TEXT, PLATFORM_COLOR } from "@/lib/constants/team";
+import { AccountRoleSelector } from "@/components/team/AccountRoleSelector";
+import { PlatformOAuthCard } from "@/components/integrated/PlatformOAuthCard";
 
 export default function IntegratedPage() {
-  // 중앙 hooks 사용
-  const { workspaces, isLoading, refreshWorkspaces } = useWorkspaces();
-  const {
-    isOpen: isWorkspaceModalOpen,
-    onOpen: onWorkspaceModalOpen,
-    onClose: onWorkspaceModalClose,
-    editingWorkspace,
-    formData: workspaceFormData,
-    setFormData: setWorkspaceFormData,
-    handleCreate: handleCreateWorkspace,
-    handleEdit: handleEditWorkspace,
-    handleSave: handleSaveWorkspace,
-    handleDelete: handleDeleteWorkspace,
-  } = useWorkspaceManagement(refreshWorkspaces);
+  const { brands, allAccounts } = useAccount();
+  const [selectedTab, setSelectedTab] = useState("oauth");
+  
+  // 브랜드 관리 모달
+  const { isOpen: isBrandModalOpen, onOpen: onBrandModalOpen, onClose: onBrandModalClose } = useDisclosure();
+  const [brandName, setBrandName] = useState("");
+  const [brandDescription, setBrandDescription] = useState("");
+  const [selectedAccountsForBrand, setSelectedAccountsForBrand] = useState<Set<string>>(new Set());
+  const [editingBrand, setEditingBrand] = useState<Brand | null>(null);
+  
+  // 계정 팀원 권한 모달
+  const { isOpen: isAccountMemberModalOpen, onOpen: onAccountMemberModalOpen, onClose: onAccountMemberModalClose } = useDisclosure();
+  const [currentAccount, setCurrentAccount] = useState<AdAccount | null>(null);
+  const [accountMembers, setAccountMembers] = useState<Record<string, AccountMember[]>>({});
 
-  const { isOpen, onOpen, onClose } = useDisclosure();
-  const [currentAccount, setCurrentAccount] = useState<any>(null);
-  const [selectedWorkspace, setSelectedWorkspace] = useState<string | null>(null);
-  const [accountStatuses, setAccountStatuses] = useState<Record<string, boolean>>({}); 
-  const [mounted, setMounted] = useState(false);
-
-  // 클라이언트 사이드 렌더링 확인
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
-  // 페이지네이션
-  const { currentPage, totalPages, paginatedData, setCurrentPage } = usePagination(platformAccounts, {
-    itemsPerPage: 5,
-  });
-
-  const handleManageWorkspaces = (account: any) => {
-    setCurrentAccount(account);
-    // 중앙 데이터에서 현재 계정에 부여된 브랜드 가져오기 (단일 선택)
-    const assigned = getWorkspacesForAccount(account.id);
-    setSelectedWorkspace(assigned.length > 0 ? assigned[0] : null);
-    onOpen();
+  const handleCreateBrand = () => {
+    setEditingBrand(null);
+    setBrandName("");
+    setBrandDescription("");
+    setSelectedAccountsForBrand(new Set());
+    onBrandModalOpen();
   };
 
-  const handleSaveWorkspaces = () => {
+  const handleEditBrand = (brand: Brand) => {
+    setEditingBrand(brand);
+    setBrandName(brand.name);
+    setBrandDescription(brand.description || "");
+    setSelectedAccountsForBrand(new Set(brand.accountIds));
+    onBrandModalOpen();
+  };
+
+  const handleSaveBrand = () => {
+    if (!brandName.trim()) {
+      toast.error({
+        title: "입력 오류",
+        description: "브랜드 이름을 입력하세요.",
+      });
+      return;
+    }
+
+    if (selectedAccountsForBrand.size === 0) {
+      toast.error({
+        title: "입력 오류",
+        description: "최소 1개 이상의 광고 계정을 선택하세요.",
+      });
+      return;
+    }
+
+    // TODO: API 호출
+    toast.success({
+      title: editingBrand ? "브랜드 수정 완료" : "브랜드 생성 완료",
+      description: `${brandName} 브랜드가 ${editingBrand ? "수정" : "생성"}되었습니다.`,
+    });
+    
+    onBrandModalClose();
+  };
+
+  const handleManageAccountMembers = (account: AdAccount) => {
+    setCurrentAccount(account);
+    onAccountMemberModalOpen();
+  };
+
+  const handleAddAccountMember = (memberId: number, role: AccountRole) => {
     if (!currentAccount) return;
 
-    // 단일 브랜드 저장 (선택 안했을 경우 빈 배열)
-    const selectedArray = selectedWorkspace ? [selectedWorkspace] : [];
+    const member = SAMPLE_TEAM_MEMBERS.find(m => m.id === memberId);
+    if (!member) return;
 
-    // 중앙 데이터에 저장
-    assignWorkspacesToAccount(currentAccount.id, selectedArray);
+    setAccountMembers(prev => ({
+      ...prev,
+      [currentAccount.id]: [
+        ...(prev[currentAccount.id] || []),
+        {
+          memberId: member.id,
+          memberName: member.name,
+          memberEmail: member.email,
+          role,
+        },
+      ],
+    }));
 
     toast.success({
-      title: "브랜드 할당 완료",
-      description: selectedWorkspace 
-        ? `${currentAccount.accountName}에 브랜드가 할당되었습니다.`
-        : `${currentAccount.accountName}의 브랜드 할당이 해제되었습니다.`,
-    });
-
-    onClose();
-  };
-
-  const handleToggleStatus = (accountId: string) => {
-    const newStatus = toggleAccountStatus(accountId);
-    setAccountStatuses(prev => ({ ...prev, [accountId]: newStatus }));
-    
-    toast.success({
-      title: newStatus ? "계정 활성화" : "계정 비활성화",
-      description: `광고 계정이 ${newStatus ? "활성화" : "비활성화"}되었습니다.`,
+      title: "권한 추가 완료",
+      description: `${member.name}님에게 ${currentAccount.accountName} 계정 접근 권한이 부여되었습니다.`,
     });
   };
 
-  const getWorkspaceNames = (accountId: string) => {
-    // 중앙 데이터에서 브랜드 목록 가져오기
-    const workspaceIds = getWorkspacesForAccount(accountId);
-    if (workspaceIds.length === 0) return "미할당";
-    
-    const names = workspaceIds.map((id: string) => {
-      const workspace = workspaces.find((w: Workspace) => w.id === id);
-      return workspace?.name || id;
-    });
+  const handleRemoveAccountMember = (memberId: number) => {
+    if (!currentAccount) return;
 
-    if (names.length === 1) return names[0];
-    return `${names[0]} 외 ${names.length - 1}개`;
+    setAccountMembers(prev => ({
+      ...prev,
+      [currentAccount.id]: (prev[currentAccount.id] || []).filter(m => m.memberId !== memberId),
+    }));
+
+    toast.success({
+      title: "권한 제거 완료",
+      description: "계정 접근 권한이 제거되었습니다.",
+    });
+  };
+
+  const handleChangeAccountMemberRole = (memberId: number, newRole: AccountRole) => {
+    if (!currentAccount) return;
+
+    setAccountMembers(prev => ({
+      ...prev,
+      [currentAccount.id]: (prev[currentAccount.id] || []).map(m =>
+        m.memberId === memberId ? { ...m, role: newRole } : m
+      ),
+    }));
+
+    toast.success({
+      title: "역할 변경 완료",
+      description: "팀원 역할이 변경되었습니다.",
+    });
   };
 
   return (
     <div className="container mx-auto px-6 py-8">
       {/* Header */}
       <div className="mb-8">
-        <h1 className="text-3xl font-bold mb-2">플랫폼 연동</h1>
+        <h1 className="text-3xl font-bold mb-2">통합 관리</h1>
         <p className="text-default-500">
-          광고 플랫폼 계정을 연동하고 관리하세요
+          플랫폼 연동, 브랜드 관리, 광고 계정 권한 설정을 한 곳에서 관리하세요
         </p>
       </div>
 
-      {/* Quick Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-        <Card>
-          <CardBody className="text-center py-6">
-            <p className="text-sm text-default-500 mb-1">연동된 플랫폼</p>
-            <p className="text-3xl font-bold">4</p>
-          </CardBody>
-        </Card>
-        <Card>
-          <CardBody className="text-center py-6">
-            <p className="text-sm text-default-500 mb-1">활성 계정</p>
-            <p className="text-3xl font-bold text-success">3</p>
-          </CardBody>
-        </Card>
-        <Card>
-          <CardBody className="text-center py-6">
-            <p className="text-sm text-default-500 mb-1">총 캠페인</p>
-            <p className="text-3xl font-bold">18</p>
-          </CardBody>
-        </Card>
-        <Card>
-          <CardBody className="text-center py-6">
-            <p className="text-sm text-default-500 mb-1">마지막 동기화</p>
-            <p className="text-lg font-bold">11:15</p>
-          </CardBody>
-        </Card>
-      </div>
-
-      {/* Data Table */}
-      <Card>
-        <CardHeader>
-          <h3 className="text-xl font-semibold">연동된 계정</h3>
-        </CardHeader>
-        <CardBody>
-          {!mounted ? (
-            <div className="text-center py-8">
-              <p className="text-default-500">로딩 중...</p>
-            </div>
-          ) : (
-            <div className="overflow-x-auto">
-              <Table
-                aria-label="플랫폼 연동 테이블"
-              >
-              <TableHeader>
-              <TableColumn key="platform">플랫폼</TableColumn>
-              <TableColumn key="account">계정명</TableColumn>
-              <TableColumn key="accountId">계정 ID</TableColumn>
-              <TableColumn key="workspaces" width={180}>할당 브랜드</TableColumn>
-              <TableColumn key="status">상태</TableColumn>
-                <TableColumn key="lastSync">마지막 동기화</TableColumn>
-                <TableColumn key="campaigns" align="center">캠페인 수</TableColumn>
-                <TableColumn key="enabled" align="center">활성화</TableColumn>
-                <TableColumn key="actions" align="center">작업</TableColumn>
-              </TableHeader>
-              <TableBody>
-              {paginatedData.map((item) => (
-                <TableRow key={item.id}>
-                  <TableCell>
-                    <div className="flex items-center gap-2">
-                      <div className="w-8 h-8 bg-primary/10 rounded flex items-center justify-center">
-                        <span className="text-xs font-bold">
-                          {item.platform.charAt(0)}
-                        </span>
-                      </div>
-                      <span className="font-medium">{item.platform}</span>
-                    </div>
-                  </TableCell>
-                  <TableCell>{item.accountName}</TableCell>
-                  <TableCell>
-                    <span className="text-xs font-mono text-default-500">
-                      {item.accountId}
-                    </span>
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm text-default-600">{getWorkspaceNames(item.id)}</span>
-                      <Button
-                        size="sm"
-                        variant="light"
-                        color="primary"
-                        radius="sm"
-                        className="min-w-unit-16"
-                        onPress={() => handleManageWorkspaces(item)}
-                      >
-                        관리
-                      </Button>
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <Chip
-                      color={statusColorMap[item.status]}
-                      size="sm"
-                      variant="flat"
-                    >
-                      {statusTextMap[item.status]}
-                    </Chip>
-                  </TableCell>
-                  <TableCell>
-                    <span className="text-sm">{item.lastSync}</span>
-                  </TableCell>
-                  <TableCell className="text-center">
-                    <span className="font-semibold">{item.campaigns}</span>
-                  </TableCell>
-                  <TableCell className="text-center">
-                    <div className="inline-flex" onClick={(e) => e.stopPropagation()}>
-                      <Switch
-                        isSelected={accountStatuses[item.id] ?? isAccountActive(item.id)}
-                        onValueChange={() => handleToggleStatus(item.id)}
-                        size="sm"
-                        color="success"
-                      />
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex gap-2 justify-center">
-                      <Button
-                        size="sm"
-                        variant="flat"
-                        color="primary"
-                        radius="sm"
-                      >
-                        동기화
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="flat"
-                        color="danger"
-                        radius="sm"
-                      >
-                        삭제
-                      </Button>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-          </div>
-          )}
-
-          {/* Pagination */}
-          {totalPages > 1 && (
-            <div className="mt-4 flex justify-center">
-              <Pagination
-                total={totalPages}
-                page={currentPage}
-                onChange={setCurrentPage}
-                showControls
-                color="primary"
-                size="sm"
+      <Tabs
+        selectedKey={selectedTab}
+        onSelectionChange={(key) => setSelectedTab(key as string)}
+        aria-label="통합 관리 탭"
+        color="primary"
+        variant="underlined"
+        classNames={{
+          tabList: "gap-6 w-full relative rounded-none p-0 border-b border-divider",
+          cursor: "w-full bg-primary",
+          tab: "max-w-fit px-0 h-12",
+        }}
+      >
+        {/* OAuth 연동 탭 */}
+        <Tab key="oauth" title="플랫폼 연동">
+          <div className="py-6">
+            {/* OAuth 플랫폼 카드 */}
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+              <PlatformOAuthCard
+                platform="google"
+                description="Google 검색 및 디스플레이 광고"
+                onConnect={() => toast.info({ title: "Google Ads 연동", description: "준비 중입니다." })}
+              />
+              <PlatformOAuthCard
+                platform="meta"
+                description="Facebook 및 Instagram 광고"
+                onConnect={() => toast.info({ title: "Meta Ads 연동", description: "준비 중입니다." })}
+              />
+              <PlatformOAuthCard
+                platform="tiktok"
+                description="TikTok 동영상 광고"
+                onConnect={() => toast.info({ title: "TikTok Ads 연동", description: "준비 중입니다." })}
+              />
+              <PlatformOAuthCard
+                platform="amazon"
+                description="Amazon 스폰서 광고"
+                onConnect={() => toast.info({ title: "Amazon Ads 연동", description: "준비 중입니다." })}
               />
             </div>
-          )}
-        </CardBody>
-      </Card>
 
-      {/* Platform Cards */}
-      <div className="mt-6">
-        <h3 className="text-xl font-semibold mb-4">사용 가능한 플랫폼</h3>
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <Card className="hover:shadow-lg transition-shadow">
-            <CardBody className="text-center py-8">
-              <div className="w-16 h-16 bg-primary/10 rounded-lg mx-auto mb-4 flex items-center justify-center">
-                <span className="text-3xl font-bold">G</span>
-              </div>
-              <h4 className="text-lg font-semibold mb-2">Google Ads</h4>
-              <p className="text-sm text-default-500 mb-4">
-                Google 검색 및 디스플레이 광고
-              </p>
-              <Button color="primary" variant="bordered" radius="sm" fullWidth>
-                연동하기
-              </Button>
-            </CardBody>
-          </Card>
-
-          <Card className="hover:shadow-lg transition-shadow">
-            <CardBody className="text-center py-8">
-              <div className="w-16 h-16 bg-secondary/10 rounded-lg mx-auto mb-4 flex items-center justify-center">
-                <span className="text-3xl font-bold">M</span>
-              </div>
-              <h4 className="text-lg font-semibold mb-2">Meta Ads</h4>
-              <p className="text-sm text-default-500 mb-4">
-                Facebook 및 Instagram 광고
-              </p>
-              <Button color="primary" variant="bordered" radius="sm" fullWidth>
-                연동하기
-              </Button>
-            </CardBody>
-          </Card>
-
-          <Card className="hover:shadow-lg transition-shadow">
-            <CardBody className="text-center py-8">
-              <div className="w-16 h-16 bg-warning/10 rounded-lg mx-auto mb-4 flex items-center justify-center">
-                <span className="text-3xl font-bold">T</span>
-              </div>
-              <h4 className="text-lg font-semibold mb-2">TikTok Ads</h4>
-              <p className="text-sm text-default-500 mb-4">
-                TikTok 동영상 광고
-              </p>
-              <Button color="primary" variant="bordered" radius="sm" fullWidth>
-                연동하기
-              </Button>
-            </CardBody>
-          </Card>
-
-          <Card className="hover:shadow-lg transition-shadow">
-            <CardBody className="text-center py-8">
-              <div className="w-16 h-16 bg-danger/10 rounded-lg mx-auto mb-4 flex items-center justify-center">
-                <span className="text-3xl font-bold">A</span>
-              </div>
-              <h4 className="text-lg font-semibold mb-2">Amazon Ads</h4>
-              <p className="text-sm text-default-500 mb-4">
-                Amazon 스폰서 광고
-              </p>
-              <Button color="primary" variant="bordered" radius="sm" fullWidth>
-                연동하기
-              </Button>
-            </CardBody>
-          </Card>
-        </div>
-      </div>
-
-      {/* Workspace Assignment Modal */}
-      <Modal isOpen={isOpen} onClose={onClose} size="lg">
-        <ModalContent>
-          <ModalHeader className="flex flex-col gap-1">
-            <h2 className="text-lg font-semibold">브랜드 할당</h2>
-            {currentAccount && (
-              <p className="text-sm text-default-400 font-normal">
-                {currentAccount.platform} · {currentAccount.accountName}
-              </p>
-            )}
-          </ModalHeader>
-          <ModalBody>
-            <div className="space-y-3">
-              <p className="text-sm text-default-500">
-                이 광고 계정을 사용할 브랜드를 선택하세요
-              </p>
-
-              <div className="space-y-2">
-                {workspaces.map((workspace) => {
-                  const isSelected = selectedWorkspace === workspace.id;
-                  
-                  return (
-                    <div
-                      key={workspace.id}
-                      className={`flex items-center justify-between p-3 rounded-lg border-2 transition-all cursor-pointer ${
-                        isSelected
-                          ? "border-primary bg-primary/5"
-                          : "border-default-200 hover:border-default-300 hover:bg-default-50"
-                      }`}
-                      onClick={() => {
-                        // 단일 선택: 동일한 것을 클릭하면 해제, 다른 것을 클릭하면 교체
-                        setSelectedWorkspace(isSelected ? null : workspace.id);
-                      }}
-                    >
-                      <div className="flex-1">
-                        <p className="font-medium text-sm">{workspace.name}</p>
-                        {workspace.description && (
-                          <p className="text-xs text-default-400 mt-0.5">
-                            {workspace.description}
-                          </p>
-                        )}
-                      </div>
-                      <div onClick={(e) => e.stopPropagation()}>
-                        <Switch
-                          isSelected={isSelected}
-                          onValueChange={() => {
-                            // Switch 클릭으로도 단일 선택 가능
-                            setSelectedWorkspace(isSelected ? null : workspace.id);
-                          }}
-                          size="sm"
-                          color="primary"
-                        />
-                      </div>
-                    </div>
-                  );
-                })}
-
-                {workspaces.length === 0 && (
-                  <div className="text-center py-8 text-default-400">
-                    <p className="text-sm">브랜드가 없습니다</p>
-                    <p className="text-xs mt-1">먼저 브랜드를 생성해주세요</p>
-                  </div>
-                )}
-              </div>
-
-              <div className="p-3 bg-default-50 rounded-lg border border-default-200">
-                <p className="text-xs text-default-500">
-                  💡 선택된 브랜드에서만 이 광고 계정의 데이터를 조회하고 관리할 수 있습니다
-                </p>
-              </div>
-            </div>
-          </ModalBody>
-          <ModalFooter>
-            <Button variant="light" onPress={onClose}>
-              취소
-            </Button>
-            <Button
-              color="primary"
-              onPress={handleSaveWorkspaces}
-            >
-              {selectedWorkspace ? '브랜드 할당' : '할당 해제'}
-            </Button>
-          </ModalFooter>
-        </ModalContent>
-      </Modal>
-
-      {/* Workspace Management Section */}
-      <div className="mt-8">
-        <Card>
-          <CardHeader className="flex justify-between items-center">
-            <div>
-              <h3 className="text-xl font-semibold">브랜드 관리</h3>
-              <p className="text-sm text-default-500 mt-1">
-                브랜드를 생성하고 관리합니다
-              </p>
-            </div>
-            <Button
-              color="primary"
-              startContent={<Plus className="w-4 h-4" />}
-              onPress={handleCreateWorkspace}
-              size="sm"
-            >
-              브랜드 추가
-            </Button>
-          </CardHeader>
-          <CardBody>
-            {!mounted ? (
-              <div className="text-center py-8">
-                <p className="text-default-500">로딩 중...</p>
-              </div>
-            ) : (
-              <div className="overflow-x-auto">
-                <Table aria-label="브랜드 관리 테이블" className="min-w-[600px]">
+            {/* 연동된 계정 목록 */}
+            <Card>
+              <CardHeader className="flex justify-between items-center">
+                <h3 className="text-xl font-semibold">연동된 광고 계정</h3>
+              </CardHeader>
+              <CardBody>
+                <Table aria-label="연동된 계정 목록">
                   <TableHeader>
-                    <TableColumn key="name">브랜드명</TableColumn>
-                    <TableColumn key="description">설명</TableColumn>
-                    <TableColumn key="createdAt">생성일</TableColumn>
-                    <TableColumn key="status" align="center">상태</TableColumn>
-                    <TableColumn key="actions" align="center">작업</TableColumn>
+                    <TableColumn>플랫폼</TableColumn>
+                    <TableColumn>계정명</TableColumn>
+                    <TableColumn>계정 ID</TableColumn>
+                    <TableColumn>브랜드</TableColumn>
+                    <TableColumn align="center">활성화</TableColumn>
+                    <TableColumn align="center">작업</TableColumn>
                   </TableHeader>
-                  <TableBody>
-                    {workspaces.map((workspace) => (
-                      <TableRow key={workspace.id}>
-                        <TableCell>
-                          <div>
-                            <p className="font-semibold">{workspace.name}</p>
-                            <p className="text-xs text-default-400">ID: {workspace.id}</p>
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <span className="text-sm text-default-500">
-                            {workspace.description || "-"}
-                          </span>
-                        </TableCell>
-                        <TableCell>
-                          <span className="text-sm">
-                            {new Date(workspace.createdAt).toLocaleDateString("ko-KR")}
-                          </span>
-                        </TableCell>
-                        <TableCell className="text-center">
-                          <Chip
-                            color={workspace.isActive ? "success" : "default"}
-                            size="sm"
-                            variant="flat"
-                          >
-                            {workspace.isActive ? "활성" : "비활성"}
-                          </Chip>
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex gap-2 justify-center">
+                  <TableBody emptyContent="연동된 계정이 없습니다.">
+                    {allAccounts.map((account) => {
+                      const brand = brands.find(b => b.id === account.brandId);
+                      return (
+                        <TableRow key={account.id}>
+                          <TableCell>
+                            <Chip
+                              color={PLATFORM_COLOR[account.platform]}
+                              size="sm"
+                              variant="flat"
+                            >
+                              {account.platform.toUpperCase()}
+                            </Chip>
+                          </TableCell>
+                          <TableCell>{account.accountName}</TableCell>
+                          <TableCell>
+                            <span className="text-xs font-mono text-default-500">
+                              {account.accountId}
+                            </span>
+                          </TableCell>
+                          <TableCell>
+                            {brand ? (
+                              <Chip size="sm" variant="flat">{brand.name}</Chip>
+                            ) : (
+                              <span className="text-sm text-default-400">미지정</span>
+                            )}
+                          </TableCell>
+                          <TableCell className="text-center">
+                            <Switch
+                              isSelected={account.isActive}
+                              size="sm"
+                              color="success"
+                            />
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex gap-2 justify-center">
+                              <Button
+                                size="sm"
+                                variant="flat"
+                                color="primary"
+                                radius="sm"
+                                onPress={() => handleManageAccountMembers(account)}
+                              >
+                                팀원 권한
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="flat"
+                                color="danger"
+                                radius="sm"
+                              >
+                                삭제
+                              </Button>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
+                  </TableBody>
+                </Table>
+              </CardBody>
+            </Card>
+          </div>
+        </Tab>
+
+        {/* 브랜드 관리 탭 */}
+        <Tab key="brands" title="브랜드 관리">
+          <div className="py-6">
+            <Card>
+              <CardHeader className="flex justify-between items-center">
+                <h3 className="text-xl font-semibold">브랜드 목록</h3>
+                <Button color="primary" onPress={handleCreateBrand}>
+                  브랜드 생성
+                </Button>
+              </CardHeader>
+              <CardBody>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {brands.map((brand) => {
+                    const brandAccounts = allAccounts.filter(acc => acc.brandId === brand.id);
+                    return (
+                      <Card key={brand.id} className="border border-divider">
+                        <CardBody>
+                          <div className="flex justify-between items-start mb-3">
+                            <div>
+                              <h4 className="text-lg font-semibold">{brand.name}</h4>
+                              {brand.description && (
+                                <p className="text-sm text-default-500 mt-1">{brand.description}</p>
+                              )}
+                            </div>
                             <Button
                               size="sm"
                               variant="flat"
                               color="primary"
-                              isIconOnly
-                              onPress={() => handleEditWorkspace(workspace)}
+                              onPress={() => handleEditBrand(brand)}
                             >
-                              <Pencil className="w-4 h-4" />
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="flat"
-                              color="danger"
-                              isIconOnly
-                              onPress={() => handleDeleteWorkspace(workspace.id, workspace.name)}
-                            >
-                              <Trash2 className="w-4 h-4" />
+                              수정
                             </Button>
                           </div>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
-            )}
-          </CardBody>
-        </Card>
-      </div>
+                          <div className="space-y-2">
+                            <div className="flex items-center gap-2">
+                              <span className="text-sm text-default-600">광고 계정:</span>
+                              <span className="text-sm font-semibold">{brandAccounts.length}개</span>
+                            </div>
+                            <div className="flex flex-wrap gap-2">
+                              {brandAccounts.map((acc) => (
+                                <Chip
+                                  key={acc.id}
+                                  size="sm"
+                                  variant="flat"
+                                  color={PLATFORM_COLOR[acc.platform]}
+                                >
+                                  {acc.accountName}
+                                </Chip>
+                              ))}
+                            </div>
+                          </div>
+                        </CardBody>
+                      </Card>
+                    );
+                  })}
+                </div>
+                {brands.length === 0 && (
+                  <div className="text-center py-12">
+                    <p className="text-default-500 mb-4">생성된 브랜드가 없습니다</p>
+                    <Button color="primary" onPress={handleCreateBrand}>
+                      첫 번째 브랜드 만들기
+                    </Button>
+                  </div>
+                )}
+              </CardBody>
+            </Card>
+          </div>
+        </Tab>
+      </Tabs>
 
-      {/* Workspace Create/Edit Modal */}
-      <Modal isOpen={isWorkspaceModalOpen} onClose={onWorkspaceModalClose} size="lg">
+      {/* 브랜드 생성/수정 모달 */}
+      <Modal isOpen={isBrandModalOpen} onClose={onBrandModalClose} size="2xl">
         <ModalContent>
-          <ModalHeader>
-            {editingWorkspace ? "브랜드 수정" : "새 브랜드 추가"}
-          </ModalHeader>
+          <ModalHeader>{editingBrand ? "브랜드 수정" : "브랜드 생성"}</ModalHeader>
           <ModalBody>
             <div className="space-y-4">
               <Input
-                label="브랜드명"
+                label="브랜드 이름"
                 placeholder="브랜드 이름을 입력하세요"
-                value={workspaceFormData.name}
-                onValueChange={(value) => setWorkspaceFormData({ ...workspaceFormData, name: value })}
+                value={brandName}
+                onChange={(e) => setBrandName(e.target.value)}
                 isRequired
               />
               <Textarea
                 label="설명"
-                placeholder="브랜드 설명을 입력하세요 (선택사항)"
-                value={workspaceFormData.description}
-                onValueChange={(value: string) => setWorkspaceFormData({ ...workspaceFormData, description: value })}
-                minRows={3}
+                placeholder="브랜드 설명 (선택사항)"
+                value={brandDescription}
+                onChange={(e) => setBrandDescription(e.target.value)}
               />
+              <div>
+                <label className="text-sm font-medium mb-2 block">
+                  광고 계정 선택 ({selectedAccountsForBrand.size}개 선택됨)
+                </label>
+                <div className="space-y-2 max-h-60 overflow-y-auto border border-divider rounded-lg p-3">
+                  {allAccounts.map((account) => (
+                    <div
+                      key={account.id}
+                      className="flex items-center justify-between p-2 hover:bg-default-100 rounded cursor-pointer"
+                      onClick={() => {
+                        const newSet = new Set(selectedAccountsForBrand);
+                        if (newSet.has(account.id)) {
+                          newSet.delete(account.id);
+                        } else {
+                          newSet.add(account.id);
+                        }
+                        setSelectedAccountsForBrand(newSet);
+                      }}
+                    >
+                      <div className="flex items-center gap-3">
+                        <input
+                          type="checkbox"
+                          checked={selectedAccountsForBrand.has(account.id)}
+                          onChange={() => {}}
+                          className="w-4 h-4"
+                        />
+                        <div>
+                          <p className="text-sm font-medium">{account.accountName}</p>
+                          <p className="text-xs text-default-400">{account.accountId}</p>
+                        </div>
+                      </div>
+                      <Chip
+                        size="sm"
+                        variant="flat"
+                        color={PLATFORM_COLOR[account.platform]}
+                      >
+                        {account.platform.toUpperCase()}
+                      </Chip>
+                    </div>
+                  ))}
+                </div>
+              </div>
             </div>
           </ModalBody>
           <ModalFooter>
-            <Button variant="light" onPress={onWorkspaceModalClose}>
+            <Button color="default" variant="flat" onPress={onBrandModalClose}>
               취소
             </Button>
-            <Button color="primary" onPress={handleSaveWorkspace}>
-              {editingWorkspace ? "수정" : "생성"}
+            <Button color="primary" onPress={handleSaveBrand}>
+              {editingBrand ? "수정" : "생성"}
             </Button>
           </ModalFooter>
         </ModalContent>
       </Modal>
 
+      {/* 계정 팀원 권한 모달 */}
+      <Modal isOpen={isAccountMemberModalOpen} onClose={onAccountMemberModalClose} size="2xl">
+        <ModalContent>
+          <ModalHeader>
+            {currentAccount?.accountName} - 팀원 권한 관리
+          </ModalHeader>
+          <ModalBody>
+            {currentAccount && (
+              <div className="space-y-4">
+                <div className="flex items-center justify-between p-3 bg-default-100 rounded-lg">
+                  <div>
+                    <p className="text-sm font-medium">{currentAccount.accountName}</p>
+                    <p className="text-xs text-default-500">{currentAccount.accountId}</p>
+                  </div>
+                  <Chip
+                    size="sm"
+                    variant="flat"
+                    color={PLATFORM_COLOR[currentAccount.platform]}
+                  >
+                    {currentAccount.platform.toUpperCase()}
+                  </Chip>
+                </div>
+
+                {/* 접근 권한이 있는 팀원 */}
+                <div>
+                  <h4 className="text-sm font-semibold mb-2">접근 권한이 있는 팀원</h4>
+                  {(accountMembers[currentAccount.id] || []).length === 0 ? (
+                    <p className="text-sm text-default-500 text-center py-4">
+                      접근 권한이 부여된 팀원이 없습니다
+                    </p>
+                  ) : (
+                    <div className="space-y-2">
+                      {(accountMembers[currentAccount.id] || []).map((member) => (
+                        <div
+                          key={member.memberId}
+                          className="flex items-center justify-between p-3 border border-divider rounded-lg"
+                        >
+                          <div>
+                            <p className="text-sm font-medium">{member.memberName}</p>
+                            <p className="text-xs text-default-500">{member.memberEmail}</p>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <AccountRoleSelector
+                              value={member.role}
+                              onChange={(role) => handleChangeAccountMemberRole(member.memberId, role)}
+                            />
+                            <Button
+                              size="sm"
+                              color="danger"
+                              variant="flat"
+                              onPress={() => handleRemoveAccountMember(member.memberId)}
+                            >
+                              제거
+                            </Button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                {/* 팀원 추가 */}
+                <div>
+                  <h4 className="text-sm font-semibold mb-2">팀원 추가</h4>
+                  <div className="space-y-2">
+                    {SAMPLE_TEAM_MEMBERS.filter(
+                      m => !(accountMembers[currentAccount.id] || []).some(am => am.memberId === m.id)
+                    ).map((member) => (
+                      <div
+                        key={member.id}
+                        className="flex items-center justify-between p-3 border border-divider rounded-lg"
+                      >
+                        <div>
+                          <p className="text-sm font-medium">{member.name}</p>
+                          <p className="text-xs text-default-500">{member.email}</p>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <AccountRoleSelector
+                            value="viewer"
+                            onChange={(role) => handleAddAccountMember(member.id, role)}
+                            className="w-32"
+                          />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
+          </ModalBody>
+          <ModalFooter>
+            <Button color="default" variant="flat" onPress={onAccountMemberModalClose}>
+              닫기
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
     </div>
   );
 }

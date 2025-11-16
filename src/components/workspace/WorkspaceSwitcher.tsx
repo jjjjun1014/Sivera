@@ -79,7 +79,7 @@ export function WorkspaceSwitcher() {
                   )}
                 </div>
                 {workspace.id === currentWorkspace.id && (
-                  <Check className="w-4 h-4 text-primary flex-shrink-0" />
+                  <Check className="w-4 h-4 text-primary shrink-0" />
                 )}
               </div>
             </DropdownItem>

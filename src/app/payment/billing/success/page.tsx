@@ -15,38 +15,51 @@ function SuccessContent() {
 
   // URL 파라미터에서 정보 가져오기
   const billingKey = searchParams.get('billingKey');
+  const paymentMethod = searchParams.get('paymentMethod') as 'card' | 'paypal' | null;
   const plan = searchParams.get('plan') || 'standard';
   const seats = searchParams.get('seats') || '1';
 
   useEffect(() => {
-    // 빌링키 발급 성공 처리
-    // TODO: 백엔드 API로 빌링키 저장 요청
+    // 빌링키 발급 성공 처리 및 Subscription 생성
     const processBillingKey = async () => {
       if (!billingKey) {
-        // 빌링키가 없으면 실패 페이지로
         router.replace('/payment/billing/failure?error=no_billing_key');
         return;
       }
 
       try {
-        // TODO: 백엔드 API 호출
-        // await fetch('/api/billing/save', {
-        //   method: 'POST',
-        //   body: JSON.stringify({ billingKey, plan, seats })
-        // });
+        // 백엔드 API 호출 - 구독 생성 및 빌링키 저장
+        const response = await fetch('/api/billing/save', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ 
+            billingKey, 
+            paymentMethod,
+            planTier: plan, 
+            teamSize: parseInt(seats) || 1,
+          }),
+          signal: AbortSignal.timeout(10000), // 10초 타임아웃
+        });
 
-        // 임시: 2초 대기 후 완료 처리
-        await new Promise(resolve => setTimeout(resolve, 2000));
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({}));
+          throw new Error(errorData.error || 'Subscription creation failed');
+        }
+
+        await response.json();
         setIsProcessing(false);
       } catch (error) {
-        setError('빌링키 저장에 실패했습니다.');
-      } finally {
+        const errorMessage = error instanceof Error ? error.message : '구독 생성에 실패했습니다.';
+        setError(errorMessage);
         setIsProcessing(false);
+        setTimeout(() => {
+          router.replace(`/payment/billing/failure?error=subscription_failed&message=${encodeURIComponent(errorMessage)}`);
+        }, 3000);
       }
     };
 
     processBillingKey();
-  }, [billingKey, plan, seats, router]);
+  }, [billingKey, paymentMethod, plan, seats, router]);
 
   const handleGoToSettings = () => {
     router.push('/dashboard/settings?tab=billing');
@@ -130,10 +143,6 @@ function SuccessContent() {
             <ul className="space-y-2 text-sm">
               <li className="flex items-center gap-2">
                 <CheckCircle className="w-4 h-4 text-success" />
-                <span>AI 챗봇 어시스턴트</span>
-              </li>
-              <li className="flex items-center gap-2">
-                <CheckCircle className="w-4 h-4 text-success" />
                 <span>API 접근 권한</span>
               </li>
               <li className="flex items-center gap-2">
@@ -143,6 +152,10 @@ function SuccessContent() {
               <li className="flex items-center gap-2">
                 <CheckCircle className="w-4 h-4 text-success" />
                 <span>무제한 광고 계정 연결</span>
+              </li>
+              <li className="flex items-center gap-2">
+                <CheckCircle className="w-4 h-4 text-success" />
+                <span>우선 고객 지원</span>
               </li>
             </ul>
           </div>

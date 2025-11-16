@@ -1,7 +1,7 @@
 /* eslint-disable local/no-literal-strings */
 "use client";
 
-import type { Tables } from "@/types/supabase.types";
+// Tables type no longer needed - using Amplify Schema types
 
 import { useState } from "react";
 import { Card, CardBody, CardHeader } from "@heroui/card";

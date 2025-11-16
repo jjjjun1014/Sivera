@@ -20,7 +20,8 @@ import {
   type SignInParams,
   type SignUpParams,
 } from '@/lib/services/auth.service';
-import { getCurrentUser as getDBUser, createUser } from '@/lib/services/user.service';
+import { getCurrentUser as getDBUser } from '@/lib/services/user.service';
+import { useAutoLogout, clearSessionActivity } from '@/hooks/useAutoLogout';
 
 interface AuthContextType {
   user: User | null;
@@ -64,6 +65,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           break;
         case 'signedOut':
           setUser(null);
+          clearSessionActivity(); // 세션 활동 기록 삭제
           break;
         case 'tokenRefresh':
           // 토큰 갱신 시 사용자 정보 유지
@@ -77,6 +79,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     return () => hubListener();
   }, []);
+
+  // 자동 로그아웃 (3시간 비활동 시)
+  useAutoLogout(
+    async () => {
+      await authSignOut();
+      setUser(null);
+      clearSessionActivity();
+    },
+    !!user // 로그인된 사용자가 있을 때만 활성화
+  );
 
   const loadUser = async () => {
     try {
@@ -159,6 +171,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const signOut = async () => {
     await authSignOut();
     setUser(null);
+    clearSessionActivity(); // 세션 활동 기록 삭제
   };
 
   const resetPassword = async (email: string) => {

@@ -7,28 +7,20 @@ import { Button } from "@heroui/button";
 import { Chip } from "@heroui/chip";
 import { FaCheckCircle } from "react-icons/fa";
 
-// TODO: Replace with backend API integration
-// import { createClient } from "@/utils/supabase/client";
 import log from "@/utils/logger";
-import { AcceptTeamInvitationResult } from "@/types";
 import { toast } from "@/utils/toast";
 import { useDictionary } from "@/hooks/use-dictionary";
+import { acceptInvitation } from "@/lib/services/team.service";
+import { updateUser } from "@/lib/services/user.service";
 
 interface InviteAcceptClientProps {
-  token: string;
-  invitation: {
-    email: string;
-    role: string;
-    teamName: string;
-    inviterName: string;
-  };
-  isPreview?: boolean;
+  invitation: any;
+  currentUser: any;
 }
 
 export default function InviteAcceptClient({
-  token,
   invitation,
-  isPreview = false,
+  currentUser,
 }: InviteAcceptClientProps) {
   const router = useRouter();
   const { dictionary: dict } = useDictionary();
@@ -36,49 +28,50 @@ export default function InviteAcceptClient({
   const [success, setSuccess] = useState(false);
 
   const roleLabels = {
-    team_mate: dict.team.roles.team_mate.name,
-    viewer: dict.team.roles.viewer.name,
+    master: "마스터",
+    team_mate: "팀 멤버",
+    viewer: "뷰어",
   };
 
   const handleAccept = async () => {
-    if (isPreview) {
-      // If preview mode, redirect to signup with invitation email and token
-      const signupUrl = `/login?mode=signup&email=${encodeURIComponent(invitation.email)}&inviteToken=${token}&returnUrl=${encodeURIComponent(`/invite/${token}`)}`;
-
-      router.push(signupUrl);
-
-      return;
-    }
-
     setIsLoading(true);
 
     try {
-      // TODO: Backend API Integration Required
-      // Endpoint: POST /api/invitations/:token/accept
-      // Response: { success, team_id, error? }
+      // 초대 수락
+      const result = await acceptInvitation(invitation.id, currentUser.id);
 
-      log.warn("handleAccept called - backend integration needed", { token });
+      if (!result.success) {
+        toast.error({
+          title: "초대 수락 실패",
+          description: result.error || "초대 수락 중 오류가 발생했습니다.",
+        });
+        return;
+      }
 
-      // Stub - show error toast
-      toast.error({
-        title: "Backend Integration Required",
-        description: "Please implement POST /api/invitations/:token/accept endpoint.",
+      // User의 teamID 업데이트
+      await updateUser(currentUser.id, {
+        teamID: invitation.teamID,
       });
 
-      // TODO: The backend should handle:
-      // 1. Validate invitation token
-      // 2. Check if user is authenticated
-      // 3. Accept the invitation (add user to team)
-      // 4. Update invitation status to 'accepted'
-      // 5. Return success with team_id
+      toast.success({
+        title: "초대 수락 완료",
+        description: "팀에 성공적으로 가입되었습니다.",
+      });
+
+      setSuccess(true);
+
+      // 대시보드로 리다이렉트
+      setTimeout(() => {
+        router.push("/dashboard");
+      }, 2000);
     } catch (err) {
-      log.error("Error accepting invitation", err as Error);
+      log.error("Error accepting invitation", err instanceof Error ? err : new Error(String(err)));
       toast.error({
-        title: dict.team.invite.accept.toast.errorTitle,
+        title: "초대 수락 실패",
         description:
           err instanceof Error
             ? err.message
-            : dict.team.invite.accept.toast.errorDescription,
+            : "초대 수락 중 오류가 발생했습니다.",
       });
     } finally {
       setIsLoading(false);
@@ -86,7 +79,6 @@ export default function InviteAcceptClient({
   };
 
   const handleDecline = () => {
-    // Just redirect to home
     router.push("/");
   };
 
@@ -97,10 +89,10 @@ export default function InviteAcceptClient({
           <CardBody className="text-center py-8">
             <FaCheckCircle className="w-16 h-16 text-success mx-auto mb-4" />
             <h2 className="text-2xl font-bold mb-2">
-              {dict.team.invite.accept.success.title}
+              초대 수락 완료
             </h2>
             <p className="text-default-500">
-              {dict.team.invite.accept.success.description}
+              팀에 성공적으로 가입되었습니다. 잠시 후 대시보드로 이동합니다.
             </p>
           </CardBody>
         </Card>
@@ -113,32 +105,25 @@ export default function InviteAcceptClient({
       <Card className="max-w-md w-full">
         <CardHeader className="text-center pb-4">
           <h1 className="text-2xl font-bold">
-            {dict.team.invite.accept.title}
+            팀 초대
           </h1>
         </CardHeader>
         <CardBody className="space-y-4">
           <div className="text-center">
             <p className="text-lg mb-4">
-              {dict.team.invite.accept.invitedBy.replace(
-                "{{inviter}}",
-                invitation.inviterName,
-              )}
+              팀에 초대되었습니다
             </p>
-            <h2 className="text-3xl font-bold mb-4">{invitation.teamName}</h2>
             <div className="text-default-500 mb-4">
-              {dict.team.invite.accept.asRole}{" "}
+              역할:{" "}
               <Chip color="primary" size="sm" variant="flat">
                 {roleLabels[invitation.role as keyof typeof roleLabels] ||
                   invitation.role}
               </Chip>
             </div>
-          </div>
-
-          {isPreview && (
-            <p className="text-sm text-default-500 text-center">
-              {dict.team.invite.accept.needAccount}
+            <p className="text-sm text-default-400">
+              초대 이메일: {invitation.email}
             </p>
-          )}
+          </div>
 
           <div className="flex gap-3 pt-4">
             <Button
@@ -148,7 +133,7 @@ export default function InviteAcceptClient({
               variant="bordered"
               onPress={handleDecline}
             >
-              {dict.team.invite.accept.decline}
+              거절
             </Button>
             <Button
               fullWidth
@@ -156,9 +141,7 @@ export default function InviteAcceptClient({
               isLoading={isLoading}
               onPress={handleAccept}
             >
-              {isPreview
-                ? dict.team.invite.accept.createAccount
-                : dict.team.invite.accept.acceptInvitation}
+              수락
             </Button>
           </div>
         </CardBody>

@@ -72,16 +72,14 @@ const helpTips: Record<string, HelpTip[]> = {
   ],
   default: [
     {
-      id: 'ai-assistant',
-      title: 'AI 도우미 사용하기',
-      description:
-        '우측 하단 챗봇 아이콘을 클릭하면 AI 어시스턴트와 대화할 수 있어요. 자연어로 질문해보세요!',
-      actionLabel: 'AI 챗봇 열기',
-    },
-    {
       id: 'keyboard-shortcuts',
       title: '키보드 단축키',
-      description: 'Cmd+K (Mac) 또는 Ctrl+K (Windows)로 빠른 검색을 열 수 있어요.',
+      description: '더 빠른 작업을 위해 다양한 단축키를 활용해보세요.',
+    },
+    {
+      id: 'data-sync',
+      title: '실시간 데이터 동기화',
+      description: '광고 플랫폼의 데이터가 자동으로 동기화됩니다. 새로고침 없이 최신 정보를 확인하세요.',
     },
   ],
 };

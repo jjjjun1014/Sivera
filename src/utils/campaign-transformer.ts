@@ -1,5 +1,4 @@
-import { Campaign } from "@/types/campaign.types";
-import { Database } from "@/types/supabase.types";
+import { Campaign, CampaignMetrics } from "@/types/campaign.types";
 
 type DbCampaign = Database["public"]["Tables"]["campaigns"]["Row"];
 

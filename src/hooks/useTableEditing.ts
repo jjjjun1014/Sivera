@@ -106,13 +106,49 @@ export function useTableEditing<T = any>() {
     dispatch({ type: 'RESET' });
   }, []);
 
+  // 하위 호환성을 위해 state의 속성들을 직접 반환
+  const setEditingCell = useCallback((cell: { id: number | string; field: string } | null) => {
+    if (cell) {
+      dispatch({ type: 'START_EDIT', payload: cell });
+    } else {
+      dispatch({ type: 'CANCEL_EDIT' });
+    }
+  }, []);
+
+  const updateTempValue = updateTemp;
+  const setTempValues = useCallback((updater: ((prev: Record<string, T>) => Record<string, T>) | Record<string, T>) => {
+    if (typeof updater === 'function') {
+      const newValues = updater(state.tempValues);
+      Object.entries(newValues).forEach(([key, value]) => {
+        dispatch({ type: 'UPDATE_TEMP', payload: { key, value } });
+      });
+    } else {
+      Object.entries(updater).forEach(([key, value]) => {
+        dispatch({ type: 'UPDATE_TEMP', payload: { key, value } });
+      });
+    }
+  }, [state.tempValues]);
+
   return {
+    // 상태 (직접 접근)
+    editingCell: state.editingCell,
+    tempValues: state.tempValues,
+    pendingChange: state.pendingChange,
+    
+    // 상태 (객체로 접근 - CampaignTable용)
     state,
+    
+    // 액션 (새 API)
     startEdit,
     updateTemp,
+    updateTempValue,
     setPending,
     cancelEdit,
     confirmEdit,
     reset,
+    
+    // 하위 호환 (기존 API)
+    setEditingCell,
+    setTempValues,
   };
 }

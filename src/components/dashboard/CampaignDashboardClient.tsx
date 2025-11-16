@@ -113,7 +113,7 @@ export function CampaignDashboardClient({
     }
   }, [isOpen]);
 
-  const columns = useMemo(
+  const columns: TableColumnType<Campaign>[] = useMemo(
     () => [
       { key: "name", label: dict.campaigns.table.name },
       { key: "platform", label: dict.campaigns.table.platform },

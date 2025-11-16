@@ -9,6 +9,7 @@ const config = {
   platformDisplayName: "TikTok Ads - 대시보드",
   description: "전체 TikTok 광고 성과를 한눈에 확인하세요",
   campaigns: tiktokAdsCampaigns,
+  platform: "tiktok" as const,
   sampleTotalData: {
     totalSpent: 856432,
     totalBudget: 1100000,

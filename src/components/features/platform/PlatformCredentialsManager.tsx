@@ -21,7 +21,7 @@ import { PlatformCredentialItem } from "./PlatformCredentialItem";
 
 import { PlatformCredential, PlatformType } from "@/types";
 import { CredentialValues } from "@/types/credentials.types";
-import { Json } from "@/types/supabase.types";
+import type { Json } from "@/types";
 import { platformConfig } from "@/constants/platform-config";
 import { useDictionary } from "@/hooks/use-dictionary";
 
@@ -62,7 +62,22 @@ function PlatformCredentialsManagerComponent({
     (platform: PlatformType) => {
       const config = platformConfig[platform];
 
+      // Check if platform is already connected (only for OAuth platforms)
       if (config.supportsOAuth && OAUTH_PLATFORMS.includes(platform)) {
+        const isAlreadyConnected = credentials.some(
+          (cred) => cred.platform === platform && cred.is_active,
+        );
+
+        if (isAlreadyConnected) {
+          toast.error({
+            title: "중복된 플랫폼 연동",
+            description: "브랜드 한개당 하나의 광고 API만 연동할 수 있습니다!",
+          });
+          log.warn("Duplicate platform connection attempt", { platform });
+
+          return;
+        }
+
         window.location.href = `/api/auth/start?platform=${platform}`;
         return;
       }
@@ -70,7 +85,7 @@ function PlatformCredentialsManagerComponent({
       setSelectedPlatform(platform);
       onOpen();
     },
-    [onOpen, OAUTH_PLATFORMS],
+    [onOpen, OAUTH_PLATFORMS, credentials],
   );
 
   const handleSave = useCallback(

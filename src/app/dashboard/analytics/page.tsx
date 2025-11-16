@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, Suspense } from "react";
 import { Card, CardBody, CardHeader } from "@heroui/card";
 import { Button } from "@heroui/button";
 import { DateRangePicker } from "@heroui/date-picker";
@@ -16,6 +16,8 @@ import { platformPerformance, topCampaigns } from "@/lib/mock-data";
 import { PLATFORM_COLORS } from "@/types";
 import { CHART_CONFIG } from "@/lib/constants";
 import { usePagination } from "@/hooks";
+import { ErrorBoundary } from "@/components/common/ErrorBoundary";
+import { DashboardSkeleton, ChartSkeleton } from "@/components/common/LoadingSkeleton";
 import {
   ComposedChart,
   Line,
@@ -63,6 +65,17 @@ const totalData = {
 };
 
 export default function IntegratedDashboardPage() {
+  const [isLoading, setIsLoading] = useState(true);
+
+  // 초기 로딩 시뮬레이션 (실제로는 API 호출)
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setIsLoading(false);
+    }, 800);
+
+    return () => clearTimeout(timer);
+  }, []);
+
   // Workspace context
   const { currentWorkspace } = useWorkspace();
   const workspaceId = currentWorkspace?.id || "default";
@@ -136,37 +149,49 @@ export default function IntegratedDashboardPage() {
   const cpaRate = calculateReversedAchievement(totalData.avgCPA, goals.targetCPA);
   const roasRate = calculateAchievement(totalData.avgROAS, goals.targetROAS);
 
+  // 로딩 중
+  if (isLoading) {
+    return (
+      <div className="space-y-6">
+        <DashboardSkeleton />
+      </div>
+    );
+  }
+
   return (
-    <div className="container mx-auto px-6 py-8">
+    <ErrorBoundary>
+      <div className="container mx-auto px-6 py-8">
       {/* Header */}
-      <div className="mb-6 flex flex-col lg:flex-row justify-between lg:items-start gap-4">
-        <div className="min-w-0">
-          <h1 className="text-2xl sm:text-3xl font-bold mb-2 break-keep">통합 대시보드</h1>
-          <p className="text-sm sm:text-base text-default-500 break-keep">
-            전체 계정의 광고 성과를 한눈에 확인하세요
-          </p>
-        </div>
-        <div className="flex flex-wrap gap-3 shrink-0">
-          <DateRangePicker
-            label="기간 선택"
-            radius="sm"
-            variant="bordered"
-            value={dateRange}
-            onChange={(value) => value && setDateRange(value)}
-            defaultValue={{
-              start: fourteenDaysAgo,
-              end: todayDate,
-            }}
-            className="max-w-xs"
-          />
-          <Button
-            color="primary"
-            variant="flat"
-            startContent={<Target className="w-4 h-4" />}
-            onPress={onGoalModalOpen}
-          >
-            목표 설정
-          </Button>
+      <div className="mb-6">
+        <div className="flex flex-col lg:flex-row justify-between lg:items-center gap-4">
+          <div className="min-w-0">
+            <h1 className="text-2xl sm:text-3xl font-bold mb-2 break-keep">통합 대시보드</h1>
+            <p className="text-sm sm:text-base text-default-500 break-keep">
+              전체 계정의 광고 성과를 한눈에 확인하세요
+            </p>
+          </div>
+          <div className="flex items-center gap-3 shrink-0">
+            <DateRangePicker
+              label="기간 선택"
+              radius="sm"
+              variant="bordered"
+              value={dateRange}
+              onChange={(value) => value && setDateRange(value)}
+              defaultValue={{
+                start: fourteenDaysAgo,
+                end: todayDate,
+              }}
+              className="max-w-xs"
+            />
+            <Button
+              color="primary"
+              variant="flat"
+              startContent={<Target className="w-4 h-4" />}
+              onPress={onGoalModalOpen}
+            >
+              목표 설정
+            </Button>
+          </div>
         </div>
       </div>
 
@@ -509,5 +534,6 @@ export default function IntegratedDashboardPage() {
         onSave={handleSaveGoals}
       />
     </div>
+    </ErrorBoundary>
   );
 }

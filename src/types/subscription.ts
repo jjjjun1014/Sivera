@@ -15,7 +15,6 @@ export interface PlanFeatures {
   adAccounts: number | 'unlimited';
   dataRetention: number | 'unlimited';  // days (3 = 3일, 'unlimited' = 무제한)
   apiAccess: 'none' | 'read-only' | 'full';
-  aiChatbot: boolean;
   apiWrite: boolean;
   prioritySupport?: boolean;
   customIntegrations?: boolean;

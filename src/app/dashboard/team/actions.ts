@@ -21,7 +21,13 @@ export async function inviteTeamMemberAction(email: string, role: UserRole) {
 
     // 2. 사용자의 팀 ID 조회 (첫 번째 팀 사용)
     const userId = currentUser.data.id;
-    const teamId = currentUser.data.teamID;
+    
+    // TODO: TeamMember를 통해 teamId 조회
+    // const teamMemberResult = await client.models.TeamMember.list({
+    //   filter: { userID: { eq: userId } }
+    // });
+    // const teamId = teamMemberResult.data[0]?.teamID;
+    const teamId = null; // 임시
     
     if (!teamId) {
       return {

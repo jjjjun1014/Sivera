@@ -25,7 +25,7 @@ import { CoupangManualCampaignManager } from "./coupang/CoupangManualCampaignMan
 // OAuth imports removed - legacy OAuth implementation
 import { PlatformType } from "@/types";
 import { CredentialValues } from "@/types/credentials.types";
-import { Database, Json } from "@/types/supabase.types";
+import type { Json } from "@/types";
 import { platformConfig } from "@/utils/platform-config";
 import { toast } from "@/utils/toast";
 import log from "@/utils/logger";
@@ -291,6 +291,21 @@ export function MultiAccountPlatformManager({
 
     // For OAuth platforms, redirect to OAuth flow
     if (config.supportsOAuth) {
+      // Check if platform is already connected
+      const isAlreadyConnected = credentials.some(
+        (cred) => cred.platform === platform && cred.is_active,
+      );
+
+      if (isAlreadyConnected) {
+        toast.error({
+          title: "중복된 플랫폼 연동",
+          description: "브랜드 한개당 하나의 광고 API만 연동할 수 있습니다!",
+        });
+        log.warn("Duplicate platform connection attempt", { platform });
+
+        return;
+      }
+
       try {
         const response = await fetch(`/api/auth/oauth/${platform}/callback`, {
           method: "POST",
@@ -321,6 +336,21 @@ export function MultiAccountPlatformManager({
   };
 
   const handleOAuthConnect = async (platform: PlatformType) => {
+    // Check if platform is already connected
+    const isAlreadyConnected = credentials.some(
+      (cred) => cred.platform === platform && cred.is_active,
+    );
+
+    if (isAlreadyConnected) {
+      toast.error({
+        title: "중복된 플랫폼 연동",
+        description: "브랜드 한개당 하나의 광고 API만 연동할 수 있습니다!",
+      });
+      log.warn("Duplicate platform connection attempt", { platform });
+
+      return;
+    }
+
     try {
       const response = await fetch(`/api/auth/oauth/${platform}/callback`, {
         method: "POST",

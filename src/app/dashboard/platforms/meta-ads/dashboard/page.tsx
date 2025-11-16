@@ -9,6 +9,7 @@ const config = {
   platformDisplayName: "Meta Ads - 대시보드",
   description: "전체 Meta 광고 성과를 한눈에 확인하세요",
   campaigns: metaAdsCampaigns,
+  platform: "meta" as const,
   sampleTotalData: {
     totalSpent: 1156789,
     totalBudget: 1400000,

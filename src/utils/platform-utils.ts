@@ -6,7 +6,8 @@ import type {
   RetryConfig,
 } from "@/types/platform-common.types";
 import type { CampaignMetrics } from "@/types/campaign.types";
-import type { Json } from "@/types/supabase.types";
+import type { Database } from "@/types/database.types";
+import type { Json } from "@/types";
 
 import { DEFAULT_RETRY_CONFIG } from "@/types/platform-common.types";
 

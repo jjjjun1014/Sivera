@@ -13,6 +13,7 @@ import {
 } from "@heroui/dropdown";
 import { ThemeSwitch } from "@/components/theme-switch";
 import { clientLogout } from "@/app/login/client-actions";
+import packageJson from "../../../package.json";
 
 const menuItems = [
   {
@@ -474,6 +475,13 @@ export default function DashboardSidebar({
                 </DropdownSection>
               </DropdownMenu>
             </Dropdown>
+
+            {/* Version Info */}
+            {!isCollapsed && (
+              <div className="px-3 py-2 text-center">
+                <p className="text-xs text-default-400">v{packageJson.version}</p>
+              </div>
+            )}
           </div>
         </div>
       </aside>

@@ -1,11 +1,11 @@
 // Auth data slice
 
 import { StateCreator } from "zustand";
-import { User } from "@supabase/supabase-js";
+import type { AuthUser } from "aws-amplify/auth";
 
 export interface AuthDataSlice {
-  user: User | null;
-  setUser: (user: User | null) => void;
+  user: AuthUser | null;
+  setUser: (user: AuthUser | null) => void;
   isInitialized: boolean;
   setIsInitialized: (isInitialized: boolean) => void;
 }

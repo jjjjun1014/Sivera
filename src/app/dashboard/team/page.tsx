@@ -2,42 +2,52 @@
 
 import { useState, useEffect } from "react";
 import { Card, CardBody, CardHeader } from "@heroui/card";
-import { Table, TableHeader, TableColumn, TableBody, TableRow, TableCell, Selection } from "@heroui/table";
+import { Table, TableHeader, TableColumn, TableBody, TableRow, TableCell } from "@heroui/table";
 import { Chip } from "@heroui/chip";
 import { Button } from "@heroui/button";
 import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, useDisclosure } from "@heroui/modal";
 import { Input } from "@heroui/input";
 import { Select, SelectItem } from "@heroui/select";
-import { Checkbox, CheckboxGroup } from "@heroui/checkbox";
 import { History } from "lucide-react";
 import { toast } from "@/utils/toast";
 import { AuditLogModal } from "@/components/modals/AuditLogModal";
 import { useWorkspace } from "@/contexts/WorkspaceContext";
 import { useTeamRole } from "@/hooks/use-team-role";
 import { getCurrentUser } from "@/lib/services/user.service";
+import { platformAccounts, SAMPLE_TEAM_MEMBERS, SAMPLE_PENDING_INVITES } from "@/lib/mock-data";
+import type { TeamMember, TeamInvitation } from "@/types/team";
+import { TEAM_ROLE_TEXT, TEAM_ROLE_COLOR } from "@/lib/constants/team";
+import type { User } from "@/types/amplify";
 
 // TODO: 광고 계정 데이터는 API에서 가져오기
-const adAccounts: any[] = [];
+const adAccounts = platformAccounts;
 
 export default function TeamPage() {
-  const [selectedKeys, setSelectedKeys] = useState<Selection>(new Set([]));
   const { isOpen, onOpen, onClose } = useDisclosure();
   const { isOpen: isAuditLogOpen, onOpen: onAuditLogOpen, onClose: onAuditLogClose } = useDisclosure();
   const { isOpen: isRoleChangeOpen, onOpen: onRoleChangeOpen, onClose: onRoleChangeClose } = useDisclosure();
+  const { isOpen: isAccountMemberModalOpen, onOpen: onAccountMemberModalOpen, onClose: onAccountMemberModalClose } = useDisclosure();
+  const { isOpen: isRemoveMemberOpen, onOpen: onRemoveMemberOpen, onClose: onRemoveMemberClose } = useDisclosure();
+  
   const [inviteEmail, setInviteEmail] = useState("");
   const [selectedAccountRoles, setSelectedAccountRoles] = useState<Record<string, string>>({});
-  const [currentEditingMember, setCurrentEditingMember] = useState<typeof teamMembers[0] | null>(null);
+  const [currentEditingMember, setCurrentEditingMember] = useState<TeamMember | null>(null);
   const [editingAccountRoles, setEditingAccountRoles] = useState<Record<string, string>>({});
+  const [currentAccount, setCurrentAccount] = useState<typeof adAccounts[0] | null>(null);
+  const [memberToRemove, setMemberToRemove] = useState<{ id: number; name: string } | null>(null);
+  
   const { workspaces } = useWorkspace();
   
   // 현재 사용자 정보 및 권한
-  const [currentUser, setCurrentUser] = useState<any>(null);
-  const [teamMembers, setTeamMembers] = useState<any[]>([]);
-  const [pendingInvites, setPendingInvites] = useState<any[]>([]);
-  const { role, isMaster, canManageTeam, isLoading } = useTeamRole(
-    currentUser?.data?.teamID || null,
-    currentUser?.data?.id || null
-  );
+  const [currentUser, setCurrentUser] = useState<{ data: User | null; error?: any } | null>(null);
+  const [teamMembers, setTeamMembers] = useState<TeamMember[]>(SAMPLE_TEAM_MEMBERS);
+  const [pendingInvites, setPendingInvites] = useState<TeamInvitation[]>(SAMPLE_PENDING_INVITES);
+  
+  // TODO: teamID는 TeamMember를 통해 조회해야 함
+  const teamID = null;
+  const userID = currentUser?.data?.id || null;
+  
+  const { role, isMaster, canManageTeam, isLoading } = useTeamRole(teamID, userID);
 
   useEffect(() => {
     // 현재 사용자 정보 조회
@@ -51,13 +61,13 @@ export default function TeamPage() {
   useEffect(() => {
     // 팀원 목록 조회
     const fetchTeamMembers = async () => {
-      if (!currentUser?.data?.teamID) return;
+      if (!teamID) return;
       
       try {
         // TODO: GraphQL로 TeamMember 조회
         // const response = await client.graphql({
         //   query: listTeamMembers,
-        //   variables: { filter: { teamID: { eq: currentUser.data.teamID } } }
+        //   variables: { filter: { teamID: { eq: teamID } } }
         // });
         // setTeamMembers(response.data.listTeamMembers.items);
       } catch (error) {
@@ -67,13 +77,13 @@ export default function TeamPage() {
 
     // 대기 중 초대 조회
     const fetchPendingInvites = async () => {
-      if (!currentUser?.data?.teamID) return;
+      if (!teamID) return;
       
       try {
         // TODO: GraphQL로 TeamInvitation 조회
         // const response = await client.graphql({
         //   query: listTeamInvitations,
-        //   variables: { filter: { teamID: { eq: currentUser.data.teamID }, status: { eq: 'pending' } } }
+        //   variables: { filter: { teamID: { eq: teamID }, status: { eq: 'pending' } } }
         // });
         // setPendingInvites(response.data.listTeamInvitations.items);
       } catch (error) {
@@ -81,40 +91,27 @@ export default function TeamPage() {
       }
     };
 
-    if (currentUser?.data?.teamID) {
+    if (teamID) {
       fetchTeamMembers();
       fetchPendingInvites();
     }
-  }, [currentUser]);
+  }, [teamID]);
 
-  const roleColorMap: Record<string, "primary" | "success" | "default"> = {
-    owner: "primary",
-    member: "success",
-    viewer: "default",
-  };
-
-  const roleTextMap: Record<string, string> = {
-    owner: "소유자",
-    member: "멤버",
-    viewer: "뷰어",
-  };
-
-  const accountRoleTextMap: Record<string, string> = {
-    admin: "관리자",
-    editor: "편집자",
-    viewer: "뷰어",
-  };
-
-  const getAccountDisplay = (member: typeof teamMembers[0]) => {
-    const accounts = member.adAccounts.map(acc => {
+  const getAccountDisplay = (member: TeamMember) => {
+    const accounts = (member.adAccounts || []).map((acc) => {
       const account = adAccounts.find(a => a.id === acc.accountId);
-      return account ? account.name : acc.accountId;
+      return account ? account.accountName : acc.accountId;
     });
     
     if (accounts.length === 0) return "-";
     if (accounts.length === 1) return accounts[0];
     if (accounts.length === 2) return `${accounts[0]}, ${accounts[1]}`;
     return `${accounts[0]}, ${accounts[1]} +${accounts.length - 2}`;
+  };
+
+  const handleManageAccountMembers = (account: typeof adAccounts[0]) => {
+    setCurrentAccount(account);
+    onAccountMemberModalOpen();
   };
 
   const handleInvite = () => {
@@ -161,7 +158,7 @@ export default function TeamPage() {
       setCurrentEditingMember(member);
       // 현재 멤버의 계정 역할을 편집 상태로 복사
       const roles: Record<string, string> = {};
-      member.adAccounts.forEach(acc => {
+      (member.adAccounts || []).forEach((acc: any) => {
         roles[acc.accountId] = acc.role;
       });
       setEditingAccountRoles(roles);
@@ -185,10 +182,24 @@ export default function TeamPage() {
   };
 
   const handleRemoveMember = (memberId: number, memberName: string) => {
-    toast.error({
-      title: "팀원 제거 확인",
-      description: `${memberName}을(를) 팀에서 제거하시겠습니까? 이 작업은 되돌릴 수 없습니다.`,
+    setMemberToRemove({ id: memberId, name: memberName });
+    onRemoveMemberOpen();
+  };
+
+  const confirmRemoveMember = () => {
+    if (!memberToRemove) return;
+
+    // TODO: 실제 팀원 제거 API 호출
+    const updatedMembers = teamMembers.filter(m => m.id !== memberToRemove.id);
+    setTeamMembers(updatedMembers);
+    
+    toast.success({
+      title: "팀원 제거 완료",
+      description: `${memberToRemove.name}님이 팀에서 제거되었습니다.`,
     });
+    
+    onRemoveMemberClose();
+    setMemberToRemove(null);
   };
 
   const handleResendInvite = (email: string) => {
@@ -212,12 +223,11 @@ export default function TeamPage() {
         <div>
           <h1 className="text-3xl font-bold mb-2">팀 관리</h1>
           <p className="text-default-500">
-            팀원을 초대하고 권한을 관리하세요
-            {role && (
-              <Chip size="sm" variant="flat" color="primary" className="ml-2">
-                내 역할: {role === 'master' ? '마스터' : role === 'team_mate' ? '팀원' : '뷰어'}
-              </Chip>
-            )}
+            팀원을 초대하고 기본 역할을 관리하세요. 광고 계정별 상세 권한은{" "}
+            <a href="/dashboard/integrated" className="text-primary hover:underline">
+              통합 관리
+            </a>
+            에서 설정할 수 있습니다.
           </p>
         </div>
         <div className="flex gap-3">
@@ -234,7 +244,6 @@ export default function TeamPage() {
             color="primary"
             radius="sm"
             onPress={onOpen}
-            isDisabled={!isMaster || isLoading}
           >
             + 팀원 초대
           </Button>
@@ -251,8 +260,8 @@ export default function TeamPage() {
         </Card>
         <Card>
           <CardBody className="text-center py-6">
-            <p className="text-sm text-default-500 mb-1">활성 팀원</p>
-            <p className="text-3xl font-bold text-success">{teamMembers.length}</p>
+            <p className="text-sm text-default-500 mb-1">연동된 광고 계정</p>
+            <p className="text-3xl font-bold text-success">{adAccounts.length}</p>
           </CardBody>
         </Card>
         <Card>
@@ -263,8 +272,8 @@ export default function TeamPage() {
         </Card>
         <Card>
           <CardBody className="text-center py-6">
-            <p className="text-sm text-default-500 mb-1">총 캠페인 접근</p>
-            <p className="text-3xl font-bold">0</p>
+            <p className="text-sm text-default-500 mb-1">활성 캠페인</p>
+            <p className="text-3xl font-bold">{adAccounts.reduce((sum, acc) => sum + (acc.campaigns || 0), 0)}</p>
           </CardBody>
         </Card>
       </div>
@@ -278,19 +287,14 @@ export default function TeamPage() {
           <div className="overflow-x-auto">
             <Table
               aria-label="팀원 목록 테이블"
-              selectionMode="multiple"
-              selectedKeys={selectedKeys}
-              onSelectionChange={setSelectedKeys}
-              disallowEmptySelection={false}
               classNames={{
-                wrapper: "min-w-[900px]",
+                wrapper: "min-w-[700px]",
               }}
             >
             <TableHeader>
               <TableColumn className="whitespace-nowrap">팀원</TableColumn>
               <TableColumn className="whitespace-nowrap">이메일</TableColumn>
               <TableColumn className="whitespace-nowrap">역할</TableColumn>
-              <TableColumn className="whitespace-nowrap">광고 계정</TableColumn>
               <TableColumn align="center" className="whitespace-nowrap">작업</TableColumn>
             </TableHeader>
             <TableBody emptyContent="팀원이 없습니다.">
@@ -306,30 +310,13 @@ export default function TeamPage() {
                   </TableCell>
                   <TableCell>
                     <Chip
-                      color={roleColorMap[member.role]}
+                      color={TEAM_ROLE_COLOR[member.role]}
                       size="sm"
                       variant="flat"
                       className="whitespace-nowrap"
                     >
-                      {roleTextMap[member.role]}
+                      {TEAM_ROLE_TEXT[member.role]}
                     </Chip>
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex flex-wrap gap-1">
-                      {member.adAccounts.slice(0, 2).map((acc) => {
-                        const account = adAccounts.find(a => a.id === acc.accountId);
-                        return (
-                          <Chip key={acc.accountId} size="sm" variant="flat" color="default">
-                            {account?.name}
-                          </Chip>
-                        );
-                      })}
-                      {member.adAccounts.length > 2 && (
-                        <Chip size="sm" variant="flat" color="default">
-                          +{member.adAccounts.length - 2}
-                        </Chip>
-                      )}
-                    </div>
                   </TableCell>
                   <TableCell>
                     <div className="flex gap-2 justify-center">
@@ -338,7 +325,7 @@ export default function TeamPage() {
                         variant="flat"
                         color="primary"
                         radius="sm"
-                        isDisabled={member.role === "owner" || !canManageTeam}
+                        isDisabled={member.role === "owner"}
                         onPress={() => handleRoleChange(member.id, member.name)}
                       >
                         역할 변경
@@ -348,7 +335,7 @@ export default function TeamPage() {
                         variant="flat"
                         color="danger"
                         radius="sm"
-                        isDisabled={member.role === "owner" || !isMaster}
+                        isDisabled={member.role === "owner"}
                         onPress={() => handleRemoveMember(member.id, member.name)}
                       >
                         제거
@@ -360,12 +347,6 @@ export default function TeamPage() {
             </TableBody>
           </Table>
           </div>
-
-          {teamMembers.length > 0 && (
-            <div className="mt-4 text-sm text-default-500">
-              선택됨: {selectedKeys === "all" ? teamMembers.length : selectedKeys.size}개
-            </div>
-          )}
         </CardBody>
       </Card>
 
@@ -392,12 +373,12 @@ export default function TeamPage() {
                   </TableCell>
                   <TableCell>
                     <Chip
-                      color={roleColorMap[invite.role]}
+                      color={TEAM_ROLE_COLOR[invite.role]}
                       size="sm"
                       variant="flat"
                       className="whitespace-nowrap"
                     >
-                      {roleTextMap[invite.role]}
+                      {TEAM_ROLE_TEXT[invite.role]}
                     </Chip>
                   </TableCell>
                   <TableCell>
@@ -413,7 +394,6 @@ export default function TeamPage() {
                         variant="flat"
                         color="primary"
                         radius="sm"
-                        isDisabled={!isMaster}
                         onPress={() => handleResendInvite(invite.email)}
                       >
                         재전송
@@ -423,7 +403,6 @@ export default function TeamPage() {
                         variant="flat"
                         color="danger"
                         radius="sm"
-                        isDisabled={!isMaster}
                         onPress={() => handleCancelInvite(invite.email)}
                       >
                         취소
@@ -684,6 +663,120 @@ export default function TeamPage() {
             </Button>
             <Button color="primary" onPress={handleSaveRoleChanges}>
               변경 사항 저장
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
+
+      {/* Account Members Management Modal */}
+      <Modal isOpen={isAccountMemberModalOpen} onClose={onAccountMemberModalClose} size="3xl" scrollBehavior="inside">
+        <ModalContent>
+          <ModalHeader>
+            <div>
+              <h2 className="text-2xl font-bold">광고 계정 접근 권한 관리</h2>
+              {currentAccount && (
+                <p className="text-sm text-default-400 font-normal mt-1">
+                  {currentAccount.platform} · {currentAccount.accountName}
+                </p>
+              )}
+            </div>
+          </ModalHeader>
+          <ModalBody>
+            <div className="space-y-6">
+              <div className="p-4 bg-default-50 rounded-lg">
+                <p className="text-sm text-default-600">
+                  이 광고 계정에 접근할 수 있는 팀원과 권한을 설정합니다.
+                </p>
+              </div>
+
+              <div className="space-y-3">
+                <h3 className="text-lg font-semibold">팀원 목록</h3>
+                <div className="space-y-3">
+                  {teamMembers.map((member) => {
+                    const memberAccount = (member.adAccounts || []).find((acc: any) => acc.accountId === currentAccount?.id);
+                    const hasAccess = !!memberAccount;
+                    
+                    return (
+                      <div
+                        key={member.id}
+                        className="flex items-center justify-between p-4 border border-divider rounded-lg"
+                      >
+                        <div className="flex-1">
+                          <p className="font-medium">{member.name}</p>
+                          <p className="text-xs text-default-500">{member.email}</p>
+                        </div>
+                        {hasAccess ? (
+                          <div className="flex items-center gap-3">
+                            <Select
+                              size="sm"
+                              radius="sm"
+                              className="w-32"
+                              selectedKeys={[memberAccount.role]}
+                              aria-label="역할 선택"
+                            >
+                              <SelectItem key="admin">관리자</SelectItem>
+                              <SelectItem key="editor">편집자</SelectItem>
+                              <SelectItem key="viewer">뷰어</SelectItem>
+                            </Select>
+                            <Button
+                              size="sm"
+                              variant="flat"
+                              color="danger"
+                              isDisabled={!isMaster}
+                            >
+                              제거
+                            </Button>
+                          </div>
+                        ) : (
+                          <Button
+                            size="sm"
+                            variant="flat"
+                            color="primary"
+                            isDisabled={!canManageTeam}
+                          >
+                            접근 권한 추가
+                          </Button>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+          </ModalBody>
+          <ModalFooter>
+            <Button variant="light" onPress={onAccountMemberModalClose}>
+              닫기
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
+
+      {/* Remove Member Confirmation Modal */}
+      <Modal isOpen={isRemoveMemberOpen} onClose={onRemoveMemberClose} size="md">
+        <ModalContent>
+          <ModalHeader>팀원 제거 확인</ModalHeader>
+          <ModalBody>
+            <p className="text-default-700">
+              <span className="font-semibold">{memberToRemove?.name}</span>님을 팀에서 제거하시겠습니까?
+            </p>
+            <p className="text-sm text-default-500 mt-2">
+              이 작업은 되돌릴 수 없으며, 해당 팀원은 모든 광고 계정에 대한 접근 권한을 잃게 됩니다.
+            </p>
+          </ModalBody>
+          <ModalFooter>
+            <Button
+              color="default"
+              variant="flat"
+              onPress={onRemoveMemberClose}
+            >
+              취소
+            </Button>
+            <Button
+              color="danger"
+              onPress={confirmRemoveMember}
+            >
+              제거
             </Button>
           </ModalFooter>
         </ModalContent>

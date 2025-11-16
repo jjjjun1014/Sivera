@@ -57,7 +57,6 @@ export const PLANS: Record<PlanType, SubscriptionPlan> = {
       adAccounts: 1,  // 광고 계정 1개만
       dataRetention: 3,  // 3일 데이터만
       apiAccess: 'none',
-      aiChatbot: false,
       apiWrite: false,
     },
   },
@@ -74,7 +73,6 @@ export const PLANS: Record<PlanType, SubscriptionPlan> = {
       adAccounts: 5,  // 광고 계정 5개
       dataRetention: 'unlimited',
       apiAccess: 'read-only',
-      aiChatbot: true,
       apiWrite: false,
     },
   },
@@ -90,7 +88,6 @@ export const PLANS: Record<PlanType, SubscriptionPlan> = {
       adAccounts: 'unlimited',  // 무제한 광고 계정
       dataRetention: 'unlimited',
       apiAccess: 'full',
-      aiChatbot: true,
       apiWrite: true,
       prioritySupport: true,
       customIntegrations: true,
@@ -106,14 +103,12 @@ export const PLAN_FEATURE_DESCRIPTIONS = {
     '팀원: 1명만',
     '계정 연동: 1개',
     '데이터 조회: 최근 3일',
-    'AI 챗봇: 사용 불가',
     'API: 접근 불가',
   ],
   standard: [
     '팀원: 1-5명 기본 포함',
     '계정 연동: 5개',
     '데이터 조회: 무제한',
-    'AI 챗봇: 사용 가능',
     'API: 읽기 전용',
     '이메일 지원',
   ],
@@ -121,7 +116,6 @@ export const PLAN_FEATURE_DESCRIPTIONS = {
     '팀원: 1-5명 기본 포함',
     '계정 연동: 무제한',
     '데이터 조회: 무제한',
-    'AI 챗봇: 사용 가능',
     'API: 읽기/쓰기 모두',
     '우선 지원',
     '커스텀 연동',
@@ -227,13 +221,6 @@ export function canAccessAPI(planType: PlanType, method: 'read' | 'write'): bool
   if (plan.features.apiAccess === 'none') return false;
   if (plan.features.apiAccess === 'read-only' && method === 'write') return false;
   return true;
-}
-
-/**
- * AI 챗봇 사용 가능 여부
- */
-export function canUseAI(planType: PlanType): boolean {
-  return PLANS[planType].features.aiChatbot;
 }
 
 /**

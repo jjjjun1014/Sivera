@@ -9,6 +9,7 @@ const config = {
   platformDisplayName: "Amazon Ads - 대시보드",
   description: "전체 Amazon 광고 성과를 한눈에 확인하세요",
   campaigns: amazonAdsCampaigns,
+  platform: "amazon" as const,
   sampleTotalData: {
     totalSpent: 987654,
     totalBudget: 1200000,

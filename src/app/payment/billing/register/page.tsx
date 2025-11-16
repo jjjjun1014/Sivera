@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useState } from "react";
+import { Suspense, useState, useEffect, useCallback } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { Card, CardBody, CardHeader } from "@heroui/card";
 import { Button } from "@heroui/button";
@@ -10,6 +10,11 @@ import { ArrowLeft, Check, CreditCard, Calendar } from "lucide-react";
 import { PortOneBillingWidget } from "@/components/payments/PortOneBillingWidget";
 import { PLANS, getMonthlyPrice, getTeamSizeTier } from "@/lib/config/plans";
 import type { PlanType } from "@/types/subscription";
+import { fetchAuthSession, fetchUserAttributes } from "aws-amplify/auth";
+import { generateClient } from "aws-amplify/data";
+import type { Schema } from "@/amplify/data/resource";
+
+const client = generateClient<Schema>();
 
 function BillingRegisterContent() {
   const router = useRouter();
@@ -18,18 +23,103 @@ function BillingRegisterContent() {
   const planParam = searchParams.get("plan") as PlanType | null;
   const seatsParam = searchParams.get("seats");
 
-  const [customerKey] = useState(() => {
-    // TODO: 실제 사용자 ID로 변경
-    return `customer_${Date.now()}`;
-  });
+  const [customerKey, setCustomerKey] = useState("");
+  const [customerName, setCustomerName] = useState("");
+  const [customerEmail, setCustomerEmail] = useState("");
+  const [customerPhoneNumber, setCustomerPhoneNumber] = useState("01012345678");
+  const [isLoadingUser, setIsLoadingUser] = useState(true);
+  const [connectedPlatforms, setConnectedPlatforms] = useState<{ platform: string; count: number }[]>([]);
+  const [teamId, setTeamId] = useState<string>("");
 
-  // 고객 정보
-  const customerName = "홍길동"; // TODO: 실제 사용자 이름
-  const customerEmail = "test@example.com"; // TODO: 실제 사용자 이메일
-  const customerPhoneNumber = "01012345678"; // TODO: 실제 사용자 휴대폰
+  // 팀의 연결된 플랫폼 정보 로드
+  const loadPlatformConnections = useCallback(async (teamId: string) => {
+    try {
+      const { data: credentials } = await client.models.PlatformCredential.list({
+        filter: { teamID: { eq: teamId }, isActive: { eq: true } },
+      });
 
-  // 스마트 라우팅 채널 그룹
-  const channelGroup = process.env.NEXT_PUBLIC_PORTONE_CHANNEL_GROUP;
+      if (credentials) {
+        // 플랫폼별로 그룹화
+        const platformCounts = credentials.reduce((acc, cred) => {
+          const platform = cred.platform || "unknown";
+          acc[platform] = (acc[platform] || 0) + 1;
+          return acc;
+        }, {} as Record<string, number>);
+
+        const platformList = Object.entries(platformCounts).map(([platform, count]) => ({
+          platform: platform.charAt(0).toUpperCase() + platform.slice(1),
+          count,
+        }));
+
+        setConnectedPlatforms(platformList);
+      }
+    } catch (error) {
+      console.error("Failed to load platform connections:", error);
+    }
+  }, []);
+
+  // 사용자 정보 및 팀 플랫폼 로드
+  useEffect(() => {
+    let isMounted = true;
+    
+    async function loadUserInfo() {
+      try {
+        const session = await fetchAuthSession();
+        const attributes = await fetchUserAttributes();
+        
+        if (!isMounted) return;
+        
+        const userId = session.userSub || `customer_${Date.now()}`;
+        const name = attributes.name || attributes.given_name || attributes.family_name || "고객";
+        const email = attributes.email || "customer@example.com";
+        const phone = attributes.phone_number || "01012345678";
+        const teamIdFromAuth = attributes["custom:teamId"];
+        
+        setCustomerKey(userId);
+        setCustomerName(name);
+        setCustomerEmail(email);
+        setCustomerPhoneNumber(phone);
+        
+        if (teamIdFromAuth && isMounted) {
+          setTeamId(teamIdFromAuth);
+          await loadPlatformConnections(teamIdFromAuth);
+        }
+      } catch (error) {
+        if (!isMounted) return;
+        console.error("Failed to load user info:", error);
+        setCustomerKey(`customer_${Date.now()}`);
+        setCustomerName("테스트 고객");
+        setCustomerEmail("test@sivera.io");
+        setCustomerPhoneNumber("01012345678");
+      } finally {
+        if (isMounted) {
+          setIsLoadingUser(false);
+        }
+      }
+    }
+    
+    loadUserInfo();
+    
+    return () => {
+      isMounted = false;
+    };
+  }, [loadPlatformConnections]);
+
+  // 스마트 라우팅 채널 그룹 - 더 이상 필요 없음
+
+  // 로딩 중
+  if (isLoadingUser) {
+    return (
+      <div className="container mx-auto px-6 py-12">
+        <Card className="max-w-2xl mx-auto">
+          <CardBody className="py-12 flex flex-col items-center gap-4">
+            <Spinner size="lg" />
+            <p className="text-default-500">사용자 정보를 불러오는 중...</p>
+          </CardBody>
+        </Card>
+      </div>
+    );
+  }
 
   // 유효하지 않은 접근
   if (!planParam || planParam === "free") {
@@ -52,152 +142,200 @@ function BillingRegisterContent() {
   const planInfo = PLANS[plan];
   const teamTier = getTeamSizeTier(seats);
   const amount = getMonthlyPrice(plan, seats, "KRW");
+  const trialEndDate = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000);
+  const firstBillingDate = new Date(trialEndDate.getTime() + 24 * 60 * 60 * 1000);
 
   return (
-    <div className="container mx-auto px-6 py-8">
+    <div className="container mx-auto px-4 sm:px-6 py-6 sm:py-8 max-w-4xl">
+      {/* 뒤로가기 */}
       <Button
         variant="light"
         startContent={<ArrowLeft className="w-4 h-4" />}
         onPress={() => router.back()}
-        className="mb-4"
+        className="mb-6"
       >
         돌아가기
       </Button>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* 구독 정보 */}
-        <div className="lg:col-span-1 space-y-4">
-          <Card>
-            <CardHeader>
-              <h2 className="text-xl font-bold">구독 정보</h2>
-            </CardHeader>
-            <CardBody className="space-y-4">
-              <div>
-                <div className="flex items-center gap-2 mb-2">
-                  <h3 className="font-semibold">{planInfo.name} 플랜</h3>
-                  {planInfo.highlighted && (
-                    <Chip size="sm" color="primary" variant="flat">
-                      추천
-                    </Chip>
-                  )}
+      <div className="space-y-6">
+        {/* 1단계: 플랜 확인 */}
+        <Card className="border-2 border-primary/20">
+          <CardBody className="p-6">
+            <div className="flex items-center justify-between flex-wrap gap-4">
+              <div className="flex items-center gap-3">
+                <div className="p-3 bg-primary/10 rounded-lg">
+                  <span className="text-2xl">💎</span>
                 </div>
-                <p className="text-sm text-default-500">{planInfo.description}</p>
+                <div>
+                  <div className="flex items-center gap-2 mb-1">
+                    <h2 className="text-xl sm:text-2xl font-bold">{planInfo.name} 플랜</h2>
+                    {planInfo.highlighted && (
+                      <Chip size="sm" color="primary" variant="flat">
+                        추천
+                      </Chip>
+                    )}
+                  </div>
+                  <p className="text-sm text-default-600">
+                    팀 {seats}명 · {planInfo.description}
+                  </p>
+                </div>
               </div>
+              <div className="text-right">
+                <p className="text-3xl sm:text-4xl font-bold text-primary">
+                  ₩{amount.toLocaleString()}
+                </p>
+                <p className="text-sm text-default-500">/월</p>
+              </div>
+            </div>
+            
+            <Button
+              size="sm"
+              variant="flat"
+              className="mt-4"
+              onPress={() => router.back()}
+            >
+              플랜 변경하기
+            </Button>
+          </CardBody>
+        </Card>
 
-              <div className="space-y-2 py-4 border-y border-divider">
-                <div className="flex justify-between text-sm">
-                  <span className="text-default-600">기본 요금</span>
-                  <span className="font-semibold">
-                    ₩{planInfo.basePriceKRW.toLocaleString()}/월
-                  </span>
-                </div>
-                {teamTier.priceKRW > 0 && (
-                  <div className="flex justify-between text-sm">
-                    <span className="text-default-600">팀 규모 ({teamTier.name})</span>
-                    <span className="font-semibold text-primary">
-                      +₩{teamTier.priceKRW.toLocaleString()}/월
+        {/* 2단계: 무료 체험 정보 */}
+        <Card className="bg-linear-to-br from-primary/5 to-secondary/5 border border-primary/20">
+          <CardBody className="p-6">
+            <div className="flex items-start gap-4">
+              <div className="p-2 bg-primary/20 rounded-lg shrink-0">
+                <span className="text-3xl">🎉</span>
+              </div>
+              <div className="flex-1">
+                <h3 className="text-xl font-bold mb-2">14일 무료 체험</h3>
+                <div className="space-y-2">
+                  <p className="text-sm text-default-700">
+                    <span className="font-semibold">
+                      {trialEndDate.toLocaleDateString('ko-KR', {
+                        year: 'numeric',
+                        month: 'long',
+                        day: 'numeric',
+                      })}
+                    </span>
+                    까지 무료로 모든 기능을 사용하세요
+                  </p>
+                  <div className="flex items-center gap-2 text-sm">
+                    <Calendar className="w-4 h-4 text-primary" />
+                    <span className="text-default-600">
+                      첫 결제일:{" "}
+                      <span className="font-semibold">
+                        {firstBillingDate.toLocaleDateString('ko-KR')}
+                      </span>
                     </span>
                   </div>
-                )}
-                <div className="flex justify-between pt-2 border-t border-divider">
-                  <span className="font-bold">월 결제 금액</span>
-                  <span className="text-xl font-bold text-primary">
-                    ₩{amount.toLocaleString()}
-                  </span>
+                  <p className="text-xs text-default-500 pt-2 border-t border-divider/50">
+                    체험 기간 중 언제든 취소 가능하며, 취소 시 요금이 청구되지 않습니다
+                  </p>
                 </div>
               </div>
+            </div>
+          </CardBody>
+        </Card>
 
-              <div className="bg-primary/10 rounded-lg p-4">
-                <div className="flex items-center gap-2 mb-1">
-                  <Calendar className="w-4 h-4 text-primary" />
-                  <span className="text-sm font-semibold">다음 결제일</span>
-                </div>
-                <p className="text-sm text-default-600">
-                  {new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toLocaleDateString('ko-KR')}
-                  <span className="text-xs ml-2">(14일 무료 체험 후)</span>
-                </p>
+        {/* 3단계: 결제수단 등록 */}
+        <Card>
+          <CardHeader className="pb-3">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-default-100 rounded-lg">
+                <CreditCard className="w-5 h-5 text-default-600" />
               </div>
-            </CardBody>
-          </Card>
-
-          {/* 포함 기능 */}
-          <Card>
-            <CardHeader>
-              <h3 className="font-semibold">포함된 기능</h3>
-            </CardHeader>
-            <CardBody className="space-y-2">
-              <div className="flex items-start gap-2">
-                <Check className="w-4 h-4 text-success flex-shrink-0 mt-0.5" />
-                <span className="text-sm">
-                  광고 계정:{" "}
-                  {planInfo.features.adAccounts === "unlimited"
-                    ? "무제한"
-                    : `${planInfo.features.adAccounts}개`}
-                </span>
-              </div>
-              <div className="flex items-start gap-2">
-                <Check className="w-4 h-4 text-success flex-shrink-0 mt-0.5" />
-                <span className="text-sm">
-                  데이터 보관:{" "}
-                  {planInfo.features.dataRetention === "unlimited"
-                    ? "무제한"
-                    : `${planInfo.features.dataRetention}일`}
-                </span>
-              </div>
-              {planInfo.features.aiChatbot && (
-                <div className="flex items-start gap-2">
-                  <Check className="w-4 h-4 text-success flex-shrink-0 mt-0.5" />
-                  <span className="text-sm">AI 챗봇 사용</span>
-                </div>
-              )}
-            </CardBody>
-          </Card>
-        </div>
-
-        {/* 결제수단 등록 */}
-        <div className="lg:col-span-2">
-          <Card>
-            <CardHeader className="flex items-center gap-2">
-              <CreditCard className="w-5 h-5" />
               <div>
                 <h2 className="text-xl font-bold">결제수단 등록</h2>
-                <p className="text-sm text-default-500 mt-1">
-                  정기결제를 위해 카드 또는 페이팔을 등록해주세요
+                <p className="text-sm text-default-500 mt-0.5">
+                  정기결제를 위해 결제수단을 등록해주세요
                 </p>
               </div>
-            </CardHeader>
-            <CardBody>
-              <div className="mb-6 p-4 bg-primary/10 rounded-lg">
-                <h4 className="font-semibold mb-2">지원 결제수단</h4>
-                <ul className="text-sm text-default-600 space-y-1">
-                  <li>💳 국내/해외 신용카드 (이니시스)</li>
-                  <li>💰 PayPal 계정</li>
-                  <li>🔒 스마트 라우팅으로 자동 선택</li>
-                </ul>
-              </div>
+            </div>
+          </CardHeader>
+          <CardBody className="pt-0">
+            <PortOneBillingWidget
+              customerId={customerKey}
+              customerName={customerName}
+              customerEmail={customerEmail}
+              customerPhoneNumber={customerPhoneNumber}
+              connectedPlatforms={connectedPlatforms}
+              onSuccess={(billingKey, paymentMethod) => {
+                router.push(`/payment/billing/success?billingKey=${billingKey}&paymentMethod=${paymentMethod}&plan=${plan}&seats=${seats}`);
+              }}
+              onError={(error) => {
+                router.push(`/payment/billing/failure?error=billing_error&message=${encodeURIComponent(error.message)}`);
+              }}
+            />
+          </CardBody>
+        </Card>
 
-              {channelGroup ? (
-                <PortOneBillingWidget
-                  customerId={customerKey}
-                  channelKey={channelGroup}
-                  customerName={customerName}
-                  customerEmail={customerEmail}
-                  customerPhoneNumber={customerPhoneNumber}
-                  onSuccess={(billingKey) => {
-                    router.push(`/payment/billing/success?billingKey=${billingKey}&plan=${plan}&seats=${seats}`);
-                  }}
-                  onError={(error) => {
-                    router.push(`/payment/billing/failure?error=billing_error&message=${error.message}`);
-                  }}
-                />
-              ) : (
-                <div className="p-6 text-center bg-danger/10 rounded-lg">
-                  <p className="text-danger">결제 채널이 설정되지 않았습니다.</p>
+        {/* 포함된 기능 (접을 수 있는 Accordion) */}
+        <Card>
+          <CardBody className="p-6">
+            <details className="group">
+              <summary className="flex items-center justify-between cursor-pointer list-none">
+                <h3 className="font-semibold text-default-700">포함된 기능 보기</h3>
+                <span className="text-default-400 group-open:rotate-180 transition-transform">
+                  ▼
+                </span>
+              </summary>
+              <div className="mt-4 space-y-3 pt-4 border-t border-divider">
+                <div className="flex items-start gap-3">
+                  <Check className="w-5 h-5 text-success shrink-0 mt-0.5" />
+                  <div>
+                    <p className="font-medium">
+                      광고 계정:{" "}
+                      {planInfo.features.adAccounts === "unlimited"
+                        ? "무제한"
+                        : `${planInfo.features.adAccounts}개`}
+                    </p>
+                    <p className="text-xs text-default-500 mt-0.5">
+                      Google, Meta, TikTok 등 모든 플랫폼 지원
+                    </p>
+                  </div>
                 </div>
-              )}
-            </CardBody>
-          </Card>
-        </div>
+                <div className="flex items-start gap-3">
+                  <Check className="w-5 h-5 text-success shrink-0 mt-0.5" />
+                  <div>
+                    <p className="font-medium">
+                      데이터 보관:{" "}
+                      {planInfo.features.dataRetention === "unlimited"
+                        ? "무제한"
+                        : `${planInfo.features.dataRetention}일`}
+                    </p>
+                    <p className="text-xs text-default-500 mt-0.5">
+                      과거 데이터 언제든 조회 가능
+                    </p>
+                  </div>
+                </div>
+                {planInfo.features.reportingFrequency && (
+                  <div className="flex items-start gap-3">
+                    <Check className="w-5 h-5 text-success shrink-0 mt-0.5" />
+                    <div>
+                      <p className="font-medium">
+                        리포팅: {planInfo.features.reportingFrequency}
+                      </p>
+                      <p className="text-xs text-default-500 mt-0.5">
+                        자동 생성 리포트 제공
+                      </p>
+                    </div>
+                  </div>
+                )}
+                {planInfo.features.prioritySupport && (
+                  <div className="flex items-start gap-3">
+                    <Check className="w-5 h-5 text-success shrink-0 mt-0.5" />
+                    <div>
+                      <p className="font-medium">우선 지원</p>
+                      <p className="text-xs text-default-500 mt-0.5">
+                        24시간 내 응답 보장
+                      </p>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </details>
+          </CardBody>
+        </Card>
       </div>
     </div>
   );

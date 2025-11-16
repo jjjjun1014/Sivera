@@ -14,6 +14,8 @@ import { useWorkspace } from "@/contexts/WorkspaceContext";
 import { CHART_CONFIG } from "@/lib/constants";
 import { usePagination } from "@/hooks";
 import { Campaign } from "@/types";
+import { PlatformPageHeader } from "@/components/platform/PlatformPageHeader";
+import type { PlatformType } from "@/contexts/AccountContext";
 import {
   ComposedChart,
   Line,
@@ -32,6 +34,7 @@ interface PlatformGoalDashboardConfig {
   platformDisplayName: string;
   description: string;
   campaigns: Campaign[];
+  platform: PlatformType;
   sampleTotalData: {
     totalSpent: number;
     totalBudget: number;
@@ -189,29 +192,22 @@ export function PlatformGoalDashboard({ config }: { config: PlatformGoalDashboar
           <h1 className="text-3xl font-bold mb-2">{config.platformDisplayName}</h1>
           <p className="text-default-500">{config.description}</p>
         </div>
-        <div className="flex gap-3">
-          <DateRangePicker
-            label="기간 선택"
-            radius="sm"
-            variant="bordered"
-            value={dateRange}
-            onChange={(value) => value && setDateRange(value)}
-            defaultValue={{
-              start: fourteenDaysAgo,
-              end: todayDate,
-            }}
-            className="max-w-xs"
-          />
-          <Button
-            color="primary"
-            variant="flat"
-            startContent={<Target className="w-4 h-4" />}
-            onPress={onGoalModalOpen}
-          >
-            목표 설정
-          </Button>
-        </div>
+        <Button
+          color="primary"
+          variant="flat"
+          startContent={<Target className="w-4 h-4" />}
+          onPress={onGoalModalOpen}
+        >
+          목표 설정
+        </Button>
       </div>
+
+      {/* 날짜 & 계정 선택 */}
+      <PlatformPageHeader
+        platform={config.platform}
+        dateRange={dateRange}
+        onDateRangeChange={(value) => setDateRange(value)}
+      />
 
       {/* Core Metrics - 6 Cards */}
       <div className="mb-6">

@@ -24,6 +24,7 @@ import {
 import type { AdGroup, Ad } from "@/types/campaign";
 import { CreateCampaignModal } from "@/components/modals/CreateCampaignModal";
 import { useDisclosure } from "@heroui/modal";
+import { PlatformPageHeader } from "@/components/platform/PlatformPageHeader";
 
 const generateChartData = () => {
   const data = [];
@@ -343,23 +344,12 @@ export default function GoogleAdsSearchPage() {
         <p className="text-default-500">디스플레이 광고 성과를 관리하세요</p>
       </div>
 
-      <Card className="mb-6">
-        <CardBody>
-          <DateRangePicker
-            label="기간 선택"
-            radius="sm"
-            variant="bordered"
-            value={dateRange}
-            onChange={(value) => value && setDateRange(value)}
-            defaultValue={{
-              start: fourteenDaysAgo,
-              end: todayDate,
-            }}
-            description="기본 14일 설정"
-            className="max-w-xs"
-          />
-        </CardBody>
-      </Card>
+      {/* 날짜 & 계정 선택 */}
+      <PlatformPageHeader
+        platform="google"
+        dateRange={dateRange}
+        onDateRangeChange={(value) => setDateRange(value)}
+      />
 
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
         <Card>

@@ -90,6 +90,8 @@ export function AdTable({
     setPending,
     cancelEdit,
     confirmEdit,
+    setEditingCell,
+    setTempValues,
   } = useTableEditing();
 
   const { isOpen, onOpen, onClose } = useDisclosure();

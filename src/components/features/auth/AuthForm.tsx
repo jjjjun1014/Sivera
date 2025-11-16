@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Input } from "@heroui/input";
 import { Button } from "@heroui/button";
 import { Link } from "@heroui/link";
@@ -35,6 +35,7 @@ export function AuthForm({
   returnUrl = "/dashboard/analytics",
 }: AuthFormProps) {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { signIn, signUp } = useAuth();
   const { formData, updateField, validateForm } = useAuthForm({ email: defaultEmail });
   const [isSignUp, setIsSignUp] = useState(initialMode === "signup");
@@ -56,6 +57,17 @@ export function AuthForm({
   const [isResending, setIsResending] = useState(false);
   
   const { dictionary: dict } = useDictionary();
+
+  // 비활동으로 인한 자동 로그아웃 메시지 표시
+  useEffect(() => {
+    const reason = searchParams.get('reason');
+    if (reason === 'inactivity') {
+      toast.error({
+        title: '세션 만료',
+        description: '3시간 동안 활동이 없어 자동 로그아웃되었습니다. 다시 로그인해주세요.',
+      });
+    }
+  }, [searchParams]);
 
   // 모든 약관을 읽었는지 확인
   useEffect(() => {

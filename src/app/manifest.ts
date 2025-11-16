@@ -10,58 +10,7 @@ export default function manifest(): MetadataRoute.Manifest {
     background_color: "#ffffff",
     theme_color: "#f97316",
     orientation: "portrait",
-    icons: [
-      {
-        src: "/icon-192x192.png",
-        sizes: "192x192",
-        type: "image/png",
-        purpose: "maskable",
-      },
-      {
-        src: "/icon-512x512.png",
-        sizes: "512x512",
-        type: "image/png",
-        purpose: "maskable",
-      },
-      {
-        src: "/icon-192x192.png",
-        sizes: "192x192",
-        type: "image/png",
-        purpose: "any",
-      },
-      {
-        src: "/icon-512x512.png",
-        sizes: "512x512",
-        type: "image/png",
-        purpose: "any",
-      },
-    ],
+    icons: [],
     categories: ["business", "productivity", "marketing"],
-    shortcuts: [
-      {
-        name: "대시보드",
-        short_name: "Dashboard",
-        description: "통합 대시보드로 이동",
-        url: "/dashboard/analytics",
-        icons: [
-          {
-            src: "/icon-192x192.png",
-            sizes: "192x192",
-          },
-        ],
-      },
-      {
-        name: "통합 분석",
-        short_name: "Analytics",
-        description: "통합 분석 보기",
-        url: "/dashboard/integrated",
-        icons: [
-          {
-            src: "/icon-192x192.png",
-            sizes: "192x192",
-          },
-        ],
-      },
-    ],
   };
 }

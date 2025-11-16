@@ -178,6 +178,21 @@ export function PlatformIntegrations() {
       return;
     }
 
+    // Check if platform is already connected
+    const isAlreadyConnected = refreshStatus?.credentials.some(
+      (cred) => cred.platform === platform && cred.isActive,
+    );
+
+    if (isAlreadyConnected) {
+      toast.error({
+        title: "중복된 플랫폼 연동",
+        description: "브랜드 한개당 하나의 광고 API만 연동할 수 있습니다!",
+      });
+      log.warn("Duplicate platform connection attempt", { platform });
+
+      return;
+    }
+
     try {
       // Amazon uses a different OAuth route
       if (platform === "amazon") {
@@ -207,7 +222,7 @@ export function PlatformIntegrations() {
     } catch (error) {
       log.error("Failed to connect platform", { platform, error });
     }
-  }, []);
+  }, [refreshStatus]);
 
   const handleRefreshTokens = useCallback(
     async (platform?: PlatformType) => {

@@ -3,3 +3,4 @@
 export * from "./campaigns";
 export * from "./platforms";
 export * from "./notifications";
+export * from "./team";

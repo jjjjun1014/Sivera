@@ -5,18 +5,17 @@ import { Card, CardBody } from "@heroui/card";
 import { FaChartBar, FaKey, FaUsers } from "react-icons/fa";
 import { useShallow } from "zustand/shallow";
 
-import { Json } from "@/types/supabase.types";
+import type { Json } from "@/types";
 import { CampaignDashboardClient } from "@/components/dashboard/CampaignDashboardClient";
 import { MultiAccountPlatformManager } from "@/components/features/platform/MultiAccountPlatformManager";
 import { TeamManagement } from "@/components/team/TeamManagement";
 import { usePlatformStore, useTeamStore, useAuthStore } from "@/stores";
 import { CredentialValues } from "@/types/credentials.types";
 import { PlatformType, Campaign, CampaignStats } from "@/types";
-import { Database } from "@/types/supabase.types";
 import { useDictionary } from "@/hooks/use-dictionary";
 
-type PlatformCredentialRow =
-  Database["public"]["Tables"]["platform_credentials"]["Row"];
+// Type placeholder - no longer using Supabase Tables type
+type PlatformCredentialRow = any;
 
 interface IntegratedTabsClientProps {
   initialCampaigns: Campaign[];

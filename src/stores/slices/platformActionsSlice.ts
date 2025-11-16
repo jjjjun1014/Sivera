@@ -6,8 +6,7 @@ import { LoadingSlice } from "./loadingSlice";
 import { ErrorSlice } from "./errorSlice";
 import { PlatformDataSlice } from "./platformDataSlice";
 
-import { PlatformCredential, PlatformType } from "@/types";
-import { Json } from "@/types/supabase.types";
+import type { PlatformCredential, Json } from "@/types";
 import log from "@/utils/logger";
 
 // TODO: Replace with backend API integration

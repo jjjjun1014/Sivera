@@ -5,10 +5,10 @@ import { Button } from "@heroui/button";
 import InviteAcceptClient from "./InviteAcceptClient";
 import LogoutButton from "./LogoutButton";
 
-// TODO: Replace with backend API integration
-// import { createClient } from "@/utils/supabase/server";
 import log from "@/utils/logger";
 import { getDictionary, type Locale } from "@/app/dictionaries";
+import { getInvitation } from "@/lib/services/team.service";
+import { getCurrentUser } from "@/lib/services/user.service";
 
 interface InvitePageProps {
   params: Promise<{
@@ -17,19 +17,19 @@ interface InvitePageProps {
 }
 
 async function getInvitationDetails(token: string) {
-  // TODO: Backend API Integration Required
-  // Endpoint: GET /api/invitations/:token
-  // Response: { invitation: { id, email, role, status, expires_at, team_name, invited_by_email, ... } }
+  try {
+    const result = await getInvitation(token);
+    
+    if (result.error || !result.data) {
+      log.error("Failed to fetch invitation", { token, error: result.error });
+      return { invitation: null, error: result.error };
+    }
 
-  log.warn("getInvitationDetails called - backend integration needed", { token });
-
-  // Stub response - return null to trigger notFound()
-  return { invitation: null, error: new Error("Backend API integration required") };
-
-  // TODO: The backend should handle:
-  // 1. Fetch invitation by token
-  // 2. Include team name and inviter email
-  // 3. Return invitation details or error
+    return { invitation: result.data, error: null };
+  } catch (error) {
+    log.error("Error in getInvitationDetails", error instanceof Error ? error : new Error(String(error)));
+    return { invitation: null, error: "초대 정보를 불러오는데 실패했습니다." };
+  }
 }
 
 // Disable caching for this page to ensure fresh data
@@ -38,45 +38,126 @@ export const revalidate = 0;
 
 export default async function InvitePage({ params }: InvitePageProps) {
   const { token } = await params;
-  const dict = await getDictionary("en" as Locale);
+  const dict = await getDictionary("ko" as Locale);
 
-  // TODO: Backend API Integration Required
-  // Need to check if user is logged in
-  // Endpoint: GET /api/auth/me
-  // Response: { user: { id, email, ... } } or null
+  // 1. 현재 사용자 확인
+  const currentUser = await getCurrentUser();
+  const isLoggedIn = !!currentUser?.data;
 
-  log.warn("InvitePage - needs backend integration for auth check");
+  // 2. 초대 정보 조회
+  const { invitation, error } = await getInvitationDetails(token);
 
-  // For now, show a message that backend integration is needed
-  return (
-    <div className="flex min-h-screen items-center justify-center p-4">
-      <div className="text-center max-w-md mx-auto">
-        <h1 className="text-2xl font-bold mb-4">
-          Backend Integration Required
-        </h1>
-        <p className="text-default-500 mb-4">
-          The team invitation system requires backend API integration.
-        </p>
-        <p className="text-default-500 mb-6">
-          Please implement the following endpoints:
-        </p>
-        <ul className="text-left text-sm text-default-600 mb-6 space-y-2">
-          <li>• GET /api/auth/me - Get current user</li>
-          <li>• GET /api/invitations/:token - Get invitation details</li>
-          <li>• POST /api/invitations/:token/accept - Accept invitation</li>
-          <li>• GET /api/profile/:userId - Check if profile exists</li>
-        </ul>
-        <div className="text-xs text-default-400">
-          Token: {token}
+  if (!invitation) {
+    log.warn("Invitation not found", { token });
+    return notFound();
+  }
+
+  // 3. 초대 상태 확인
+  if (invitation.status === "accepted") {
+    return (
+      <div className="flex min-h-screen items-center justify-center p-4">
+        <div className="text-center max-w-md mx-auto">
+          <h1 className="text-2xl font-bold mb-4">이미 수락된 초대입니다</h1>
+          <p className="text-default-500 mb-6">
+            이 초대는 이미 수락되었습니다.
+          </p>
+          <Button
+            color="primary"
+            onClick={() => (window.location.href = "/dashboard")}
+          >
+            대시보드로 이동
+          </Button>
         </div>
       </div>
-    </div>
-  );
+    );
+  }
 
-  // TODO: Original logic to restore after backend integration:
-  // 1. Get invitation details by token
-  // 2. Check if user is logged in
-  // 3. Validate invitation status and expiration
-  // 4. Check if user email matches invitation email
-  // 5. Show appropriate UI based on state
+  if (invitation.status === "cancelled") {
+    return (
+      <div className="flex min-h-screen items-center justify-center p-4">
+        <div className="text-center max-w-md mx-auto">
+          <h1 className="text-2xl font-bold mb-4">취소된 초대입니다</h1>
+          <p className="text-default-500 mb-6">
+            이 초대는 취소되었습니다.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  // 4. 만료 확인
+  if (new Date(invitation.expiresAt) < new Date()) {
+    return (
+      <div className="flex min-h-screen items-center justify-center p-4">
+        <div className="text-center max-w-md mx-auto">
+          <h1 className="text-2xl font-bold mb-4">만료된 초대입니다</h1>
+          <p className="text-default-500 mb-6">
+            이 초대는 만료되었습니다. 초대를 보낸 사람에게 새 초대를 요청하세요.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  // 5. 로그인 여부에 따른 처리
+  if (!isLoggedIn) {
+    // 로그인하지 않은 경우 - 회원가입/로그인 유도
+    return (
+      <div className="flex min-h-screen items-center justify-center p-4">
+        <div className="text-center max-w-md mx-auto">
+          <h1 className="text-2xl font-bold mb-4">팀 초대</h1>
+          <p className="text-default-500 mb-6">
+            {invitation.email}로 초대장이 발송되었습니다.
+            <br />
+            초대를 수락하려면 로그인하거나 회원가입하세요.
+          </p>
+          <div className="flex gap-4 justify-center">
+            <Button
+              color="primary"
+              onClick={() => (window.location.href = `/login?redirect=/invite/${token}`)}
+            >
+              로그인
+            </Button>
+            <Button
+              variant="bordered"
+              onClick={() => (window.location.href = `/signup?redirect=/invite/${token}`)}
+            >
+              회원가입
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // 6. 이메일 일치 확인
+  if (currentUser.data.email?.toLowerCase() !== invitation.email.toLowerCase()) {
+    return (
+      <div className="flex min-h-screen items-center justify-center p-4">
+        <div className="text-center max-w-md mx-auto">
+          <h1 className="text-2xl font-bold mb-4">이메일 불일치</h1>
+          <p className="text-default-500 mb-4">
+            이 초대는 <strong>{invitation.email}</strong>으로 발송되었습니다.
+          </p>
+          <p className="text-default-500 mb-6">
+            현재 로그인한 계정: <strong>{currentUser.data.email}</strong>
+          </p>
+          <p className="text-default-400 text-sm mb-6">
+            올바른 계정으로 로그인하여 초대를 수락하세요.
+          </p>
+          <LogoutButton />
+        </div>
+      </div>
+    );
+  }
+
+  // 7. 초대 수락 페이지 표시
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <InviteAcceptClient
+        invitation={invitation}
+        currentUser={currentUser.data}
+      />
+    </Suspense>
+  );
 }
